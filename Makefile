@@ -23,6 +23,7 @@ include $(BOLOS_SDK)/Makefile.defines
 # Main app configuration
 
 APPNAME = "Lisk Wallet"
+
 APPVERSION = 1.0.0
 APP_LOAD_PARAMS =--appFlags 0x40  --curve secp256k1  --curve ed25519 $(COMMON_LOAD_PARAMS)
 

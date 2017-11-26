@@ -20,13 +20,16 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include "os.h"
-#include "a_ui_elements_s.h"
+#include "ui_elements_s.h"
 #include "cx.h"
 
 #include "os_io_seproxyhal.h"
 
 #define INS_GET_PUBLIC_KEY 0x04
 #define INS_SIGN 0x05
+#define INS_SIGN_MSG 0x06
+#define ADDRESS_SUFFIX "L\0"
+
 static unsigned int current_text_pos; // parsing cursor in the text to display
 static unsigned int text_y;           // current location of the displayed text
 static unsigned char hashTainted;     // notification to restart the hash
@@ -57,34 +60,24 @@ bagl_ui_approval_nanos_button(unsigned int button_mask,
                               unsigned int button_mask_counter) {
     switch (button_mask) {
         case BUTTON_EVT_RELEASED | BUTTON_RIGHT:
-            io_seproxyhal_touch_approve(NULL);
+          io_seproxyhal_touch_approve(NULL);
             break;
 
         case BUTTON_EVT_RELEASED | BUTTON_LEFT:
-            io_seproxyhal_touch_deny(NULL);
+          io_seproxyhal_touch_deny(NULL);
             break;
     }
     return 0;
 }
 
+
+
 static const bagl_element_t*
 io_seproxyhal_touch_approve(const bagl_element_t *e) {
-    unsigned int tx = 0;
-    // Update the hash
-//    cx_hash(&hash.header, 0, G_io_apdu_buffer + 5, G_io_apdu_buffer[4], NULL);
-//    if (G_io_apdu_buffer[2] == P1_LAST) {
-//        // Hash is finalized, send back the signature
-//        unsigned char result[32];
-//        cx_hash(&hash.header, CX_LAST, G_io_apdu_buffer, 0, result);
-//        tx = cx_ecdsa_sign((void *) &N_privateKey, CX_RND_RFC6979 | CX_LAST,
-//                           CX_SHA256, result, sizeof(result), G_io_apdu_buffer);
-//        G_io_apdu_buffer[0] &= 0xF0; // discard the parity information
-//        hashTainted = 1;
-//    }
-//    G_io_apdu_buffer[tx++] = 0x90;
-//    G_io_apdu_buffer[tx++] = 0x00;
-    // Send back the response, do not restart the event loop
-    io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
+    G_io_apdu_buffer[0] = 0x90;
+    G_io_apdu_buffer[1] = 0x00;
+
+    io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
     // Display back the original UX
     ui_idle();
     return 0; // do not redraw the widget
@@ -92,6 +85,17 @@ io_seproxyhal_touch_approve(const bagl_element_t *e) {
 /**/
 
 
+
+static const bagl_element_t *io_seproxyhal_touch_deny(const bagl_element_t *e) {
+  hashTainted = 1;
+  G_io_apdu_buffer[0] = 0x69;
+  G_io_apdu_buffer[1] = 0x85;
+  // Send back the response, do not restart the event loop
+  io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
+  // Display back the original UX
+  ui_idle();
+  return 0; // do not redraw the widget
+}
 
 // unsigned int io_seproxyhal_touch_exit(const bagl_element_t *e) {
 static const bagl_element_t *io_seproxyhal_touch_exit(const bagl_element_t *e) {
@@ -131,21 +135,10 @@ enum UI_STATE { UI_IDLE, UI_TEXT, UI_APPROVAL };
 
 enum UI_STATE uiState;
 
+
+
+
 ux_state_t ux;
-
-
-
-
-static const bagl_element_t *io_seproxyhal_touch_deny(const bagl_element_t *e) {
-    hashTainted = 1;
-    G_io_apdu_buffer[0] = 0x69;
-    G_io_apdu_buffer[1] = 0x85;
-    // Send back the response, do not restart the event loop
-    io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
-    // Display back the original UX
-    ui_idle();
-    return 0; // do not redraw the widget
-}
 
 static unsigned int
 bagl_ui_text_review_nanos_button(unsigned int button_mask,
@@ -220,6 +213,16 @@ typedef struct transactionContext_t {
 } transactionContext_t;
 
 
+typedef struct signContext_t {
+    cx_ecfp_private_key_t privateKey;
+    cx_ecfp_public_key_t publicKey;
+    uint16_t msgLength;
+    uint8_t *msg;
+    bool hasRequesterPublicKey;
+    uint64_t sourceAddress;
+    char * sourceAddressStr;
+} signContext_t;
+
 
 struct response {
     uint8_t n;
@@ -227,6 +230,10 @@ struct response {
     uint16_t whatLength[8];
 } response;
 
+/**
+ * Contains a sign context with nullified private key.
+ */
+signContext_t nullSignContext;
 
 void addToResponse(uint8_t* what, uint16_t length) {
     response.what[response.n] = what;
@@ -300,11 +307,10 @@ uint64_t deriveAddressFromUintArray(uint8_t *source, bool rev) {
 /**
  * Returns a string representation of the encoded Address
  * @param encodedAddress address to represent
- * @param suffix suffix to append 'L' for Lisk - 'R' for Rise' - 'X' for OXY - 'S' for Shift
  * @param output the output where the string representation will be returned
  * @return the length of the string representation.
  */
-uint8_t deriveAddressStringRepresentation(uint64_t encodedAddress, char suffix, char *output) {
+uint8_t deriveAddressStringRepresentation(uint64_t encodedAddress, char *output) {
     memset(output, 0, strlen(output));
 
     char brocca[22];
@@ -319,12 +325,25 @@ uint8_t deriveAddressStringRepresentation(uint64_t encodedAddress, char suffix, 
     for (i=0; i<total; i++) {
         output[total-1-i] = brocca[i];
     }
-    output[total] = suffix;
 
-    return (uint8_t) (total + 1 /*suffix*/);
+    memmove(&output[total], ADDRESS_SUFFIX, strlen(ADDRESS_SUFFIX));
+    output[total+strlen(ADDRESS_SUFFIX)] = '\0'; // for strlen
+    return (uint8_t) (total + strlen(ADDRESS_SUFFIX) /*suffix*/);
 }
 
+uint8_t deriveAddressShortRepresentation(uint64_t encodedAddress, char *output) {
+  char tmp[14];
+  deriveAddressStringRepresentation(encodedAddress, output);
+  size_t length = strlen(output);
 
+
+  os_memmove(tmp, output, 5);
+  os_memmove(tmp+5, "...", 3);
+  os_memmove(tmp+5+3, output + length - 5, 5);
+  tmp[13] = '\0';
+
+  os_memmove(output, tmp, 14);
+}
 /**
  * Derive address associated to the specific publicKey.
  * @param publicKey original publicKey
@@ -359,6 +378,7 @@ void parseTransaction(uint8_t *txBytes, uint32_t length, bool hasRequesterPublic
     }
 
 }
+
 
 /**
  * Signs an arbitrary message given the privateKey and the info
@@ -431,38 +451,74 @@ void handleGetPublic(uint8_t *bip32DataBuffer, volatile unsigned int *tx) {
     *tx = flushResponseToIO();
 }
 
-void handleSign(uint8_t *dataBuffer, volatile unsigned int *flags, volatile unsigned int *tx) {
-    cx_ecfp_private_key_t privateKey;
-    cx_ecfp_public_key_t publicKey;
+signContext_t getSignContext(uint8_t *dataBuffer) {
+    signContext_t toRet;
+    uint32_t bytesRead = derivePrivatePublic(dataBuffer, &toRet.privateKey, &toRet.publicKey);
+    toRet.msgLength = (*(dataBuffer+bytesRead)) << 8;
+    toRet.msgLength += (*(dataBuffer+bytesRead+1));
+    bytesRead+=2;
+    toRet.hasRequesterPublicKey  = *(dataBuffer+bytesRead);
+    bytesRead++;
+    toRet.msg = dataBuffer+bytesRead;
+    toRet.sourceAddress = deriveAddressFromPublic(&toRet.publicKey);
+
+    char address[22+strlen(ADDRESS_SUFFIX)];
+    deriveAddressStringRepresentation(toRet.sourceAddress, address);
+    toRet.sourceAddressStr = address;
+    return toRet;
+}
+
+signContext_t getNullifiedSignContext(uint8_t *dataBuffer) {
+  signContext_t context = getSignContext(dataBuffer);
+
+  os_memset(&context.privateKey, 0, sizeof(context.privateKey));
+  return context;
+}
+
+/**
+ * Handles the signing of a message
+ * @param dataBuffer
+ * @param flags
+ * @param tx
+ */
+void handleSignMSG(uint8_t *dataBuffer, volatile unsigned int * flags, volatile unsigned int *tx) {
+
+  signContext_t signContext = getSignContext(dataBuffer);
+
+  unsigned char signature[64];
+  unsigned char msg[signContext.msgLength];
+  os_memmove(msg, signContext.msg, signContext.msgLength);
+  sign(&signContext.privateKey, msg, signContext.msgLength, signature);
+
+  // Clean memory!
+  os_memset(&signContext.privateKey, 0, sizeof(signContext.privateKey));
+
+  initResponse();
+  addToResponse(signature, 64);
+//  addToResponse(signContext.sourceAddressStr, strlen(signContext.sourceAddressStr));
+  *tx = flushResponseToIO();
+}
+
+void handleSignTX(uint8_t *dataBuffer, volatile unsigned int *flags, volatile unsigned int *tx) {
+    signContext_t signContext = getSignContext(dataBuffer);
+
     unsigned char signature[64];
 
     struct transaction txOut;
 
-    uint32_t bytesRead = derivePrivatePublic(dataBuffer, &privateKey, &publicKey);
-
-    uint16_t txLength = (*(dataBuffer+bytesRead)) << 8;
-    txLength+= (*(dataBuffer+bytesRead+1));
-    bytesRead+=2;
-
-    bool hasRequesterPublicKey = *(dataBuffer+bytesRead);
-    bytesRead++;
+    parseTransaction(signContext.msg, signContext.msgLength, signContext.hasRequesterPublicKey, &txOut);
 
 
-    parseTransaction(dataBuffer+bytesRead, txLength, hasRequesterPublicKey, &txOut);
-
-
-    unsigned char data[txLength];
-    os_memmove(data, dataBuffer+bytesRead, txLength);
-    sign(&privateKey, data, txLength, signature);
+    unsigned char data[signContext.msgLength];
+    os_memmove(data, signContext.msg, signContext.msgLength);
+    sign(&signContext.privateKey, data, signContext.msgLength, signature);
 
     // Clean memory!
-    os_memset(&privateKey, 0, sizeof(privateKey));
+    os_memset(&signContext.privateKey, 0, sizeof(signContext.privateKey));
 
     if (txOut.type == TXTYPE_SEND || 1) {
         initResponse();
         addToResponse(signature, 64);
-
-        addToResponse(data, txLength);
         *tx = flushResponseToIO();
     } else {
         initResponse();
@@ -543,7 +599,7 @@ void __test(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, volatile unsigned int *
 
         char address[22];
         uint64_t addrN = deriveAddressFromPublic(&publicKey);
-        uint32_t length = deriveAddressStringRepresentation(addrN, 'L',  address);
+        uint32_t length = deriveAddressStringRepresentation(addrN,   address);
         os_memmove(G_io_apdu_buffer, address, length);
         _tx = length;
 
@@ -646,9 +702,29 @@ static void lisk_main(void) {
                                 THROW(0x9000);
                                 break;
                             case INS_SIGN:
-                                handleSign(G_io_apdu_buffer+2, &flags, &tx);
+                                handleSignTX(G_io_apdu_buffer+2, &flags, &tx);
                                 THROW(0x9000);
+                                break;
 
+                            case INS_SIGN_MSG:
+//                                handleSignMSG(G_io_apdu_buffer+2, &flags, &tx);
+                                nullSignContext = getNullifiedSignContext(G_io_apdu_buffer+2);
+//                                initResponse();
+//                                addToResponse(nullSignContext.sourceAddressStr, strlen(nullSignContext.sourceAddressStr));
+//                                tx = flushResponseToIO();
+
+                                deriveAddressShortRepresentation(nullSignContext.sourceAddress, lineBuffer);
+                                flags |= IO_ASYNCH_REPLY;
+
+//                                flags |=  IO_ASYNCH_REPLY;
+//                                lineBuffer[0] = 'C';
+//                                lineBuffer[1] = 'I';
+//                                lineBuffer[2] = 'A';
+//                                lineBuffer[3] = 'O';
+//                                lineBuffer[4] = '\0';
+                                ui_text();
+
+//                                THROW(0x9000);
                                 break;
 
 //                            case INS_GET_PUBLIC_KEY:
