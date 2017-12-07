@@ -5,4 +5,6 @@ extern const ux_menu_entry_t menu_about[3];
 
 extern const bagl_element_t bagl_ui_approval_nanos[4];
 extern const bagl_element_t bagl_ui_text_review_nanos[5];
-extern char lineBuffer[50];
+extern char linesBuffer[50];
+extern char lineBuffer[11];
+extern uint8_t lineBufferLength;
