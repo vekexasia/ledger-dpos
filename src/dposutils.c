@@ -119,7 +119,7 @@ void parseTransaction(uint8_t *txBytes, bool hasRequesterPublicKey, struct trans
   uint8_t i = 0;
   out->amountSatoshi = 0;
   for (i = 0; i < 8; i++) {
-    out->amountSatoshi += txBytes[recIndex + 8 + i] << (i);
+    out->amountSatoshi |= ((uint64_t )txBytes[recIndex + 8 + i]) << (8*i);
   }
 
 }

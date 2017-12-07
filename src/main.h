@@ -1,5 +1,6 @@
 #include "stdbool.h"
-
+#include "ui_elements_s.h"
+#include "dposutils.h"
 static bagl_element_t *io_seproxyhal_touch_exit(const bagl_element_t *e);
 
 static bagl_element_t *io_seproxyhal_touch_approve(const bagl_element_t *e);

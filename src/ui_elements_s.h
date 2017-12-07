@@ -10,3 +10,5 @@ extern const bagl_element_t bagl_ui_text_review_nanos[5];
 extern char linesBuffer[50];
 extern char lineBuffer[11];
 extern uint8_t lineBufferLength;
+
+void satoshiToString(uint64_t amount, uint8_t *out);

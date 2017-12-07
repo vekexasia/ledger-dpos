@@ -118,14 +118,6 @@ static void ui_text(void) {
 #endif
 }
 
-static void ui_signtx(uint8_t steps) {
-  currentStep = 0;
-  totalSteps = steps;
-  // IMPLEMENT BLUE
-  UX_DISPLAY(bagl_ui_sign_tx, signprocessor);
-}
-
-
 const bagl_element_t *signprocessor(const bagl_element_t *element) {
   if (element->component.userid == 0x0) {
     return 1;
@@ -157,6 +149,18 @@ unsigned int bagl_ui_sign_tx_button(unsigned int button_mask, unsigned int butto
   }
   return 0;
 }
+
+
+static void ui_signtx(uint8_t steps) {
+  currentStep = 0;
+  totalSteps = steps;
+  // IMPLEMENT BLUE
+  UX_DISPLAY(bagl_ui_sign_tx, signprocessor);
+}
+
+
+
+
 
 // ********************************************************************************
 // Ledger Nano S specific UI
@@ -396,13 +400,13 @@ void handleSignTX(uint8_t *dataBuffer, volatile unsigned int *flags, volatile un
   if (signContext.tx.type == TXTYPE_SEND) {
 
     *flags |= IO_ASYNCH_REPLY;
-    ui_signtx()
+//    ui_signtx()
   } else {
-    initResponse();
-    addToResponse(&txOut.type, 1);
-    addToResponse(&txOut.amountSatoshi, 8);
-    addToResponse(&txOut.recipientId, 8);
-    *tx = flushResponseToIO(G_io_apdu_buffer);
+//    initResponse();
+//    addToResponse(&txOut.type, 1);
+//    addToResponse(&txOut.amountSatoshi, 8);
+//    addToResponse(&txOut.recipientId, 8);
+//    *tx = flushResponseToIO(G_io_apdu_buffer);
   }
 
 }
@@ -452,12 +456,16 @@ static void lisk_main(void) {
                 break;
               case INS_ECHO:
                 getSignContext(G_io_apdu_buffer + 2, &signContext);
+                struct transaction out;
+                parseTransaction(signContext.msg, false, &out);
                 initResponse();
-                addToResponse(&signContext.msgLength, 2);
-                addToResponse("ciao", 4);
-                addToResponse(&signContext.sourceAddress, 8);
-                addToResponse(signContext.msg, signContext.msgLength);
-                addToResponse(signContext.sourceAddressStr, 24);
+                addToResponse(&out.amountSatoshi, 8);
+                addToResponse(&out.type, 1);
+                addToResponse(&out.recipientId, 8);
+                char brocca[22];
+                os_memset(brocca, 0, 22);
+                satoshiToString(out.amountSatoshi, brocca);
+                addToResponse(brocca, 22);
                 tx = flushResponseToIO(G_io_apdu_buffer);
                 THROW(0x9000);
                 break;
