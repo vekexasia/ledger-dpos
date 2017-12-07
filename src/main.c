@@ -25,7 +25,7 @@
 #include "ui_elements_s.h"
 #include "io_protocol.h"
 #include "dposutils.h"
-
+#include "main.h"
 #define INS_GET_PUBLIC_KEY 0x04
 #define INS_SIGN 0x05
 #define INS_SIGN_MSG 0x06
@@ -34,30 +34,8 @@
 
 static unsigned int current_text_pos; // parsing cursor in the text to display
 static unsigned int text_y;           // current location of the displayed text
-static unsigned char hashTainted;     // notification to restart the hash
-
-static const bagl_element_t *io_seproxyhal_touch_exit(const bagl_element_t *e);
-
-static const bagl_element_t *io_seproxyhal_touch_approve(const bagl_element_t *e);
-
-static const bagl_element_t *io_seproxyhal_touch_deny(const bagl_element_t *e);
-
-static void sign(cx_ecfp_private_key_t *privateKey, void *whatToSign, uint32_t length, unsigned char *output);
 
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
-
-static void ui_idle(void);
-
-static unsigned char display_text_part(void);
-
-static void ui_text(void);
-
-static void ui_approval(void);
-
-
-static const bagl_element_t *io_seproxyhal_touch_exit(const bagl_element_t *e);
-
-
 
 typedef struct signContext_t {
     cx_ecfp_private_key_t privateKey;
@@ -74,16 +52,50 @@ typedef struct signContext_t {
  */
 signContext_t signContext;
 
+enum UI_STATE {
+    UI_IDLE, UI_TEXT, UI_APPROVAL
+};
+
+enum UI_STATE uiState;
+
+
 ux_state_t ux;
+
+#define MAX_BIP32_PATH 10
+#define P1_CONFIRM 0x01
+#define P1_NON_CONFIRM 0x00
+#define P2_SECP256K1 0x40
+#define P2_ED25519 0x80
+#define P2_NO_CHAINCODE 0x00
+#define P2_CHAINCODE 0x01
+#define MAX_RAW_TX 300
+#define OFFSET_P1 2
+#define OFFSET_P2 3
+#define OFFSET_LC 4
+
+#define OFFSET_CDATA 5
+
+#define TXTYPE_SEND 0
+#define TXTYPE_CREATESIGNATURE 1
+#define TXTYPE_REGISTERDELEGATE 2
+#define TXTYPE_VOTE 3
+#define TXTYPE_CREATEMULTISIG 4
+
+typedef struct transaction {
+    uint8_t type;
+    uint64_t recipientId;
+    uint64_t amountSatoshi;
+};
+
+
+
+
 
 // ********************************************************************************
 // Ledger Nano S specific UI
 // ********************************************************************************
 
-// APpENA AGGIUNTO
-static unsigned int
-bagl_ui_approval_nanos_button(unsigned int button_mask,
-                              unsigned int button_mask_counter) {
+unsigned int bagl_ui_approval_nanos_button(unsigned int button_mask, unsigned int button_mask_counter) {
   switch (button_mask) {
     case BUTTON_EVT_RELEASED | BUTTON_RIGHT:
       io_seproxyhal_touch_approve(NULL);
@@ -98,12 +110,10 @@ bagl_ui_approval_nanos_button(unsigned int button_mask,
 
 /**/
 
-
-
-static const bagl_element_t *io_seproxyhal_touch_deny(const bagl_element_t *e) {
-  hashTainted = 1;
+bagl_element_t *io_seproxyhal_touch_deny(const bagl_element_t *e) {
   G_io_apdu_buffer[0] = 0x69;
   G_io_apdu_buffer[1] = 0x85;
+  nullifyContext();
   // Send back the response, do not restart the event loop
   io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
   // Display back the original UX
@@ -112,7 +122,7 @@ static const bagl_element_t *io_seproxyhal_touch_deny(const bagl_element_t *e) {
 }
 
 // unsigned int io_seproxyhal_touch_exit(const bagl_element_t *e) {
-static const bagl_element_t *io_seproxyhal_touch_exit(const bagl_element_t *e) {
+static bagl_element_t *io_seproxyhal_touch_exit(const bagl_element_t *e) {
   // Go back to the dashboard
   os_sched_exit(0);
   return NULL;
@@ -145,18 +155,8 @@ unsigned short io_exchange_al(unsigned char channel, unsigned short tx_len) {
   return 0;
 }
 
-enum UI_STATE {
-    UI_IDLE, UI_TEXT, UI_APPROVAL
-};
 
-enum UI_STATE uiState;
-
-
-ux_state_t ux;
-
-static unsigned int
-bagl_ui_text_review_nanos_button(unsigned int button_mask,
-                                 unsigned int button_mask_counter) {
+unsigned int bagl_ui_text_review_nanos_button(unsigned int button_mask, unsigned int button_mask_counter) {
   switch (button_mask) {
     case BUTTON_EVT_RELEASED | BUTTON_RIGHT:
       if (!display_text_part()) {
@@ -193,38 +193,9 @@ static void ui_idle(void) {
 }
 
 
-#define MAX_BIP32_PATH 10
-#define P1_CONFIRM 0x01
-#define P1_NON_CONFIRM 0x00
-#define P2_SECP256K1 0x40
-#define P2_ED25519 0x80
-#define P2_NO_CHAINCODE 0x00
-#define P2_CHAINCODE 0x01
-#define MAX_RAW_TX 300
-#define OFFSET_P1 2
-#define OFFSET_P2 3
-#define OFFSET_LC 4
-
-#define OFFSET_CDATA 5
-
-#define TXTYPE_SEND 0
-#define TXTYPE_CREATESIGNATURE 1
-#define TXTYPE_REGISTERDELEGATE 2
-#define TXTYPE_VOTE 3
-#define TXTYPE_CREATEMULTISIG 4
-
-typedef struct transaction {
-    uint8_t type;
-    uint64_t recipientId;
-    uint64_t amountSatoshi;
-};
 
 
-
-
-
-
-static const bagl_element_t * io_seproxyhal_touch_approve(const bagl_element_t *e) {
+static bagl_element_t * io_seproxyhal_touch_approve(const bagl_element_t *e) {
   uint8_t status[2] = {0x90, 0x00};
   uint8_t signature[64];
   sign(&signContext.privateKey, signContext.msg, signContext.msgLength, signature);
@@ -360,9 +331,7 @@ void getSignContext(uint8_t *dataBuffer, signContext_t *whereTo) {
   deriveAddressStringRepresentation((*whereTo).sourceAddress, (*whereTo).sourceAddressStr);
 }
 
-void calcNullifiedSignContext(uint8_t *dataBuffer) {
-  getSignContext(dataBuffer, &signContext);
-
+void nullifyContext() {
   os_memset(&signContext.privateKey, 0, sizeof(signContext.privateKey));
 }
 
