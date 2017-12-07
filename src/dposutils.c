@@ -86,6 +86,7 @@ uint8_t deriveAddressShortRepresentation(uint64_t encodedAddress, char *output) 
   tmp[13] = '\0';
 
   os_memmove(output, tmp, 14);
+  return 13;
 }
 
 /**

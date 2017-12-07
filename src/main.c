@@ -23,7 +23,7 @@
 #include "cx.h"
 #include "os_io_seproxyhal.h"
 #include "ui_elements_s.h"
-
+#include "io_protocol.h"
 #include "dposutils.h"
 
 #define INS_GET_PUBLIC_KEY 0x04
@@ -35,9 +35,6 @@
 static unsigned int current_text_pos; // parsing cursor in the text to display
 static unsigned int text_y;           // current location of the displayed text
 static unsigned char hashTainted;     // notification to restart the hash
-#define MAX_CHARS_PER_LINE 10
-
-uint8_t deriveAddressShortRepresentation(uint64_t encodedAddress, char *output);
 
 static const bagl_element_t *io_seproxyhal_touch_exit(const bagl_element_t *e);
 
@@ -224,43 +221,6 @@ typedef struct transaction {
 
 
 
-struct response {
-    uint8_t n;
-    uint8_t *what[8];
-    uint16_t whatLength[8];
-} response;
-
-
-void addToResponse(void *what, uint16_t length) {
-  response.what[response.n] = what;
-  response.whatLength[response.n] = length;
-  response.n = response.n + 1;
-}
-
-void initResponse() {
-  response.n = 0;
-}
-
-
-unsigned int flushResponseToIO(uint8_t offset) {
-  // Write how many infos toWrite
-  os_memmove(G_io_apdu_buffer + offset, &(response.n), 1);
-  unsigned int total = 1;
-  uint8_t i = 0;
-  for (i = 0; i < response.n; i++) {
-    // Write length.
-    os_memmove(G_io_apdu_buffer  + offset + total, &response.whatLength[i], 2);
-    total += 2;
-    // Write data
-    os_memmove(G_io_apdu_buffer  + offset + total, response.what[i], response.whatLength[i]);
-    total += response.whatLength[i];
-  }
-//     Reset.
-  initResponse();
-
-  return total;
-}
-
 
 
 
@@ -273,7 +233,7 @@ static const bagl_element_t * io_seproxyhal_touch_approve(const bagl_element_t *
   addToResponse(signature, 64);
   addToResponse(status, 2);
 
-  unsigned int tx = flushResponseToIO(0);
+  unsigned int tx = flushResponseToIO(G_io_apdu_buffer);
   // Status
   G_io_apdu_buffer[tx] = 0x90;
   G_io_apdu_buffer[tx+1] = 0x00;
@@ -373,7 +333,7 @@ void handleGetPublic(uint8_t *bip32DataBuffer, volatile unsigned int *tx) {
 
   initResponse();
   addToResponse(encodedPkey, 32);
-  *tx = flushResponseToIO(0);
+  *tx = flushResponseToIO(G_io_apdu_buffer);
 }
 
 /**
@@ -427,7 +387,7 @@ void handleSignMSG(uint8_t *dataBuffer, volatile unsigned int *flags, volatile u
   initResponse();
   addToResponse(signature, 64);
 //  addToResponse(signContext.sourceAddressStr, strlen(signContext.sourceAddressStr));
-  *tx = flushResponseToIO(0);
+  *tx = flushResponseToIO(G_io_apdu_buffer);
 }
 
 void handleSignTX(uint8_t *dataBuffer, volatile unsigned int *flags, volatile unsigned int *tx) {
@@ -450,13 +410,13 @@ void handleSignTX(uint8_t *dataBuffer, volatile unsigned int *flags, volatile un
   if (txOut.type == TXTYPE_SEND || 1) {
     initResponse();
     addToResponse(signature, 64);
-    *tx = flushResponseToIO(0);
+    *tx = flushResponseToIO(G_io_apdu_buffer);
   } else {
     initResponse();
     addToResponse(&txOut.type, 1);
     addToResponse(&txOut.amountSatoshi, 8);
     addToResponse(&txOut.recipientId, 8);
-    *tx = flushResponseToIO(0);
+    *tx = flushResponseToIO(G_io_apdu_buffer);
   }
 
 }
@@ -512,7 +472,7 @@ static void lisk_main(void) {
                 addToResponse(&signContext.sourceAddress, 8);
                 addToResponse(signContext.msg, signContext.msgLength);
                 addToResponse(signContext.sourceAddressStr, 24);
-                tx = flushResponseToIO(0);
+                tx = flushResponseToIO(G_io_apdu_buffer);
                 THROW(0x9000);
                 break;
               case INS_GET_PUBLIC_KEY: // echo
