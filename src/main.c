@@ -19,19 +19,18 @@
 #include <string.h>
 #include <inttypes.h>
 #include <stdio.h>
-//#include <malloc.h>
 #include "os.h"
-#include "ui_elements_s.h"
 #include "cx.h"
-
 #include "os_io_seproxyhal.h"
+#include "ui_elements_s.h"
+
+#include "dposutils.h"
 
 #define INS_GET_PUBLIC_KEY 0x04
 #define INS_SIGN 0x05
 #define INS_SIGN_MSG 0x06
 #define INS_ECHO 0x07
-#define ADDRESS_SUFFIX "L\0"
-#define ADDRESS_SUFFIX_LENGTH 1
+
 
 static unsigned int current_text_pos; // parsing cursor in the text to display
 static unsigned int text_y;           // current location of the displayed text
@@ -287,106 +286,6 @@ static const bagl_element_t * io_seproxyhal_touch_approve(const bagl_element_t *
 }
 
 
-
-/**
- * Gets a bigendian representation of the usable publicKey
- * @param publicKey the raw public key containing both coordinated for the elliptic curve
- * @param encoded result holder
- */
-void getEncodedPublicKey(cx_ecfp_public_key_t *publicKey, uint8_t *encoded) {
-  uint8_t i;
-  for (i = 0; i < 32; i++) {
-    encoded[i] = publicKey->W[64 - i];
-  }
-  if ((publicKey->W[32] & 1) != 0) {
-    encoded[31] |= 0x80;
-  }
-}
-
-
-/**
- * Derive address uint64_t value from a byte array.
- * @param source source byte array where the next 8 bytes represent the address
- * @param rev whether or not to reverse the info. (publickey address derivation => true)
- * @return the encoded address in uint64_t data.
- */
-uint64_t deriveAddressFromUintArray(uint8_t *source, bool rev) {
-
-  uint8_t address[8];
-  uint8_t i;
-  for (i = 0; i < 8; i++) {
-    address[i] = source[rev == true ? 7 - i : i];
-  }
-
-  uint64_t encodedAddress = 0;
-  for (i = 0; i < 8; i++) {
-    encodedAddress = encodedAddress << 8;
-    encodedAddress += address[i];
-  }
-
-  return encodedAddress;
-}
-
-
-/**
- * Returns a string representation of the encoded Address
- * @param encodedAddress address to represent
- * @param output the output where the string representation will be returned
- * @return the length of the string representation.
- */
-uint8_t deriveAddressStringRepresentation(uint64_t encodedAddress, char *output) {
-  memset(output, 0, strlen(output));
-
-  char brocca[22];
-  uint8_t i = 0;
-  while (encodedAddress > 0) {
-    uint64_t remainder = encodedAddress % 10;
-    encodedAddress = encodedAddress / 10;
-    brocca[i++] = (char) (remainder + '0');
-  }
-
-  uint8_t total = i;
-  for (i = 0; i < total; i++) {
-    output[total - 1 - i] = brocca[i];
-  }
-
-  os_memmove(&output[total], ADDRESS_SUFFIX, strlen(ADDRESS_SUFFIX));
-  output[total + strlen(ADDRESS_SUFFIX)] = '\0'; // for strlen
-  return (uint8_t) (total + strlen(ADDRESS_SUFFIX) /*suffix*/);
-}
-
-uint8_t deriveAddressShortRepresentation(uint64_t encodedAddress, char *output) {
-  char tmp[14];
-  deriveAddressStringRepresentation(encodedAddress, output);
-  size_t length = strlen(output);
-
-
-  os_memmove(tmp, output, 5);
-  os_memmove(tmp + 5, "...", 3);
-  os_memmove(tmp + 5 + 3, output + length - 5, 5);
-  tmp[13] = '\0';
-
-  os_memmove(output, tmp, 14);
-}
-
-/**
- * Derive address associated to the specific publicKey.
- * @param publicKey original publicKey
- * @return the encoded address.
- */
-uint64_t deriveAddressFromPublic(cx_ecfp_public_key_t *publicKey) {
-  uint8_t encodedPkey[32];
-
-  getEncodedPublicKey(publicKey, encodedPkey);
-
-  unsigned char hashedPkey[32];
-  cx_hash_sha256(encodedPkey, 32, hashedPkey);
-
-  return deriveAddressFromUintArray(
-    hashedPkey,
-    true
-  );
-}
 
 
 void parseTransaction(uint8_t *txBytes, uint32_t length, bool hasRequesterPublicKey, struct transaction *out) {
