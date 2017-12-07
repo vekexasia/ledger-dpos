@@ -107,3 +107,19 @@ uint64_t deriveAddressFromPublic(cx_ecfp_public_key_t *publicKey) {
     true
   );
 }
+
+
+void parseTransaction(uint8_t *txBytes, bool hasRequesterPublicKey, struct transaction *out) {
+  out->type = txBytes[0];
+  uint32_t recIndex = 1 /*type*/
+                      + 4 /*timestamp*/
+                      + 32 /*senderPublicKey */
+                      + (hasRequesterPublicKey == true ? 32 : 0) /*requesterPublicKey */;
+  out->recipientId = deriveAddressFromUintArray(&txBytes[recIndex], false);
+  uint8_t i = 0;
+  out->amountSatoshi = 0;
+  for (i = 0; i < 8; i++) {
+    out->amountSatoshi += txBytes[recIndex + 8 + i] << (i);
+  }
+
+}

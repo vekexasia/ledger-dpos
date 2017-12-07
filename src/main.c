@@ -19,6 +19,7 @@
 #include <string.h>
 #include <inttypes.h>
 #include <stdio.h>
+#include <bagl.h>
 #include "os.h"
 #include "cx.h"
 #include "os_io_seproxyhal.h"
@@ -33,19 +34,13 @@
 
 
 static unsigned int current_text_pos; // parsing cursor in the text to display
+static unsigned int currentStep;
+static unsigned int totalSteps;
 static unsigned int text_y;           // current location of the displayed text
-
+static bagl_element_t *bagl_ui_sign_tx; // Real holder of the ui array.
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
-typedef struct signContext_t {
-    cx_ecfp_private_key_t privateKey;
-    cx_ecfp_public_key_t publicKey;
-    uint16_t msgLength;
-    uint8_t msg[500];
-    bool hasRequesterPublicKey;
-    uint64_t sourceAddress;
-    char sourceAddressStr[22 + ADDRESS_SUFFIX_LENGTH + 1];
-} signContext_t;
+
 
 /**
  * Contains a sign context with nullified private key.
@@ -81,15 +76,87 @@ ux_state_t ux;
 #define TXTYPE_VOTE 3
 #define TXTYPE_CREATEMULTISIG 4
 
-typedef struct transaction {
-    uint8_t type;
-    uint64_t recipientId;
-    uint64_t amountSatoshi;
-};
 
 
 
 
+// Pick the text elements to display
+static unsigned char display_text_part() {
+
+  int charsToDisplay = MIN(lineBufferLength - current_text_pos,  MAX_CHARS_PER_LINE);
+  if (charsToDisplay <=0) {
+    return 0;
+  }
+  os_memmove(lineBuffer, linesBuffer+current_text_pos, charsToDisplay);
+  lineBuffer[charsToDisplay] = '\0';
+  current_text_pos += charsToDisplay;
+#ifdef TARGET_BLUE
+  os_memset(bagl_ui_text, 0, sizeof(bagl_ui_text));
+  bagl_ui_text[0].component.type = BAGL_LABEL;
+  bagl_ui_text[0].component.x = 4;
+  bagl_ui_text[0].component.y = text_y;
+  bagl_ui_text[0].component.width = 320;
+  bagl_ui_text[0].component.height = TEXT_HEIGHT;
+  // element.component.fill = BAGL_FILL;
+  bagl_ui_text[0].component.fgcolor = 0x000000;
+  bagl_ui_text[0].component.bgcolor = 0xf9f9f9;
+  bagl_ui_text[0].component.font_id = DEFAULT_FONT;
+  bagl_ui_text[0].text = lineBuffer;
+  text_y += TEXT_HEIGHT + TEXT_SPACE;
+#endif
+  return 1;
+}
+
+static void ui_text(void) {
+  current_text_pos = 0;
+  uiState = UI_TEXT;
+  display_text_part();
+#ifdef TARGET_BLUE
+  UX_DISPLAY(bagl_ui_text, NULL);
+#else
+  UX_DISPLAY(bagl_ui_text_review_nanos, NULL);
+#endif
+}
+
+static void ui_signtx(uint8_t steps) {
+  currentStep = 0;
+  totalSteps = steps;
+  // IMPLEMENT BLUE
+  UX_DISPLAY(bagl_ui_sign_tx, signprocessor);
+}
+
+
+const bagl_element_t *signprocessor(const bagl_element_t *element) {
+  if (element->component.userid == 0x0) {
+    return 1;
+  }
+
+  if ((element->component.type & (~BAGL_FLAG_TOUCHABLE)) == BAGL_NONE) {
+    return 0;
+  }
+  if (element->component.userid == currentStep) {
+    return 1;
+  }
+  return 0;
+}
+
+unsigned int bagl_ui_sign_tx_button(unsigned int button_mask, unsigned int button_mask_counter) {
+  switch (button_mask) {
+    case BUTTON_EVT_RELEASED | BUTTON_RIGHT:
+      if (currentStep < totalSteps) {
+        currentStep++;
+        UX_REDISPLAY();
+      } else {
+        io_seproxyhal_touch_approve(NULL);
+      }
+      break;
+
+    case BUTTON_EVT_RELEASED | BUTTON_LEFT:
+      io_seproxyhal_touch_deny(NULL);
+      break;
+  }
+  return 0;
+}
 
 // ********************************************************************************
 // Ledger Nano S specific UI
@@ -219,21 +286,6 @@ static bagl_element_t * io_seproxyhal_touch_approve(const bagl_element_t *e) {
 
 
 
-void parseTransaction(uint8_t *txBytes, uint32_t length, bool hasRequesterPublicKey, struct transaction *out) {
-  out->type = txBytes[0];
-  uint32_t recIndex = 1 /*type*/
-                      + 4 /*timestamp*/
-                      + 32 /*senderPublicKey */
-                      + (hasRequesterPublicKey == true ? 32 : 0) /*requesterPublicKey */;
-  out->recipientId = deriveAddressFromUintArray(&txBytes[recIndex], false);
-  uint8_t i = 0;
-  out->amountSatoshi = 0;
-  for (i = 0; i < 8; i++) {
-    out->amountSatoshi += txBytes[recIndex + 8 + i] << (i);
-  }
-
-}
-
 
 /**
  * Signs an arbitrary message given the privateKey and the info
@@ -329,57 +381,22 @@ void getSignContext(uint8_t *dataBuffer, signContext_t *whereTo) {
   (*whereTo).sourceAddress = deriveAddressFromPublic(&(*whereTo).publicKey);
 
   deriveAddressStringRepresentation((*whereTo).sourceAddress, (*whereTo).sourceAddressStr);
+
 }
 
 void nullifyContext() {
   os_memset(&signContext.privateKey, 0, sizeof(signContext.privateKey));
 }
 
-/**
- * Handles the signing of a message
- * @param dataBuffer
- * @param flags
- * @param tx
- */
-void handleSignMSG(uint8_t *dataBuffer, volatile unsigned int *flags, volatile unsigned int *tx) {
-
-  getSignContext(dataBuffer, &signContext);
-
-  unsigned char signature[64];
-  unsigned char msg[signContext.msgLength];
-  os_memmove(msg, signContext.msg, signContext.msgLength);
-  sign(&signContext.privateKey, msg, signContext.msgLength, signature);
-
-  // Clean memory!
-  os_memset(&signContext.privateKey, 0, sizeof(signContext.privateKey));
-
-  initResponse();
-  addToResponse(signature, 64);
-//  addToResponse(signContext.sourceAddressStr, strlen(signContext.sourceAddressStr));
-  *tx = flushResponseToIO(G_io_apdu_buffer);
-}
 
 void handleSignTX(uint8_t *dataBuffer, volatile unsigned int *flags, volatile unsigned int *tx) {
-  getSignContext(dataBuffer, &signContext);
 
-  unsigned char signature[64];
+  parseTransaction(signContext.msg, signContext.hasRequesterPublicKey, &signContext.tx);
+  signContext.isTx = true;
+  if (signContext.tx.type == TXTYPE_SEND) {
 
-  struct transaction txOut;
-
-  parseTransaction(signContext.msg, signContext.msgLength, signContext.hasRequesterPublicKey, &txOut);
-
-
-  unsigned char data[signContext.msgLength];
-  os_memmove(data, signContext.msg, signContext.msgLength);
-  sign(&signContext.privateKey, data, signContext.msgLength, signature);
-
-  // Clean memory!
-  os_memset(&signContext.privateKey, 0, sizeof(signContext.privateKey));
-
-  if (txOut.type == TXTYPE_SEND || 1) {
-    initResponse();
-    addToResponse(signature, 64);
-    *tx = flushResponseToIO(G_io_apdu_buffer);
+    *flags |= IO_ASYNCH_REPLY;
+    ui_signtx()
   } else {
     initResponse();
     addToResponse(&txOut.type, 1);
@@ -451,7 +468,6 @@ static void lisk_main(void) {
                 break;
               case INS_SIGN:
                 handleSignTX(G_io_apdu_buffer + 2, &flags, &tx);
-                THROW(0x9000);
                 break;
 
               case INS_SIGN_MSG:
@@ -556,43 +572,6 @@ unsigned char io_event(unsigned char channel) {
 }
 
 
-// Pick the text elements to display
-static unsigned char display_text_part() {
-
-  int charsToDisplay = MIN(lineBufferLength - current_text_pos,  MAX_CHARS_PER_LINE);
-  if (charsToDisplay <=0) {
-    return 0;
-  }
-  os_memmove(lineBuffer, linesBuffer+current_text_pos, charsToDisplay);
-  lineBuffer[charsToDisplay] = '\0';
-  current_text_pos += charsToDisplay;
-#ifdef TARGET_BLUE
-  os_memset(bagl_ui_text, 0, sizeof(bagl_ui_text));
-  bagl_ui_text[0].component.type = BAGL_LABEL;
-  bagl_ui_text[0].component.x = 4;
-  bagl_ui_text[0].component.y = text_y;
-  bagl_ui_text[0].component.width = 320;
-  bagl_ui_text[0].component.height = TEXT_HEIGHT;
-  // element.component.fill = BAGL_FILL;
-  bagl_ui_text[0].component.fgcolor = 0x000000;
-  bagl_ui_text[0].component.bgcolor = 0xf9f9f9;
-  bagl_ui_text[0].component.font_id = DEFAULT_FONT;
-  bagl_ui_text[0].text = lineBuffer;
-  text_y += TEXT_HEIGHT + TEXT_SPACE;
-#endif
-  return 1;
-}
-
-static void ui_text(void) {
-  current_text_pos = 0;
-  uiState = UI_TEXT;
-  display_text_part();
-#ifdef TARGET_BLUE
-  UX_DISPLAY(bagl_ui_text, NULL);
-#else
-  UX_DISPLAY(bagl_ui_text_review_nanos, NULL);
-#endif
-}
 
 __attribute__((section(".boot"))) int main(void) {
   // exit critical section

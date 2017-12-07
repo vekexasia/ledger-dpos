@@ -2,6 +2,11 @@
 
 #define ADDRESS_SUFFIX "L"
 #define ADDRESS_SUFFIX_LENGTH 1
+typedef struct transaction {
+    uint8_t type;
+    uint64_t recipientId;
+    uint64_t amountSatoshi;
+};
 
 
 /**
@@ -37,3 +42,5 @@ uint8_t deriveAddressShortRepresentation(uint64_t encodedAddress, char *output);
  * @return the encoded address.
  */
 uint64_t deriveAddressFromPublic(cx_ecfp_public_key_t *publicKey);
+
+void parseTransaction(uint8_t *txBytes, bool hasRequesterPublicKey, struct transaction *out)
