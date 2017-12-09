@@ -24,18 +24,19 @@ const ux_menu_entry_t menu_about[] = {
   UX_MENU_END
 };
 
-#define CLEAN_SCREEN            { {BAGL_RECTANGLE, 0x00, 0, 0, 128, 32, 0, 0, BAGL_FILL, 0x000000, 0xFFFFFF, 0, 0}, NULL, 0, 0, 0, NULL, NULL, NULL}
-#define ICON(which, x, y, w, h) { {BAGL_ICON, 0x00, x, y, w, h,  0, 0, 0, 0xFFFFFF, 0x000000, 0, which}, NULL, 0, 0, 0, NULL, NULL, NULL }
-#define ICON_LEFT(which)        ICON(which, 3, 12, 7, 7)
-#define ICON_RIGHT(which)       ICON(which, 117, 13, 8, 6)
-#define ICON_CROSS              ICON_LEFT(BAGL_GLYPH_ICON_CROSS)
-#define ICON_CHECK              ICON_RIGHT(BAGL_GLYPH_ICON_CHECK)
-#define ICON_DOWN               ICON_RIGHT(BAGL_GLYPH_ICON_DOWN)
-#define LINEBUFFER \
+#define CLEAN_SCREEN                    { {BAGL_RECTANGLE, 0x00, 0, 0, 128, 32, 0, 0, BAGL_FILL, 0x000000, 0xFFFFFF, 0, 0}, NULL, 0, 0, 0, NULL, NULL, NULL}
+#define ICON(which, userid, x, y, w, h) { {BAGL_ICON, userid, x, y, w, h,  0, 0, 0, 0xFFFFFF, 0x000000, 0, which}, NULL, 0, 0, 0, NULL, NULL, NULL }
+#define ICON_LEFT(which, userid)        ICON(which, userid, 3, 12, 7, 7)
+#define ICON_RIGHT(which, userid)       ICON(which, userid, 117, 13, 8, 6)
+#define ICON_CROSS(userid)              ICON_LEFT(BAGL_GLYPH_ICON_CROSS, userid)
+#define ICON_CHECK(userid)              ICON_RIGHT(BAGL_GLYPH_ICON_CHECK, userid)
+#define ICON_DOWN(userid)               ICON_RIGHT(BAGL_GLYPH_ICON_DOWN, userid)
+#define SECONDLINE(txt, userid) \
 { \
   { BAGL_LABELINE, 0x00, 23, 26, 82, 11, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000, BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26}, \
   lineBuffer, 0, 0, 0, NULL, NULL, NULL, \
 }
+#define LINEBUFFER              SECONDLINE(lineBuffer, 0x00)
 
 #define TITLE_ITEM(txt, userid) \
 { \
@@ -52,8 +53,23 @@ const bagl_element_t bagl_ui_approval_send_nanos[] = {
   TITLE_ITEM("To", 0x02),
   TITLE_ITEM("Amount", 0x03),
   LINEBUFFER,
-  ICON_CHECK,
-  ICON_CROSS,
+  ICON_DOWN(0x01),
+  ICON_DOWN(0x02),
+  ICON_CHECK(0x03),
+  ICON_CROSS(0x00),
+};
+
+/**
+ * Create second signature with address
+ */
+const bagl_element_t bagl_ui_secondsign_nanos[] = {
+  CLEAN_SCREEN,
+  TITLE_ITEM("Create second", 0x01),
+  SECONDLINE("signature", 0x01),
+  TITLE_ITEM("For account", 0x02),
+  LINEBUFFER,
+  ICON_CHECK(0x00),
+  ICON_CROSS(0x00),
 };
 
 
@@ -64,8 +80,8 @@ const bagl_element_t bagl_ui_approval_nanos[] = {
   CLEAN_SCREEN,
   TITLE_ITEM("Sign", 0x01),
   LINEBUFFER,
-  ICON_CHECK,
-  ICON_CROSS,
+  ICON_CHECK(0x00),
+  ICON_CROSS(0x00),
 };
 
 void satoshiToString(uint64_t amount, char *out) {
@@ -105,6 +121,18 @@ void satoshiToString(uint64_t amount, char *out) {
 
 }
 
+void lineBufferSecondSignProcessor(signContext_t *signContext, uint8_t step) {
+  os_memset(lineBuffer, 0, 11);
+  switch (step) {
+    case 1:
+      break;
+    case 2:
+      deriveAddressShortRepresentation(signContext->sourceAddress, lineBuffer);
+      break;
+  }
+}
+
+
 void lineBufferSendTxProcessor(signContext_t *signContext, uint8_t step) {
   os_memset(lineBuffer, 0, 11);
   switch (step) {
@@ -139,6 +167,6 @@ const bagl_element_t bagl_ui_text_review_nanos[] = {
   CLEAN_SCREEN,
   TITLE_ITEM("Verify text", 0x00),
   LINEBUFFER,
-  ICON_CROSS,
-  ICON_DOWN
+  ICON_CROSS(0x00),
+  ICON_DOWN(0x00)
 };

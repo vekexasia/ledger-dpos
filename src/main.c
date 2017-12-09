@@ -38,12 +38,12 @@ static unsigned int current_text_pos; // parsing cursor in the text to display
 static unsigned int currentStep;
 static unsigned int totalSteps;
 static unsigned int text_y;           // current location of the displayed text
-static bagl_element_t *bagl_ui_sign_tx; // Real holder of the ui array.
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
+typedef void (*processor_callback)(signContext_t *ctx, uint8_t step);
 
-
-
+processor_callback pcallback;
+static bagl_element_t *bagl_ui_sign_tx; // Real holder of the ui array.
 
 enum UI_STATE {
     UI_IDLE, UI_TEXT, UI_APPROVAL
@@ -55,19 +55,6 @@ enum UI_STATE uiState;
 ux_state_t ux;
 
 #define MAX_BIP32_PATH 10
-#define P1_CONFIRM 0x01
-#define P1_NON_CONFIRM 0x00
-#define P2_SECP256K1 0x40
-#define P2_ED25519 0x80
-#define P2_NO_CHAINCODE 0x00
-#define P2_CHAINCODE 0x01
-#define MAX_RAW_TX 300
-#define OFFSET_P1 2
-#define OFFSET_P2 3
-#define OFFSET_LC 4
-
-#define OFFSET_CDATA 5
-
 #define TXTYPE_SEND 0
 #define TXTYPE_CREATESIGNATURE 1
 #define TXTYPE_REGISTERDELEGATE 2
@@ -109,7 +96,7 @@ unsigned int bagl_ui_sign_tx_button(unsigned int button_mask, unsigned int butto
     case BUTTON_EVT_RELEASED | BUTTON_RIGHT:
       if (currentStep < totalSteps) {
         currentStep++;
-        lineBufferSendTxProcessor(&signContext, currentStep);
+        pcallback(&signContext, currentStep);
         UX_REDISPLAY();
       } else {
         io_seproxyhal_touch_approve(NULL);
@@ -124,13 +111,13 @@ unsigned int bagl_ui_sign_tx_button(unsigned int button_mask, unsigned int butto
 }
 
 
-static void ui_signtx(uint8_t steps) {
+static void ui_signtx(uint8_t steps, uint8_t uielements) {
   currentStep = 1;
   totalSteps = steps;
-  lineBufferSendTxProcessor(&signContext, 1);
+  pcallback(&signContext, 1);
   // IMPLEMENT BLUE
-  ux.elements = bagl_ui_approval_send_nanos;
-  ux.elements_count = 3+steps;
+  ux.elements = bagl_ui_sign_tx;
+  ux.elements_count = uielements;
   ux.button_push_handler = bagl_ui_sign_tx_button;
   ux.elements_preprocessor = signprocessor;
   UX_WAKE_UP();
@@ -368,20 +355,26 @@ void handleSignTX(uint8_t *dataBuffer, volatile unsigned int *flags, volatile un
   parseTransaction(signContext.msg, signContext.hasRequesterPublicKey, &signContext.tx);
   signContext.isTx = true;
 
+  *flags |= IO_ASYNCH_REPLY;
   if (signContext.tx.type == TXTYPE_SEND) {
-    *flags |= IO_ASYNCH_REPLY;
-    ui_signtx(3);
-  } else if (signContext.tx.type == TXTYPE_VOTE ) {
+    pcallback = lineBufferSendTxProcessor;
+    bagl_ui_sign_tx = bagl_ui_approval_send_nanos;
+    ui_signtx(3, 9);
+  } else if (signContext.tx.type == TXTYPE_VOTE) {
 
-  } else {
+  } else if (signContext.tx.type == TXTYPE_CREATESIGNATURE) {
+    pcallback = lineBufferSecondSignProcessor;
+    bagl_ui_sign_tx = bagl_ui_approval_send_nanos;
+    ui_signtx(2, 5);
+  }
 //    initResponse();
 //    addToResponse(&txOut.type, 1);
 //    addToResponse(&txOut.amountSatoshi, 8);
 //    addToResponse(&txOut.recipientId, 8);
 //    *tx = flushResponseToIO(G_io_apdu_buffer);
-  }
-
 }
+
+
 static void lisk_main(void) {
   volatile unsigned int rx = 0;
   volatile unsigned int tx = 0;
