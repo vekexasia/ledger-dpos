@@ -65,11 +65,12 @@ const bagl_element_t bagl_ui_approval_send_nanos[] = {
 const bagl_element_t bagl_ui_secondsign_nanos[] = {
   CLEAN_SCREEN,
   TITLE_ITEM("Create second", 0x01),
-  SECONDLINE("signature", 0x01),
   TITLE_ITEM("For account", 0x02),
+  TITLE_ITEM("With public", 0x03),
   LINEBUFFER,
   ICON_DOWN(0x01),
-  ICON_CHECK(0x02),
+  ICON_DOWN(0x02),
+  ICON_CHECK(0x03),
   ICON_CROSS(0x00),
 };
 
@@ -79,7 +80,7 @@ const bagl_element_t bagl_ui_secondsign_nanos[] = {
  */
 const bagl_element_t bagl_ui_approval_nanos[] = {
   CLEAN_SCREEN,
-  TITLE_ITEM("Sign", 0x01),
+  TITLE_ITEM("Sign with", 0x01),
   LINEBUFFER,
   ICON_CHECK(0x00),
   ICON_CROSS(0x00),
@@ -126,9 +127,13 @@ void lineBufferSecondSignProcessor(signContext_t *signContext, uint8_t step) {
   os_memset(lineBuffer, 0, 11);
   switch (step) {
     case 1:
+      os_memmove(lineBuffer, "signature\0", 11);
       break;
     case 2:
       deriveAddressShortRepresentation(signContext->sourceAddress, lineBuffer);
+      break;
+    case 3:
+      os_memmove(lineBuffer, signContext->tx.shortDesc, 16);
       break;
   }
 }

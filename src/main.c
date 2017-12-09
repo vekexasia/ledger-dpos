@@ -55,11 +55,6 @@ enum UI_STATE uiState;
 ux_state_t ux;
 
 #define MAX_BIP32_PATH 10
-#define TXTYPE_SEND 0
-#define TXTYPE_CREATESIGNATURE 1
-#define TXTYPE_REGISTERDELEGATE 2
-#define TXTYPE_VOTE 3
-#define TXTYPE_CREATEMULTISIG 4
 
 
 
@@ -359,13 +354,13 @@ void handleSignTX(uint8_t *dataBuffer, volatile unsigned int *flags, volatile un
   if (signContext.tx.type == TXTYPE_SEND) {
     pcallback = lineBufferSendTxProcessor;
     bagl_ui_sign_tx = bagl_ui_approval_send_nanos;
-    ui_signtx(3, 9);
+    ui_signtx(3, sizeof(bagl_ui_approval_send_nanos)/sizeof(bagl_ui_approval_send_nanos[0]));
   } else if (signContext.tx.type == TXTYPE_VOTE) {
 
   } else if (signContext.tx.type == TXTYPE_CREATESIGNATURE) {
     pcallback = lineBufferSecondSignProcessor;
     bagl_ui_sign_tx = bagl_ui_secondsign_nanos;
-    ui_signtx(2, 5);
+    ui_signtx(3, sizeof(bagl_ui_secondsign_nanos)/sizeof(bagl_ui_secondsign_nanos[0]));
   }
 //    initResponse();
 //    addToResponse(&txOut.type, 1);
