@@ -68,7 +68,8 @@ const bagl_element_t bagl_ui_secondsign_nanos[] = {
   SECONDLINE("signature", 0x01),
   TITLE_ITEM("For account", 0x02),
   LINEBUFFER,
-  ICON_CHECK(0x00),
+  ICON_DOWN(0x01),
+  ICON_CHECK(0x02),
   ICON_CROSS(0x00),
 };
 

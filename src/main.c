@@ -364,7 +364,7 @@ void handleSignTX(uint8_t *dataBuffer, volatile unsigned int *flags, volatile un
 
   } else if (signContext.tx.type == TXTYPE_CREATESIGNATURE) {
     pcallback = lineBufferSecondSignProcessor;
-    bagl_ui_sign_tx = bagl_ui_approval_send_nanos;
+    bagl_ui_sign_tx = bagl_ui_secondsign_nanos;
     ui_signtx(2, 5);
   }
 //    initResponse();
