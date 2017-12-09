@@ -115,7 +115,7 @@ void parseTransaction(uint8_t *txBytes, bool hasRequesterPublicKey, struct trans
                       + 4 /*timestamp*/
                       + 32 /*senderPublicKey */
                       + (hasRequesterPublicKey == true ? 32 : 0) /*requesterPublicKey */;
-  out->recipientId = deriveAddressFromUintArray(&txBytes[recIndex], false);
+  out->recipientId = deriveAddressFromUintArray(txBytes + recIndex, false);
   uint8_t i = 0;
   out->amountSatoshi = 0;
   for (i = 0; i < 8; i++) {

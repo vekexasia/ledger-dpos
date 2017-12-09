@@ -1,23 +1,16 @@
 #include "os_io_seproxyhal.h"
 #include "main.h"
 #include "dposutils.h"
+#include "structs.h"
 
 const ux_menu_entry_t menu_main[];
 const ux_menu_entry_t menu_about[];
 
 /**
- * TEMP global var used to print a lot of data (50chars)
+ * Line buffer (50chars)
  */
-char linesBuffer[50];
-/**
- * Actually used in the display.
- */
-char lineBuffer[11];
-/**
- * Coupled with linesBuffer its used to know how long is the buffer to print
- * and split into chunks.
- */
-uint8_t lineBufferLength = 0;
+char lineBuffer[50];
+
 
 const ux_menu_entry_t menu_main[] = {
   {NULL, NULL, 0, NULL, "Use wallet to", "view accounts", 33, 12},
@@ -31,12 +24,51 @@ const ux_menu_entry_t menu_about[] = {
   UX_MENU_END
 };
 
-#define CLEAN_SCREEN { {BAGL_RECTANGLE, 0x00, 0, 0, 128, 32, 0, 0, BAGL_FILL, 0x000000, 0xFFFFFF, 0, 0}, NULL, 0, 0, 0, NULL, NULL, NULL}
-#define ICON_CROSS { {BAGL_ICON, 0x00, 3, 12, 7, 7,  0, 0, 0, 0xFFFFFF, 0x000000, 0, BAGL_GLYPH_ICON_CROSS}, NULL, 0, 0, 0, NULL, NULL, NULL }
-#define ICON_CHECK { {BAGL_ICON, 0x00, 117, 13, 8, 6,  0, 0, 0, 0xFFFFFF, 0x000000, 0, BAGL_GLYPH_ICON_CHECK}, NULL, 0, 0, 0, NULL, NULL, NULL }
-#define ICON_DOWN  { {BAGL_ICON, 0x00, 117, 13, 8, 6,  0, 0, 0, 0xFFFFFF, 0x000000, 0, BAGL_GLYPH_ICON_DOWN}, NULL, 0, 0, 0, NULL, NULL, NULL }
+#define CLEAN_SCREEN            { {BAGL_RECTANGLE, 0x00, 0, 0, 128, 32, 0, 0, BAGL_FILL, 0x000000, 0xFFFFFF, 0, 0}, NULL, 0, 0, 0, NULL, NULL, NULL}
+#define ICON(which, x, y, w, h) { {BAGL_ICON, 0x00, x, y, w, h,  0, 0, 0, 0xFFFFFF, 0x000000, 0, which}, NULL, 0, 0, 0, NULL, NULL, NULL }
+#define ICON_LEFT(which)        ICON(which, 3, 12, 7, 7)
+#define ICON_RIGHT(which)       ICON(which, 117, 13, 8, 6)
+#define ICON_CROSS              ICON_LEFT(BAGL_GLYPH_ICON_CROSS)
+#define ICON_CHECK              ICON_RIGHT(BAGL_GLYPH_ICON_CHECK)
+#define ICON_DOWN               ICON_RIGHT(BAGL_GLYPH_ICON_DOWN)
+#define LINEBUFFER \
+{ \
+  { BAGL_LABELINE, 0x00, 23, 26, 82, 11, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000, BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26}, \
+  lineBuffer, 0, 0, 0, NULL, NULL, NULL, \
+}
 
-void satoshiToString(uint64_t amount, uint8_t *out) {
+#define TITLE_ITEM(txt, userid) \
+{ \
+  { BAGL_LABELINE, userid, 0, 12, 128, 11, 0, 0, 0, 0xFFFFFF, 0x000000, BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0}, \
+  txt, 0, 0, 0, NULL, NULL, NULL, \
+}
+
+/**
+ * Sign with address
+ */
+const bagl_element_t bagl_ui_approval_send_nanos[] = {
+  CLEAN_SCREEN,
+  TITLE_ITEM("Send from", 0x01),
+  TITLE_ITEM("To", 0x02),
+  TITLE_ITEM("Amount", 0x03),
+  LINEBUFFER,
+  ICON_CHECK,
+  ICON_CROSS,
+};
+
+
+/**
+ * Sign with address
+ */
+const bagl_element_t bagl_ui_approval_nanos[] = {
+  CLEAN_SCREEN,
+  TITLE_ITEM("Sign", 0x01),
+  LINEBUFFER,
+  ICON_CHECK,
+  ICON_CROSS,
+};
+
+void satoshiToString(uint64_t amount, char *out) {
 
   uint64_t partInt = amount / 100000000;
   uint64_t partDecimal = amount - (partInt*100000000l) ;
@@ -73,55 +105,9 @@ void satoshiToString(uint64_t amount, uint8_t *out) {
 
 }
 
-
-/**
- * Sign with address
- */
-const bagl_element_t bagl_ui_approval_send_nanos[] = {
-  CLEAN_SCREEN,
-  {
-    {BAGL_LABELINE, 0x01, 0, 12, 128, 11, 0, 0, 0, 0xFFFFFF, 0x000000,
-     BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-    "Send from", 0, 0, 0, NULL, NULL, NULL,
-  },
-  {
-    {BAGL_LABELINE, 0x02, 0, 12, 128, 11, 0, 0, 0, 0xFFFFFF, 0x000000,
-     BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-    "To", 0, 0, 0, NULL, NULL, NULL,
-  },
-  {
-    {BAGL_LABELINE, 0x03, 0, 12, 128, 11, 0, 0, 0, 0xFFFFFF, 0x000000,
-     BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-    "Amount", 0, 0, 0, NULL, NULL, NULL,
-  },
-  ICON_CHECK,
-  ICON_CROSS,
-};
-
-
-/**
- * Sign with address
- */
-const bagl_element_t bagl_ui_approval_nanos[] = {
-  CLEAN_SCREEN,
-
-  {
-    {BAGL_LABELINE, 0x02, 0, 12, 128, 11, 0, 0, 0, 0xFFFFFF, 0x000000,
-     BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-    "Send", 0, 0, 0, NULL, NULL, NULL,
-  },
-  {
-    {BAGL_LABELINE, 0x02, 23, 26, 82, 11, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
-     BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
-    lineBuffer, 0, 0, 0, NULL, NULL, NULL,
-  },
-
-  ICON_CHECK,
-  ICON_CROSS,
-};
-
 void lineBufferSendTxProcessor(signContext_t *signContext, uint8_t step) {
-  switch (step + 1) {
+  os_memset(lineBuffer, 0, 11);
+  switch (step) {
     case 1:
       deriveAddressShortRepresentation(signContext->sourceAddress, lineBuffer);
       break;
@@ -129,8 +115,8 @@ void lineBufferSendTxProcessor(signContext_t *signContext, uint8_t step) {
       deriveAddressShortRepresentation(signContext->tx.recipientId, lineBuffer);
       break;
     case 3:
-
-      signContext->tx.amountSatoshi;
+      satoshiToString(signContext->tx.amountSatoshi, lineBuffer);
+      break;
   }
 }
 
@@ -151,16 +137,8 @@ const bagl_element_t bagl_ui_text_review_nanos[] = {
   //     over,
   // },
   CLEAN_SCREEN,
-  {
-    {BAGL_LABELINE, 0x02, 0, 12, 128, 11, 0, 0, 0, 0xFFFFFF, 0x000000,
-     BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-    "Verify text", 0, 0, 0, NULL, NULL, NULL,
-  },
-  {
-    {BAGL_LABELINE, 0x02, 23, 26, 82, 11, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
-     BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
-    lineBuffer, 0, 0, 0, NULL, NULL, NULL,
-  },
+  TITLE_ITEM("Verify text", 0x00),
+  LINEBUFFER,
   ICON_CROSS,
   ICON_DOWN
 };

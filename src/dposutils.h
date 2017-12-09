@@ -1,4 +1,4 @@
-
+#include <stdbool.h>
 
 #define ADDRESS_SUFFIX "L"
 #define ADDRESS_SUFFIX_LENGTH 1
