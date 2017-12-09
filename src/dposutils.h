@@ -53,4 +53,4 @@ uint8_t deriveAddressShortRepresentation(uint64_t encodedAddress, char *output);
  */
 uint64_t deriveAddressFromPublic(cx_ecfp_public_key_t *publicKey);
 
-void parseTransaction(uint8_t *txBytes, bool hasRequesterPublicKey, struct transaction *out);
+void parseTransaction(uint8_t *txBytes, uint32_t length, bool hasRequesterPublicKey, struct transaction *out);

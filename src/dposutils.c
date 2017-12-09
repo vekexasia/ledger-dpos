@@ -114,7 +114,7 @@ void toHex(uint8_t what, char * whereTo) {
 }
 
 
-void parseTransaction(uint8_t *txBytes, bool hasRequesterPublicKey, struct transaction *out) {
+void parseTransaction(uint8_t *txBytes, uint32_t txLength, bool hasRequesterPublicKey, struct transaction *out) {
   out->type = txBytes[0];
   uint32_t recIndex = 1 /*type*/
                       + 4 /*timestamp*/
@@ -140,5 +140,7 @@ void parseTransaction(uint8_t *txBytes, bool hasRequesterPublicKey, struct trans
       toHex(txBytes[recIndex + 8 + 8 + 32 - 3 + i], out->shortDesc + 7 + i*2);
     }
     out->shortDesc[7] = '.';
+  } else if (out->type == TXTYPE_REGISTERDELEGATE) {
+    os_memmove(out->shortDesc, txBytes+recIndex + 8 + 8, MIN(16, txLength - (recIndex + 8 + 8)));
   }
 }

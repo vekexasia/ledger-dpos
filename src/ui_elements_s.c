@@ -74,6 +74,21 @@ const bagl_element_t bagl_ui_secondsign_nanos[] = {
   ICON_CROSS(0x00),
 };
 
+/**
+ * Create second signature with address
+ */
+const bagl_element_t bagl_ui_regdelegate_nanos[] = {
+  CLEAN_SCREEN,
+  TITLE_ITEM("Register", 0x01),
+  TITLE_ITEM("For account", 0x02),
+  TITLE_ITEM("With name", 0x03),
+  LINEBUFFER,
+  ICON_DOWN(0x01),
+  ICON_DOWN(0x02),
+  ICON_CHECK(0x03),
+  ICON_CROSS(0x00),
+};
+
 
 /**
  * Sign with address
@@ -122,6 +137,23 @@ void satoshiToString(uint64_t amount, char *out) {
 
 
 }
+
+
+void lineBufferRegDelegateTxProcessor(signContext_t *signContext, uint8_t step) {
+  os_memset(lineBuffer, 0, 20);
+  switch (step) {
+    case 1:
+      os_memmove(lineBuffer, "delegate\0", 11);
+      break;
+    case 2:
+      deriveAddressShortRepresentation(signContext->tx.recipientId, lineBuffer);
+      break;
+    case 3:
+      os_memmove(lineBuffer, signContext->tx.shortDesc, 16);
+      break;
+  }
+}
+
 
 void lineBufferSecondSignProcessor(signContext_t *signContext, uint8_t step) {
   os_memset(lineBuffer, 0, 11);

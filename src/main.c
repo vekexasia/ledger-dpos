@@ -347,7 +347,7 @@ void nullifyContext() {
 
 void handleSignTX(uint8_t *dataBuffer, volatile unsigned int *flags, volatile unsigned int *tx) {
   getSignContext(dataBuffer, &signContext);
-  parseTransaction(signContext.msg, signContext.hasRequesterPublicKey, &signContext.tx);
+  parseTransaction(signContext.msg, signContext.msgLength, signContext.hasRequesterPublicKey, &signContext.tx);
   signContext.isTx = true;
 
   *flags |= IO_ASYNCH_REPLY;
@@ -355,8 +355,10 @@ void handleSignTX(uint8_t *dataBuffer, volatile unsigned int *flags, volatile un
     pcallback = lineBufferSendTxProcessor;
     bagl_ui_sign_tx = bagl_ui_approval_send_nanos;
     ui_signtx(3, sizeof(bagl_ui_approval_send_nanos)/sizeof(bagl_ui_approval_send_nanos[0]));
-  } else if (signContext.tx.type == TXTYPE_VOTE) {
-
+  } else if (signContext.tx.type == TXTYPE_REGISTERDELEGATE) {
+    pcallback = lineBufferRegDelegateTxProcessor;
+    bagl_ui_sign_tx = bagl_ui_regdelegate_nanos;
+    ui_signtx(3, sizeof(bagl_ui_regdelegate_nanos)/sizeof(bagl_ui_regdelegate_nanos[0]));
   } else if (signContext.tx.type == TXTYPE_CREATESIGNATURE) {
     pcallback = lineBufferSecondSignProcessor;
     bagl_ui_sign_tx = bagl_ui_secondsign_nanos;
@@ -416,7 +418,7 @@ static void lisk_main(void) {
                 break;
               case INS_ECHO:
                 getSignContext(G_io_apdu_buffer + 2, &signContext);
-                parseTransaction(signContext.msg, false, &signContext.tx);
+                parseTransaction(signContext.msg, signContext.msgLength, false, &signContext.tx);
                 initResponse();
                 addToResponse(&signContext.tx.amountSatoshi, 8);
                 addToResponse(&signContext.tx.type, 1);
