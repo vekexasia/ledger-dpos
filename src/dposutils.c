@@ -54,7 +54,6 @@ uint64_t deriveAddressFromUintArray(uint8_t *source, bool rev) {
  * @return the length of the string representation.
  */
 uint8_t deriveAddressStringRepresentation(uint64_t encodedAddress, char *output) {
-  memset(output, 0, strlen(output));
 
   char brocca[22];
   uint8_t i = 0;
@@ -74,20 +73,20 @@ uint8_t deriveAddressStringRepresentation(uint64_t encodedAddress, char *output)
   return (uint8_t) (total + strlen(ADDRESS_SUFFIX) /*suffix*/);
 }
 
-uint8_t deriveAddressShortRepresentation(uint64_t encodedAddress, char *output) {
-  char tmp[14];
-  deriveAddressStringRepresentation(encodedAddress, output);
-  size_t length = strlen(output);
-
-
-  os_memmove(tmp, output, 5);
-  os_memmove(tmp + 5, "...", 3);
-  os_memmove(tmp + 5 + 3, output + length - 5, 5);
-  tmp[13] = '\0';
-
-  os_memmove(output, tmp, 14);
-  return 13;
-}
+//uint8_t deriveAddressShortRepresentation(uint64_t encodedAddress, char *output) {
+//  char tmp[14];
+//  deriveAddressStringRepresentation(encodedAddress, output);
+//  size_t length = strlen(output);
+//
+//
+//  os_memmove(tmp, output, 5);
+//  os_memmove(tmp + 5, "...", 3);
+//  os_memmove(tmp + 5 + 3, output + length - 5, 5);
+//  tmp[13] = '\0';
+//
+//  os_memmove(output, tmp, 14);
+//  return 13;
+//}
 const char hexChars[] = "0123456789abcdef";
 /**
  * Derive address associated to the specific publicKey.
@@ -121,13 +120,13 @@ void parseTransaction(uint8_t *txBytes, uint32_t txLength, bool hasRequesterPubl
                       + 32 /*senderPublicKey */
                       + (hasRequesterPublicKey == true ? 32 : 0) /*requesterPublicKey */;
   out->recipientId = deriveAddressFromUintArray(txBytes + recIndex, false);
-  uint8_t i = 0;
+  uint32_t i = 0;
   out->amountSatoshi = 0;
   for (i = 0; i < 8; i++) {
     out->amountSatoshi |= ((uint64_t )txBytes[recIndex + 8 + i]) << (8*i);
   }
 
-  os_memset(out->shortDesc, 0, 16);
+  os_memset(out->shortDesc, 0, 21);
   if (out->type == TXTYPE_CREATESIGNATURE) {
     // Read publickey from bytes.
     // it's 32 bytes.
@@ -141,6 +140,29 @@ void parseTransaction(uint8_t *txBytes, uint32_t txLength, bool hasRequesterPubl
     }
     out->shortDesc[7] = '.';
   } else if (out->type == TXTYPE_REGISTERDELEGATE) {
-    os_memmove(out->shortDesc, txBytes+recIndex + 8 + 8, MIN(16, txLength - (recIndex + 8 + 8)));
+    os_memmove(out->shortDesc, txBytes+recIndex + 8 + 8, MIN(20, txLength - (recIndex + 8 + 8)));
+    for (i=0; i<MIN(20, txLength - (recIndex + 8 + 8)); i++) {
+      char c = out->shortDesc[i];
+      if (
+        !(c >= 'a' && c <= 'z') &&
+        !(c >= '0' && c <= '9') &&
+        !(c == '!' || c == '@' || c == '$' || c == '&' || c == '_' || c == '.')) {
+        out->shortDesc[i] = '\0';
+      }
+    }
+  } else if (out->type == TXTYPE_VOTE) {
+    uint8_t added = 0;
+    uint8_t removed = 0;
+    for (i=recIndex + 8 + 8; i<txLength; i++) {
+      if (txBytes[i] == '+') {
+        added++;
+      } else if (txBytes[i] == '-') {
+        removed++;
+      }
+    }
+    // Storing the amount of added and removed votes in shortDesc.
+    // Will later be used in the ui_elements thing.
+    out->shortDesc[0] = added;
+    out->shortDesc[1] = removed;
   }
 }

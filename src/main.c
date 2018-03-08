@@ -28,16 +28,22 @@
 #include "dposutils.h"
 #include "main.h"
 #include "structs.h"
+#define INS_COM_START 89
+#define INS_COM_CONTINUE 90
+#define INS_COM_END 91
+
 #define INS_GET_PUBLIC_KEY 0x04
 #define INS_SIGN 0x05
 #define INS_SIGN_MSG 0x06
 #define INS_ECHO 0x07
+#define INS_PING 0x08
 
 
 static unsigned int current_text_pos; // parsing cursor in the text to display
 static unsigned int currentStep;
 static unsigned int totalSteps;
 static unsigned int text_y;           // current location of the displayed text
+short crc; // holds the crc16 of the content.
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
 typedef void (*processor_callback)(signContext_t *ctx, uint8_t step);
@@ -204,7 +210,7 @@ unsigned int bagl_ui_text_review_nanos_button(unsigned int button_mask, unsigned
 
 static void ui_approval(void) {
   uiState = UI_APPROVAL;
-  deriveAddressShortRepresentation(signContext.sourceAddress, lineBuffer);
+  deriveAddressStringRepresentation(signContext.sourceAddress, lineBuffer);
 
 
 #ifdef TARGET_BLUE
@@ -226,7 +232,7 @@ static void ui_idle(void) {
 static bagl_element_t * io_seproxyhal_touch_approve(const bagl_element_t *e) {
   uint8_t signature[64];
 
-  sign(&signContext.privateKey, signContext.msg, signContext.msgLength, signature);
+  sign(&signContext.privateKey, signContext.msg, signContext.msgLength, signature, signContext.isTx);
 
   initResponse();
   addToResponse(signature, 64);
@@ -248,10 +254,18 @@ static bagl_element_t * io_seproxyhal_touch_approve(const bagl_element_t *e) {
  * @param privateKey the privateKey to be used
  * @param whatToSign the message to sign
  * @param length the length of the message ot sign
+ * @param isTx wether we're signing a tx or a text
  * @param output
  */
-void sign(cx_ecfp_private_key_t *privateKey, void *whatToSign, uint32_t length, unsigned char *output) {
-  cx_eddsa_sign(privateKey, NULL, CX_LAST, CX_SHA512, whatToSign, length, output);
+void sign(cx_ecfp_private_key_t *privateKey, void *whatToSign, uint32_t length, unsigned char *output, bool isTx) {
+  if (isTx == true) {
+    uint8_t hash[32];
+    cx_hash_sha256(whatToSign, length, hash);
+    cx_eddsa_sign(privateKey, NULL, CX_SHA512, hash, 32, NULL, 0, output, 0);
+  } else {
+    cx_eddsa_sign(privateKey, NULL, CX_SHA512, whatToSign, length, NULL, 0, output, 0);
+  }
+
 }
 
 /**
@@ -301,7 +315,7 @@ derivePrivatePublic(uint8_t *bip32DataBuffer, cx_ecfp_private_key_t *privateKey,
  * @param bip32DataBuffer
  * @param tx
  */
-void handleGetPublic(uint8_t *bip32DataBuffer, volatile unsigned int *tx) {
+void handleGetPublic(uint8_t *bip32DataBuffer) {
   cx_ecfp_private_key_t privateKey;
   cx_ecfp_public_key_t publicKey;
   uint8_t encodedPkey[32];
@@ -312,7 +326,6 @@ void handleGetPublic(uint8_t *bip32DataBuffer, volatile unsigned int *tx) {
 
   initResponse();
   addToResponse(encodedPkey, 32);
-  *tx = flushResponseToIO(G_io_apdu_buffer);
 }
 
 /**
@@ -330,8 +343,8 @@ void getSignContext(uint8_t *dataBuffer, signContext_t *whereTo) {
   bytesRead++;
 
   // REad message
-
-  os_memmove(whereTo->msg, dataBuffer + bytesRead, whereTo->msgLength);
+  whereTo->msg = dataBuffer + bytesRead;
+//  os_memmove(whereTo->msg, dataBuffer + bytesRead, whereTo->msgLength);
 //  whereTo.msg[whereTo.msgLength] = '\0';
 
   whereTo->sourceAddress = deriveAddressFromPublic(&whereTo->publicKey);
@@ -345,12 +358,11 @@ void nullifyContext() {
 }
 
 
-void handleSignTX(uint8_t *dataBuffer, volatile unsigned int *flags, volatile unsigned int *tx) {
+void handleSignTX(uint8_t *dataBuffer) {
   getSignContext(dataBuffer, &signContext);
   parseTransaction(signContext.msg, signContext.msgLength, signContext.hasRequesterPublicKey, &signContext.tx);
   signContext.isTx = true;
 
-  *flags |= IO_ASYNCH_REPLY;
   if (signContext.tx.type == TXTYPE_SEND) {
     pcallback = lineBufferSendTxProcessor;
     bagl_ui_sign_tx = bagl_ui_approval_send_nanos;
@@ -363,16 +375,170 @@ void handleSignTX(uint8_t *dataBuffer, volatile unsigned int *flags, volatile un
     pcallback = lineBufferSecondSignProcessor;
     bagl_ui_sign_tx = bagl_ui_secondsign_nanos;
     ui_signtx(3, sizeof(bagl_ui_secondsign_nanos)/sizeof(bagl_ui_secondsign_nanos[0]));
+  } else if (signContext.tx.type == TXTYPE_VOTE) {
+    pcallback = lineBufferVoteProcessor;
+    bagl_ui_sign_tx = bagl_ui_vote_nanos;
+    ui_signtx(3, sizeof(bagl_ui_vote_nanos)/sizeof(bagl_ui_vote_nanos[0]));
   }
-//    initResponse();
-//    addToResponse(&txOut.type, 1);
-//    addToResponse(&txOut.amountSatoshi, 8);
-//    addToResponse(&txOut.recipientId, 8);
-//    *tx = flushResponseToIO(G_io_apdu_buffer);
 }
 
 
-static void lisk_main(void) {
+void handleStartCommPacket() {
+  if (commContext.started) {
+    THROW(0x6D00);
+//    return;
+  }
+  commContext.started = true;
+  commContext.read = 0;
+  commContext.isDataInNVRAM = false; // For now.
+
+  uint16_t totalAmountOfData = G_io_apdu_buffer[1] << 8;
+  totalAmountOfData += G_io_apdu_buffer[2];
+
+  // Debug
+  initResponse();
+  os_memmove(rawData, &totalAmountOfData, 2);
+  addToResponse(rawData, 2);
+
+  if (totalAmountOfData > 800) {
+    commContext.isDataInNVRAM = true;
+    commContext.data = PIC(&N_rawData);
+  } else {
+    commContext.data = rawData;
+  }
+//  commContext.data = rawData;
+}
+void handleCommPacket() {
+  if (commContext.isDataInNVRAM) {
+    nvm_write(commContext.data + commContext.read, G_io_apdu_buffer + 2, G_io_apdu_buffer[1]);
+  } else {
+    os_memmove(commContext.data + commContext.read, G_io_apdu_buffer + 2, G_io_apdu_buffer[1]);
+  }
+
+  initResponse();
+  commContext.read += G_io_apdu_buffer[1];
+  crc = cx_crc16(commContext.data, commContext.read);
+  addToResponse(&crc, 2);
+}
+
+
+
+void processCommPacket(volatile unsigned int *flags) {
+
+  switch(commContext.data[1]) {
+    case INS_PING:
+      initResponse();
+      char * pong = "PONG";
+      addToResponse(pong, 4);
+      break;
+    case INS_GET_PUBLIC_KEY:
+      handleGetPublic(commContext.data + 2);
+      break;
+    case INS_SIGN_MSG:
+      getSignContext(commContext.data + 2, &signContext);
+      signContext.isTx = false;
+      os_memset(lineBuffer, 0, 50);
+      os_memmove(lineBuffer, signContext.msg, MIN(50, signContext.msgLength));
+      *flags |= IO_ASYNCH_REPLY;
+      ui_text();
+      break;
+    case INS_SIGN:
+      handleSignTX(commContext.data + 2);
+      *flags |= IO_ASYNCH_REPLY;
+      break;
+
+    default:
+      THROW(0x6D00);
+  }
+
+  commContext.started = false;
+  commContext.read = 0;
+}
+
+static void dpos_main(void) {
+  volatile unsigned int rx = 0;
+  volatile unsigned int tx = 0;
+  volatile unsigned int flags = 0;
+  // DESIGN NOTE: the bootloader ignores the way APDU are fetched. The only
+  // goal is to retrieve APDU.
+  // When APDU are to be fetched from multiple IOs, like NFC+USB+BLE, make
+  // sure the io_event is called with a
+  // switch event, before the apdu is replied to the bootloader. This avoid
+  // APDU injection faults.
+  for (;;) {
+    volatile unsigned short sw = 0;
+
+    BEGIN_TRY
+      {
+        TRY
+          {
+            rx = tx;
+            tx = 0; // ensure no race in catch_other if io_exchange throws
+            // an error
+            rx = io_exchange(CHANNEL_APDU | flags, rx);
+            flags = 0;
+
+            // no apdu received, well, reset the session, and reset the
+            // bootloader configuration
+            if (rx == 0) {
+              THROW(0x6982);
+            }
+
+            switch (G_io_apdu_buffer[0]) {
+              case INS_COM_START:
+                handleStartCommPacket();
+                tx = flushResponseToIO(G_io_apdu_buffer);
+                THROW(0x9000);
+                break;
+              case INS_COM_CONTINUE:
+                handleCommPacket();
+                tx = flushResponseToIO(G_io_apdu_buffer);
+                THROW(0x9000);
+                break;
+              case INS_COM_END:
+                processCommPacket(&flags);
+                tx = flushResponseToIO(G_io_apdu_buffer);
+                THROW(0x9000);
+                break;
+
+              case 0xFF: // return to dashboard
+                goto return_to_dashboard;
+
+              default:
+                THROW(0x6D00);
+                break;
+            }
+          }
+        CATCH_OTHER(e)
+          {
+            switch (e & 0xF000) {
+              case 0x6000:
+              case 0x9000:
+                sw = e;
+                break;
+              default:
+                sw = 0x6800 | (e & 0x7FF);
+                break;
+            }
+            // Unexpected exception => report
+            G_io_apdu_buffer[tx] = sw >> 8;
+            G_io_apdu_buffer[tx + 1] = sw;
+            tx += 2;
+          }
+        FINALLY
+        {
+        }
+      }
+    END_TRY;
+  }
+
+  return_to_dashboard:
+  return;
+}
+
+
+
+static void lisk_main2(void) {
   volatile unsigned int rx = 0;
   volatile unsigned int tx = 0;
   volatile unsigned int flags = 0;
@@ -416,6 +582,12 @@ static void lisk_main(void) {
               case 0x01: // case 1
                 THROW(0x9000);
                 break;
+              case INS_PING:
+                initResponse();
+                char * pong = "PONG";
+                addToResponse(pong, 4);
+                tx = flushResponseToIO(G_io_apdu_buffer);
+                THROW(0x9000);
               case INS_ECHO:
                 getSignContext(G_io_apdu_buffer + 2, &signContext);
                 parseTransaction(signContext.msg, signContext.msgLength, false, &signContext.tx);
@@ -433,13 +605,15 @@ static void lisk_main(void) {
                 tx = flushResponseToIO(G_io_apdu_buffer);
                 THROW(0x9000);
                 break;
-              case INS_GET_PUBLIC_KEY: // echo
-//                                tx = rx;
-                handleGetPublic(G_io_apdu_buffer + 2, &tx);
+              case INS_GET_PUBLIC_KEY:
+                handleGetPublic(G_io_apdu_buffer + 2);
+                tx = flushResponseToIO(G_io_apdu_buffer);
                 THROW(0x9000);
                 break;
               case INS_SIGN:
-                handleSignTX(G_io_apdu_buffer + 2, &flags, &tx);
+                handleSignTX(G_io_apdu_buffer + 2);
+                flags |= IO_ASYNCH_REPLY;
+
                 break;
 
               case INS_SIGN_MSG:
@@ -449,7 +623,8 @@ static void lisk_main(void) {
                 os_memmove(lineBuffer, signContext.msg, MIN(50, signContext.msgLength));
                 flags |= IO_ASYNCH_REPLY;
 
-                ui_text();
+//                ui_text();
+                io_seproxyhal_touch_approve(NULL);
 
 //                                THROW(0x9000);
                 break;
@@ -551,6 +726,8 @@ __attribute__((section(".boot"))) int main(void) {
 
   // ensure exception will work as planned
   os_boot();
+  commContext.read = 0;
+  commContext.started = false;
 
   BEGIN_TRY
     {
@@ -565,7 +742,7 @@ __attribute__((section(".boot"))) int main(void) {
 
           ui_idle();
 
-          lisk_main();
+          dpos_main();
         }
       CATCH_OTHER(e)
         {

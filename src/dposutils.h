@@ -14,7 +14,7 @@ typedef struct transaction {
     uint8_t type;
     uint64_t recipientId;
     uint64_t amountSatoshi;
-    char shortDesc[16];
+    char shortDesc[21];
 };
 
 #endif

@@ -52,11 +52,11 @@ const bagl_element_t bagl_ui_approval_send_nanos[] = {
   TITLE_ITEM("Send from", 0x01),
   TITLE_ITEM("To", 0x02),
   TITLE_ITEM("Amount", 0x03),
-  LINEBUFFER,
   ICON_DOWN(0x01),
   ICON_DOWN(0x02),
   ICON_CHECK(0x03),
   ICON_CROSS(0x00),
+  LINEBUFFER,
 };
 
 /**
@@ -67,11 +67,11 @@ const bagl_element_t bagl_ui_secondsign_nanos[] = {
   TITLE_ITEM("Create second", 0x01),
   TITLE_ITEM("For account", 0x02),
   TITLE_ITEM("With public", 0x03),
-  LINEBUFFER,
   ICON_DOWN(0x01),
   ICON_DOWN(0x02),
   ICON_CHECK(0x03),
   ICON_CROSS(0x00),
+  LINEBUFFER,
 };
 
 /**
@@ -82,13 +82,27 @@ const bagl_element_t bagl_ui_regdelegate_nanos[] = {
   TITLE_ITEM("Register", 0x01),
   TITLE_ITEM("For account", 0x02),
   TITLE_ITEM("With name", 0x03),
-  LINEBUFFER,
   ICON_DOWN(0x01),
   ICON_DOWN(0x02),
   ICON_CHECK(0x03),
   ICON_CROSS(0x00),
+  LINEBUFFER,
 };
 
+/**
+ * Create second signature with address
+ */
+const bagl_element_t bagl_ui_vote_nanos[] = {
+  CLEAN_SCREEN,
+  TITLE_ITEM("Vote from", 0x01),
+  TITLE_ITEM("Added", 0x02),
+  TITLE_ITEM("Removed", 0x03),
+  ICON_DOWN(0x01),
+  ICON_DOWN(0x02),
+  ICON_CHECK(0x03),
+  ICON_CROSS(0x00),
+  LINEBUFFER,
+};
 
 /**
  * Sign with address
@@ -96,10 +110,45 @@ const bagl_element_t bagl_ui_regdelegate_nanos[] = {
 const bagl_element_t bagl_ui_approval_nanos[] = {
   CLEAN_SCREEN,
   TITLE_ITEM("Sign with", 0x01),
-  LINEBUFFER,
   ICON_CHECK(0x00),
   ICON_CROSS(0x00),
+  LINEBUFFER,
 };
+
+
+/**
+ * Review text to sign (message)
+ */
+const bagl_element_t bagl_ui_text_review_nanos[] = {
+  CLEAN_SCREEN,
+  TITLE_ITEM("Verify text", 0x00),
+  ICON_CROSS(0x00),
+  ICON_DOWN(0x00),
+  LINEBUFFER,
+};
+
+uint8_t intToString(uint64_t amount, char *out) {
+  uint8_t i = 0;
+  if (amount == 0) {
+    out[0] = '0';
+    i = 1;
+  } else {
+    uint64_t part = amount;
+    while(part > 0) {
+      out[i++] = (uint8_t) (part % 10 + '0');
+      part /= 10;
+    }
+  }
+  out[i] = '\0';
+  uint8_t j = 0;
+  for (j=0; j<i/2; j++) {
+    char swap = out[j];
+    out[j] = out[i-1-j];
+    out[i-1-j] = swap;
+  }
+
+  return i;
+}
 
 void satoshiToString(uint64_t amount, char *out) {
 
@@ -146,10 +195,10 @@ void lineBufferRegDelegateTxProcessor(signContext_t *signContext, uint8_t step) 
       os_memmove(lineBuffer, "delegate\0", 11);
       break;
     case 2:
-      deriveAddressShortRepresentation(signContext->tx.recipientId, lineBuffer);
+      deriveAddressStringRepresentation(signContext->tx.recipientId, lineBuffer);
       break;
     case 3:
-      os_memmove(lineBuffer, signContext->tx.shortDesc, 16);
+      os_memmove(lineBuffer, signContext->tx.shortDesc, 21);
       break;
   }
 }
@@ -162,11 +211,37 @@ void lineBufferSecondSignProcessor(signContext_t *signContext, uint8_t step) {
       os_memmove(lineBuffer, "signature\0", 11);
       break;
     case 2:
-      deriveAddressShortRepresentation(signContext->sourceAddress, lineBuffer);
+      deriveAddressStringRepresentation(signContext->sourceAddress, lineBuffer);
       break;
     case 3:
-      os_memmove(lineBuffer, signContext->tx.shortDesc, 16);
+      os_memmove(lineBuffer, signContext->tx.shortDesc, 21);
       break;
+  }
+}
+
+
+void lineBufferVoteProcessor(signContext_t *signContext, uint8_t step) {
+  uint64_t tmp = 0;
+  os_memset(lineBuffer, 0, 11);
+  switch (step) {
+    case 1:
+      deriveAddressStringRepresentation(signContext->sourceAddress, lineBuffer);
+      break;
+    case 2:
+      // Added number
+      tmp += signContext->tx.shortDesc[0];
+      tmp = intToString(tmp, lineBuffer);
+      break;
+    case 3:
+      // Removed number
+      tmp += signContext->tx.shortDesc[1];
+      tmp = intToString(tmp, lineBuffer);
+//      tmp = 5;
+//      os_memmove(lineBuffer, "ciao", 4);
+      break;
+  }
+  if (tmp != 0) {
+    os_memmove(lineBuffer+tmp, " votes\0", 7);
   }
 }
 
@@ -175,10 +250,10 @@ void lineBufferSendTxProcessor(signContext_t *signContext, uint8_t step) {
   os_memset(lineBuffer, 0, 11);
   switch (step) {
     case 1:
-      deriveAddressShortRepresentation(signContext->sourceAddress, lineBuffer);
+      deriveAddressStringRepresentation(signContext->sourceAddress, lineBuffer);
       break;
     case 2:
-      deriveAddressShortRepresentation(signContext->tx.recipientId, lineBuffer);
+      deriveAddressStringRepresentation(signContext->tx.recipientId, lineBuffer);
       break;
     case 3:
       satoshiToString(signContext->tx.amountSatoshi, lineBuffer);
@@ -186,25 +261,3 @@ void lineBufferSendTxProcessor(signContext_t *signContext, uint8_t step) {
   }
 }
 
-
-/**
- * Review text to sign (message)
- */
-const bagl_element_t bagl_ui_text_review_nanos[] = {
-  // {
-  //     {type, userid, x, y, width, height, stroke, radius, fill, fgcolor,
-  //      bgcolor, font_id, icon_id},
-  //     text,
-  //     touch_area_brim,
-  //     overfgcolor,
-  //     overbgcolor,
-  //     tap,
-  //     out,
-  //     over,
-  // },
-  CLEAN_SCREEN,
-  TITLE_ITEM("Verify text", 0x00),
-  LINEBUFFER,
-  ICON_CROSS(0x00),
-  ICON_DOWN(0x00)
-};

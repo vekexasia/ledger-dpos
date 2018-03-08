@@ -8,7 +8,7 @@ static bagl_element_t *io_seproxyhal_touch_approve(const bagl_element_t *e);
 
 static bagl_element_t *io_seproxyhal_touch_deny(const bagl_element_t *e);
 
-static void sign(cx_ecfp_private_key_t *privateKey, void *whatToSign, uint32_t length, unsigned char *output);
+static void sign(cx_ecfp_private_key_t *privateKey, void *whatToSign, uint32_t length, unsigned char *output, bool isTx);
 
 static void ui_idle(void);
 
