@@ -11,6 +11,7 @@ extern const bagl_element_t bagl_ui_regdelegate_nanos[9];
 extern const bagl_element_t bagl_ui_secondsign_nanos[9];
 extern const bagl_element_t bagl_ui_approval_nanos[5];
 extern const bagl_element_t bagl_ui_text_review_nanos[5];
+extern const bagl_element_t bagl_ui_multisignature_nanos[11];
 extern const bagl_element_t bagl_ui_vote_nanos[9];
 extern char lineBuffer[50];
 
@@ -19,3 +20,4 @@ void lineBufferVoteProcessor(signContext_t *signContext, uint8_t step);
 void lineBufferSendTxProcessor(signContext_t *signContext, uint8_t step);
 void lineBufferSecondSignProcessor(signContext_t *signContext, uint8_t step);
 void lineBufferRegDelegateTxProcessor(signContext_t *signContext, uint8_t step);
+void lineBufferMultisigProcessor(signContext_t *signContext, uint8_t step);

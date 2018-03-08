@@ -117,6 +117,23 @@ const bagl_element_t bagl_ui_approval_nanos[] = {
 
 
 /**
+ * Sign with address
+ */
+const bagl_element_t bagl_ui_multisignature_nanos[] = {
+  CLEAN_SCREEN,
+  TITLE_ITEM("Create", 0x01),
+  TITLE_ITEM("Using", 0x02),
+  TITLE_ITEM("Minimum", 0x03),
+  TITLE_ITEM("Lifetime", 0x04),
+  ICON_DOWN(0x01),
+  ICON_DOWN(0x02),
+  ICON_DOWN(0x03),
+  ICON_CHECK(0x04),
+  ICON_CROSS(0x00),
+  LINEBUFFER,
+};
+
+/**
  * Review text to sign (message)
  */
 const bagl_element_t bagl_ui_text_review_nanos[] = {
@@ -205,7 +222,7 @@ void lineBufferRegDelegateTxProcessor(signContext_t *signContext, uint8_t step) 
 
 
 void lineBufferSecondSignProcessor(signContext_t *signContext, uint8_t step) {
-  os_memset(lineBuffer, 0, 11);
+  os_memset(lineBuffer, 0, 20);
   switch (step) {
     case 1:
       os_memmove(lineBuffer, "signature\0", 11);
@@ -222,7 +239,7 @@ void lineBufferSecondSignProcessor(signContext_t *signContext, uint8_t step) {
 
 void lineBufferVoteProcessor(signContext_t *signContext, uint8_t step) {
   uint64_t tmp = 0;
-  os_memset(lineBuffer, 0, 11);
+  os_memset(lineBuffer, 0, 20);
   switch (step) {
     case 1:
       deriveAddressStringRepresentation(signContext->sourceAddress, lineBuffer);
@@ -236,8 +253,6 @@ void lineBufferVoteProcessor(signContext_t *signContext, uint8_t step) {
       // Removed number
       tmp += signContext->tx.shortDesc[1];
       tmp = intToString(tmp, lineBuffer);
-//      tmp = 5;
-//      os_memmove(lineBuffer, "ciao", 4);
       break;
   }
   if (tmp != 0) {
@@ -247,7 +262,7 @@ void lineBufferVoteProcessor(signContext_t *signContext, uint8_t step) {
 
 
 void lineBufferSendTxProcessor(signContext_t *signContext, uint8_t step) {
-  os_memset(lineBuffer, 0, 11);
+  os_memset(lineBuffer, 0, 20);
   switch (step) {
     case 1:
       deriveAddressStringRepresentation(signContext->sourceAddress, lineBuffer);
@@ -261,3 +276,26 @@ void lineBufferSendTxProcessor(signContext_t *signContext, uint8_t step) {
   }
 }
 
+
+void lineBufferMultisigProcessor(signContext_t *signContext, uint8_t step) {
+  uint64_t tmp = 0;
+  os_memset(lineBuffer, 0, 20);
+  switch (step) {
+    case 1:
+      os_memmove(lineBuffer, "Multi-sig account\0", 17);
+      break;
+    case 2:
+      deriveAddressStringRepresentation(signContext->sourceAddress, lineBuffer);
+      break;
+    case 3:
+      // Min keys
+      tmp = intToString(signContext->tx.shortDesc[0], lineBuffer);
+      os_memmove(lineBuffer+tmp, " keys\0", 6);
+      break;
+    case 4:
+      // Lifetime
+      tmp = intToString(signContext->tx.shortDesc[1], lineBuffer);
+      os_memmove(lineBuffer+tmp, " hours\0", 7);
+      break;
+  }
+}

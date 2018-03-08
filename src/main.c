@@ -379,6 +379,10 @@ void handleSignTX(uint8_t *dataBuffer) {
     pcallback = lineBufferVoteProcessor;
     bagl_ui_sign_tx = bagl_ui_vote_nanos;
     ui_signtx(3, sizeof(bagl_ui_vote_nanos)/sizeof(bagl_ui_vote_nanos[0]));
+  } else if (signContext.tx.type == TXTYPE_CREATEMULTISIG) {
+    pcallback = lineBufferMultisigProcessor;
+    bagl_ui_sign_tx = bagl_ui_multisignature_nanos;
+    ui_signtx(4, sizeof(bagl_ui_multisignature_nanos)/sizeof(bagl_ui_multisignature_nanos[0]));
   }
 }
 

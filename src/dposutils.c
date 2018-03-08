@@ -164,5 +164,8 @@ void parseTransaction(uint8_t *txBytes, uint32_t txLength, bool hasRequesterPubl
     // Will later be used in the ui_elements thing.
     out->shortDesc[0] = added;
     out->shortDesc[1] = removed;
+  } else if (out->type == TXTYPE_CREATEMULTISIG) {
+    out->shortDesc[0] = txBytes[recIndex+8+8];
+    out->shortDesc[1] = txBytes[recIndex+8+8+1];
   }
 }
