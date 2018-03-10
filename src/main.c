@@ -318,14 +318,16 @@ derivePrivatePublic(uint8_t *bip32DataBuffer, cx_ecfp_private_key_t *privateKey,
 void handleGetPublic(uint8_t *bip32DataBuffer) {
   cx_ecfp_private_key_t privateKey;
   cx_ecfp_public_key_t publicKey;
-  uint8_t encodedPkey[32];
 
   derivePrivatePublic(bip32DataBuffer, &privateKey, &publicKey);
-  getEncodedPublicKey(&publicKey, encodedPkey);
+  getEncodedPublicKey(&publicKey, rawData);
   os_memset(&privateKey, 0, sizeof(privateKey));
 
   initResponse();
-  addToResponse(encodedPkey, 32);
+  addToResponse(rawData, 32);
+  uint64_t address = deriveAddressFromPublic(&publicKey);
+  uint8_t length = deriveAddressStringRepresentation(address, (char *) (rawData + 32));
+  addToResponse(rawData+32, length);
 }
 
 /**
@@ -396,8 +398,8 @@ void handleStartCommPacket() {
   commContext.read = 0;
   commContext.isDataInNVRAM = false; // For now.
 
-  uint16_t totalAmountOfData = G_io_apdu_buffer[1] << 8;
-  totalAmountOfData += G_io_apdu_buffer[2];
+  uint16_t totalAmountOfData = G_io_apdu_buffer[5] << 8;
+  totalAmountOfData += G_io_apdu_buffer[6];
 
   // Debug
   initResponse();
@@ -414,13 +416,13 @@ void handleStartCommPacket() {
 }
 void handleCommPacket() {
   if (commContext.isDataInNVRAM) {
-    nvm_write(commContext.data + commContext.read, G_io_apdu_buffer + 2, G_io_apdu_buffer[1]);
+    nvm_write(commContext.data + commContext.read, G_io_apdu_buffer + 5, G_io_apdu_buffer[4]);
   } else {
-    os_memmove(commContext.data + commContext.read, G_io_apdu_buffer + 2, G_io_apdu_buffer[1]);
+    os_memmove(commContext.data + commContext.read, G_io_apdu_buffer + 5, G_io_apdu_buffer[4]);
   }
 
   initResponse();
-  commContext.read += G_io_apdu_buffer[1];
+  commContext.read += G_io_apdu_buffer[4];
   crc = cx_crc16(commContext.data, commContext.read);
   addToResponse(&crc, 2);
 }
@@ -429,17 +431,17 @@ void handleCommPacket() {
 
 void processCommPacket(volatile unsigned int *flags) {
 
-  switch(commContext.data[1]) {
+  switch(commContext.data[0]) {
     case INS_PING:
       initResponse();
       char * pong = "PONG";
       addToResponse(pong, 4);
       break;
     case INS_GET_PUBLIC_KEY:
-      handleGetPublic(commContext.data + 2);
+      handleGetPublic(commContext.data + 1);
       break;
     case INS_SIGN_MSG:
-      getSignContext(commContext.data + 2, &signContext);
+      getSignContext(commContext.data + 1, &signContext);
       signContext.isTx = false;
       os_memset(lineBuffer, 0, 50);
       os_memmove(lineBuffer, signContext.msg, MIN(50, signContext.msgLength));
@@ -447,7 +449,7 @@ void processCommPacket(volatile unsigned int *flags) {
       ui_text();
       break;
     case INS_SIGN:
-      handleSignTX(commContext.data + 2);
+      handleSignTX(commContext.data + 1);
       *flags |= IO_ASYNCH_REPLY;
       break;
 
@@ -488,7 +490,7 @@ static void dpos_main(void) {
               THROW(0x6982);
             }
 
-            switch (G_io_apdu_buffer[0]) {
+            switch (G_io_apdu_buffer[1]) {
               case INS_COM_START:
                 handleStartCommPacket();
                 tx = flushResponseToIO(G_io_apdu_buffer);
@@ -592,23 +594,6 @@ static void lisk_main2(void) {
                 addToResponse(pong, 4);
                 tx = flushResponseToIO(G_io_apdu_buffer);
                 THROW(0x9000);
-              case INS_ECHO:
-                getSignContext(G_io_apdu_buffer + 2, &signContext);
-                parseTransaction(signContext.msg, signContext.msgLength, false, &signContext.tx);
-                initResponse();
-                addToResponse(&signContext.tx.amountSatoshi, 8);
-                addToResponse(&signContext.tx.type, 1);
-                addToResponse(&signContext.tx.recipientId, 8);
-                addToResponse(&signContext.hasRequesterPublicKey, 1);
-                addToResponse(signContext.msg, signContext.msgLength);
-
-                char brocca[22];
-                os_memset(brocca, 0, 22);
-                satoshiToString(signContext.tx.amountSatoshi, brocca);
-                addToResponse(brocca, 22);
-                tx = flushResponseToIO(G_io_apdu_buffer);
-                THROW(0x9000);
-                break;
               case INS_GET_PUBLIC_KEY:
                 handleGetPublic(G_io_apdu_buffer + 2);
                 tx = flushResponseToIO(G_io_apdu_buffer);
