@@ -22,10 +22,24 @@ include $(BOLOS_SDK)/Makefile.defines
 
 # Main app configuration
 
-APPNAME = "Lisk Wallet"
+ifndef COIN
+	COIN=all
+endif
 
 APPVERSION = 1.0.0
 APP_LOAD_PARAMS =--appFlags 0x40  --curve secp256k1  --curve ed25519 $(COMMON_LOAD_PARAMS)
+
+ifeq ($(COIN), all)
+	APPNAME = "dPoS"
+	APP_LOAD_PARAMS += --path "44'/134'" --path "44'/1120'"
+else ifeq ($(COIN), lisk)
+	APPNAME = "Lisk"
+	APP_LOAD_PARAMS += --path "44'/134'"
+else ifeq($(COIN), rise)
+	APPNAME = "Rise"
+	APP_LOAD_PARAMS += --path "44'/1120'"
+endif
+
 
 # Build configuration
 
@@ -49,6 +63,8 @@ DEFINES   += U2F_REQUEST_TIMEOUT=10000 # 10 seconds
 DEFINES   += UNUSED\(x\)=\(void\)x
 DEFINES   += APPVERSION=\"$(APPVERSION)\"
 
+
+ICONNAME=badge_$(COIN).gif
 # Compiler, assembler, and linker
 
 ifneq ($(BOLOS_ENV),)

@@ -16,18 +16,13 @@
 ********************************************************************************/
 
 #include <stdbool.h>
-#include <string.h>
 #include <inttypes.h>
-#include <stdio.h>
 #include <bagl.h>
 #include "os.h"
-#include "cx.h"
-#include "os_io_seproxyhal.h"
+#include "main.h"
 #include "ui_elements_s.h"
 #include "io_protocol.h"
-#include "dposutils.h"
-#include "main.h"
-#include "structs.h"
+#include "ed25519.h"
 #define INS_COM_START 89
 #define INS_COM_CONTINUE 90
 #define INS_COM_END 91
@@ -35,41 +30,53 @@
 #define INS_GET_PUBLIC_KEY 0x04
 #define INS_SIGN 0x05
 #define INS_SIGN_MSG 0x06
-#define INS_ECHO 0x07
 #define INS_PING 0x08
+#define INS_VERSION 0x09
 
 
-static unsigned int current_text_pos; // parsing cursor in the text to display
 static unsigned int currentStep;
 static unsigned int totalSteps;
 static unsigned int text_y;           // current location of the displayed text
 short crc; // holds the crc16 of the content.
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
-
 typedef void (*processor_callback)(signContext_t *ctx, uint8_t step);
-
 processor_callback pcallback;
 static bagl_element_t *bagl_ui_sign_tx; // Real holder of the ui array.
-
 enum UI_STATE {
     UI_IDLE, UI_TEXT, UI_APPROVAL
 };
 
 enum UI_STATE uiState;
-
-
 ux_state_t ux;
 
-#define MAX_BIP32_PATH 10
 
 
 
 
+/**
+ * Sets ui to idle.
+ */
+void ui_idle() {
+  uiState = UI_IDLE;
+  UX_MENU_DISPLAY(0, menu_main, NULL);
+}
+
+/**
+ *
+ */
+void ui_approval(void) {
+  uiState = UI_APPROVAL;
+  deriveAddressStringRepresentation(signContext.sourceAddress, lineBuffer);
 
 
+#ifdef TARGET_BLUE
+  UX_DISPLAY(bagl_ui_approval_blue, NULL);
+#else
+  UX_DISPLAY(bagl_ui_approval_nanos, NULL);
+#endif
+}
 
 static void ui_text(void) {
-  current_text_pos = 0;
   uiState = UI_TEXT;
 #ifdef TARGET_BLUE
   UX_DISPLAY(bagl_ui_text, NULL);
@@ -78,6 +85,11 @@ static void ui_text(void) {
 #endif
 }
 
+/**
+ * Used to verify what is going to be displayed
+ * @param element
+ * @return 0 or 1
+ */
 const int signprocessor(const bagl_element_t *element) {
   if (element->component.userid == 0x0) {
     return 1;
@@ -90,6 +102,13 @@ const int signprocessor(const bagl_element_t *element) {
     return 1;
   }
   return 0;
+}
+
+/**
+ * Cleans memory.
+ */
+void nullifyContext() {
+  os_memset(&signContext.privateKey, 0, sizeof(signContext.privateKey));
 }
 
 unsigned int bagl_ui_sign_tx_button(unsigned int button_mask, unsigned int button_mask_counter) {
@@ -112,7 +131,7 @@ unsigned int bagl_ui_sign_tx_button(unsigned int button_mask, unsigned int butto
 }
 
 
-static void ui_signtx(uint8_t steps, uint8_t uielements) {
+void ui_signtx(uint8_t steps, uint8_t uielements) {
   currentStep = 1;
   totalSteps = steps;
   pcallback(&signContext, 1);
@@ -133,6 +152,23 @@ static void ui_signtx(uint8_t steps, uint8_t uielements) {
 // Ledger Nano S specific UI
 // ********************************************************************************
 
+bagl_element_t *io_seproxyhal_touch_deny(const bagl_element_t *e) {
+  G_io_apdu_buffer[0] = 0x69;
+  G_io_apdu_buffer[1] = 0x85;
+
+  // Allow restart of operation
+  commContext.started = false;
+  commContext.read = 0;
+
+  nullifyContext();
+  // Send back the response, do not restart the event loop
+  io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
+  // Display back the original UX
+  ui_idle();
+  return 0; // do not redraw the widget
+}
+
+
 unsigned int bagl_ui_approval_nanos_button(unsigned int button_mask, unsigned int button_mask_counter) {
   switch (button_mask) {
     case BUTTON_EVT_RELEASED | BUTTON_RIGHT:
@@ -148,19 +184,8 @@ unsigned int bagl_ui_approval_nanos_button(unsigned int button_mask, unsigned in
 
 /**/
 
-bagl_element_t *io_seproxyhal_touch_deny(const bagl_element_t *e) {
-  G_io_apdu_buffer[0] = 0x69;
-  G_io_apdu_buffer[1] = 0x85;
-  nullifyContext();
-  // Send back the response, do not restart the event loop
-  io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
-  // Display back the original UX
-  ui_idle();
-  return 0; // do not redraw the widget
-}
-
 // unsigned int io_seproxyhal_touch_exit(const bagl_element_t *e) {
-static bagl_element_t *io_seproxyhal_touch_exit(const bagl_element_t *e) {
+bagl_element_t *io_seproxyhal_touch_exit(const bagl_element_t *e) {
   // Go back to the dashboard
   os_sched_exit(0);
   return NULL;
@@ -208,28 +233,7 @@ unsigned int bagl_ui_text_review_nanos_button(unsigned int button_mask, unsigned
 }
 
 
-static void ui_approval(void) {
-  uiState = UI_APPROVAL;
-  deriveAddressStringRepresentation(signContext.sourceAddress, lineBuffer);
-
-
-#ifdef TARGET_BLUE
-  UX_DISPLAY(bagl_ui_approval_blue, NULL);
-#else
-  UX_DISPLAY(bagl_ui_approval_nanos, NULL);
-#endif
-}
-
-
-static void ui_idle(void) {
-  uiState = UI_IDLE;
-  UX_MENU_DISPLAY(0, menu_main, NULL);
-}
-
-
-
-
-static bagl_element_t * io_seproxyhal_touch_approve(const bagl_element_t *e) {
+bagl_element_t * io_seproxyhal_touch_approve(const bagl_element_t *e) {
   uint8_t signature[64];
 
   sign(&signContext.privateKey, signContext.msg, signContext.msgLength, signature, signContext.isTx);
@@ -248,67 +252,6 @@ static bagl_element_t * io_seproxyhal_touch_approve(const bagl_element_t *e) {
   return 0; // do not redraw the widget
 }
 
-
-/**
- * Signs an arbitrary message given the privateKey and the info
- * @param privateKey the privateKey to be used
- * @param whatToSign the message to sign
- * @param length the length of the message ot sign
- * @param isTx wether we're signing a tx or a text
- * @param output
- */
-void sign(cx_ecfp_private_key_t *privateKey, void *whatToSign, uint32_t length, unsigned char *output, bool isTx) {
-  if (isTx == true) {
-    uint8_t hash[32];
-    cx_hash_sha256(whatToSign, length, hash);
-    cx_eddsa_sign(privateKey, NULL, CX_SHA512, hash, 32, NULL, 0, output, 0);
-  } else {
-    cx_eddsa_sign(privateKey, NULL, CX_SHA512, whatToSign, length, NULL, 0, output, 0);
-  }
-
-}
-
-/**
- *
- * @param bip32DataBuffer
- * @param privateKey
- * @param publicKey
- * @return read data to derive private public
- */
-uint32_t
-derivePrivatePublic(uint8_t *bip32DataBuffer, cx_ecfp_private_key_t *privateKey, cx_ecfp_public_key_t *publicKey) {
-  uint8_t bip32PathLength = bip32DataBuffer[0];
-  uint32_t i;
-  uint32_t bip32Path[MAX_BIP32_PATH];
-  uint8_t privateKeyData[33];
-
-  uint32_t readData = 1; // 1byte length
-  bip32DataBuffer += 1;
-
-  if ((bip32PathLength < 0x01) || (bip32PathLength > MAX_BIP32_PATH)) {
-    THROW(0x6a80);
-  }
-
-
-  for (i = 0; i < bip32PathLength; i++) {
-    bip32Path[i] = (bip32DataBuffer[0] << 24) | (bip32DataBuffer[1] << 16) |
-                   (bip32DataBuffer[2] << 8) | (bip32DataBuffer[3]);
-    bip32DataBuffer += 4;
-    readData += 4;
-  }
-  os_perso_derive_node_bip32(CX_CURVE_Ed25519, bip32Path, bip32PathLength,
-                             privateKeyData,
-                             NULL /* CHAIN CODE */);
-
-  cx_ecfp_init_private_key(CX_CURVE_Ed25519, privateKeyData, 32, privateKey);
-
-  cx_ecfp_generate_pair(CX_CURVE_Ed25519, publicKey, privateKey, 1);
-
-  // Clean up!
-  os_memset(privateKeyData, 0, sizeof(privateKeyData));
-
-  return readData;
-}
 
 /**
  * Handle publicKey request given the bip32Db
@@ -344,19 +287,11 @@ void getSignContext(uint8_t *dataBuffer, signContext_t *whereTo) {
   whereTo->hasRequesterPublicKey = *(dataBuffer + bytesRead);
   bytesRead++;
 
-  // REad message
   whereTo->msg = dataBuffer + bytesRead;
-//  os_memmove(whereTo->msg, dataBuffer + bytesRead, whereTo->msgLength);
-//  whereTo.msg[whereTo.msgLength] = '\0';
 
   whereTo->sourceAddress = deriveAddressFromPublic(&whereTo->publicKey);
 
   deriveAddressStringRepresentation(whereTo->sourceAddress, whereTo->sourceAddressStr);
-
-}
-
-void nullifyContext() {
-  os_memset(&signContext.privateKey, 0, sizeof(signContext.privateKey));
 }
 
 
@@ -390,10 +325,10 @@ void handleSignTX(uint8_t *dataBuffer) {
 
 
 void handleStartCommPacket() {
-  if (commContext.started) {
-    THROW(0x6D00);
-//    return;
-  }
+//  if (commContext.started) {
+//    THROW(0x6D00);
+////    return;
+//  }
   commContext.started = true;
   commContext.read = 0;
   commContext.isDataInNVRAM = false; // For now.
@@ -432,6 +367,10 @@ void handleCommPacket() {
 void processCommPacket(volatile unsigned int *flags) {
 
   switch(commContext.data[0]) {
+    case INS_VERSION:
+      initResponse();
+      addToResponse(APPVERSION, 5);
+      break;
     case INS_PING:
       initResponse();
       char * pong = "PONG";
@@ -543,122 +482,6 @@ static void dpos_main(void) {
 }
 
 
-
-static void lisk_main2(void) {
-  volatile unsigned int rx = 0;
-  volatile unsigned int tx = 0;
-  volatile unsigned int flags = 0;
-
-  // DESIGN NOTE: the bootloader ignores the way APDU are fetched. The only
-  // goal is to retrieve APDU.
-  // When APDU are to be fetched from multiple IOs, like NFC+USB+BLE, make
-  // sure the io_event is called with a
-  // switch event, before the apdu is replied to the bootloader. This avoid
-  // APDU injection faults.
-  for (;;) {
-    volatile unsigned short sw = 0;
-
-    BEGIN_TRY
-      {
-        TRY
-          {
-            rx = tx;
-            tx = 0; // ensure no race in catch_other if io_exchange throws
-            // an error
-            rx = io_exchange(CHANNEL_APDU | flags, rx);
-            flags = 0;
-
-            // no apdu received, well, reset the session, and reset the
-            // bootloader configuration
-            if (rx == 0) {
-              THROW(0x6982);
-            }
-//                // Handle Input?
-//                if (G_io_apdu_buffer[0] != 0x80) {
-//                    THROW(0x6E00);
-//                }
-
-            // unauthenticated instruction
-            switch (G_io_apdu_buffer[1]) {
-              case 0x00: // reset
-                flags |= IO_RESET_AFTER_REPLIED;
-                THROW(0x9000);
-                break;
-
-              case 0x01: // case 1
-                THROW(0x9000);
-                break;
-              case INS_PING:
-                initResponse();
-                char * pong = "PONG";
-                addToResponse(pong, 4);
-                tx = flushResponseToIO(G_io_apdu_buffer);
-                THROW(0x9000);
-              case INS_GET_PUBLIC_KEY:
-                handleGetPublic(G_io_apdu_buffer + 2);
-                tx = flushResponseToIO(G_io_apdu_buffer);
-                THROW(0x9000);
-                break;
-              case INS_SIGN:
-                handleSignTX(G_io_apdu_buffer + 2);
-                flags |= IO_ASYNCH_REPLY;
-
-                break;
-
-              case INS_SIGN_MSG:
-//                                handleSignMSG(G_io_apdu_buffer+2, &flags, &tx);
-                getSignContext(G_io_apdu_buffer + 2, &signContext);
-                os_memset(lineBuffer, 0, 50);
-                os_memmove(lineBuffer, signContext.msg, MIN(50, signContext.msgLength));
-                flags |= IO_ASYNCH_REPLY;
-
-//                ui_text();
-                io_seproxyhal_touch_approve(NULL);
-
-//                                THROW(0x9000);
-                break;
-
-//                            case INS_GET_PUBLIC_KEY:
-//                                __test(G_io_apdu_buffer[OFFSET_P1],
-//                                                   G_io_apdu_buffer[OFFSET_P2],
-//                                                   G_io_apdu_buffer + OFFSET_CDATA, &flags, &tx);
-//                                THROW(0x9000);
-//                                break;
-              case 0xFF: // return to dashboard
-                goto return_to_dashboard;
-
-              default:
-                THROW(0x6D00);
-                break;
-            }
-          }
-        CATCH_OTHER(e)
-          {
-            switch (e & 0xF000) {
-              case 0x6000:
-              case 0x9000:
-                sw = e;
-                break;
-              default:
-                sw = 0x6800 | (e & 0x7FF);
-                break;
-            }
-            // Unexpected exception => report
-            G_io_apdu_buffer[tx] = sw >> 8;
-            G_io_apdu_buffer[tx + 1] = sw;
-            tx += 2;
-          }
-        FINALLY
-        {
-        }
-      }
-    END_TRY;
-  }
-
-  return_to_dashboard:
-  return;
-}
-
 void io_seproxyhal_display(const bagl_element_t *element) {
   io_seproxyhal_display_default((bagl_element_t *) element);
 }
@@ -709,7 +532,6 @@ __attribute__((section(".boot"))) int main(void) {
   __asm volatile("cpsie i");
 
   UX_INIT();
-  current_text_pos = 0;
   // Set ui state to idle.
   uiState = UI_IDLE;
 

@@ -3,7 +3,9 @@
 #include <inttypes.h>
 #include "io_protocol.h"
 
-
+/**
+ * Holds the responses
+ */
 struct response {
     uint8_t n;
     uint8_t *what[8];

@@ -44,7 +44,6 @@ uint64_t deriveAddressFromUintArray(uint8_t *source, bool rev);
  */
 uint8_t deriveAddressStringRepresentation(uint64_t encodedAddress, char *output);
 
-uint8_t deriveAddressShortRepresentation(uint64_t encodedAddress, char *output);
 
 /**
  * Derive address associated to the specific publicKey.
@@ -53,4 +52,12 @@ uint8_t deriveAddressShortRepresentation(uint64_t encodedAddress, char *output);
  */
 uint64_t deriveAddressFromPublic(cx_ecfp_public_key_t *publicKey);
 
+/**
+ * Parse a transaction.
+ * @param txBytes transaction bytes as returned by getBytes.
+ * @param length length of bytes
+ * @param hasRequesterPublicKey true if the tx has requesterPublicKey field set
+ * @param out output
+ */
 void parseTransaction(uint8_t *txBytes, uint32_t length, bool hasRequesterPublicKey, struct transaction *out);
+

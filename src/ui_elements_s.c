@@ -1,7 +1,7 @@
 #include "os_io_seproxyhal.h"
-#include "main.h"
 #include "dposutils.h"
 #include "structs.h"
+#include "glyphs.h"
 
 const ux_menu_entry_t menu_main[];
 const ux_menu_entry_t menu_about[];
@@ -13,14 +13,15 @@ char lineBuffer[50];
 
 
 const ux_menu_entry_t menu_main[] = {
-  {NULL, NULL, 0, NULL, "Use wallet to", "view accounts", 33, 12},
+  {NULL, NULL, 0, &C_badge_lisk, "Use wallet to", "view accounts", 33, 12},
   {menu_about, NULL, 0, NULL, "About", NULL, 0, 0},
-  {NULL, os_sched_exit, 0, NULL, "Quit app", NULL, 50, 29},
+  {NULL, os_sched_exit, 0, &C_icon_dashboard, "Quit app", NULL, 50, 29},
   UX_MENU_END
 };
 const ux_menu_entry_t menu_about[] = {
   {NULL, NULL, 0, NULL, "Version", APPVERSION, 0, 0},
-  {menu_main, NULL, 2, NULL, "Back", NULL, 61, 40},
+  {NULL, NULL, 0, NULL, "Developer", "vekexasia", 0, 0},
+  {menu_main, NULL, 2, &C_icon_back, "Back", NULL, 61, 40},
   UX_MENU_END
 };
 

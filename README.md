@@ -1,11 +1,15 @@
-# Hello World App for Ledger Blue & Ledger Nano S
+# blue-app-dpos
 
-This application demonstrates the user interface and Secure Element proxy logic.
-A simple "Hello World" message is displayed on the screen. On the Nano S, press
-both buttons to exit.
+Wallet Application for several DPoS cryptocurrencies. Currently supported cryptocurrencies are:
 
-Run `make load` to build and load the application onto the device. After
-installing and running the application, you can run `demo.py` to test a data
-exchange over USB.
+ * LISK
+ * RISE
+ * OXY
+ * SHIFT
 
-See [Ledger's documentation](http://ledger.readthedocs.io) to get started.
+# More info
+
+If you wish to know more about the protocol used by this app you can read [the documentation](/vekexasia/ledger-wallet-dpos/blob/master/docs/proto.md).
+
+You can consume the features provided by this Ledger implementation by using [dpos-ledger-ts](https://github.com/vekexasia/dpos-ledger-ts).
+
