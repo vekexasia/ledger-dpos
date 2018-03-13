@@ -283,6 +283,9 @@ void getSignContext(uint8_t *dataBuffer, signContext_t *whereTo) {
   uint32_t bytesRead = derivePrivatePublic(dataBuffer, &(*whereTo).privateKey, &(*whereTo).publicKey);
   whereTo->msgLength = (*(dataBuffer + bytesRead)) << 8;
   whereTo->msgLength += (*(dataBuffer + bytesRead + 1));
+  if (whereTo->msgLength >= commContext.totalAmount) {
+    THROW(0x6700); // INCORRECT_LENGTH
+  }
   bytesRead += 2;
   whereTo->hasRequesterPublicKey = *(dataBuffer + bytesRead);
   bytesRead++;
