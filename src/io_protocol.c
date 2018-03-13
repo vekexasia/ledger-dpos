@@ -2,6 +2,7 @@
 #include <string.h>
 #include <inttypes.h>
 #include "io_protocol.h"
+#include "os.h"
 
 /**
  * Holds the responses
@@ -13,6 +14,11 @@ struct response {
 } response;
 
 void addToResponse(void *what, uint16_t length) {
+  if (response.n == 8) {
+    // OVERFLOW;
+    THROW(0x9850); // Max Value Reached.
+    return;
+  }
   response.what[response.n] = what;
   response.whatLength[response.n] = length;
   response.n = response.n + 1;

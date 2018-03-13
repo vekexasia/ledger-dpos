@@ -20,6 +20,7 @@ typedef struct signContext_t {
 typedef struct commContext_t {
     bool started;
     uint16_t read;
+    uint16_t totalAmount;
     uint8_t *data;
     bool isDataInNVRAM;
 } commContext_t;

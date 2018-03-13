@@ -320,6 +320,8 @@ void handleSignTX(uint8_t *dataBuffer) {
     pcallback = lineBufferMultisigProcessor;
     bagl_ui_sign_tx = bagl_ui_multisignature_nanos;
     ui_signtx(4, sizeof(bagl_ui_multisignature_nanos)/sizeof(bagl_ui_multisignature_nanos[0]));
+  } else {
+    THROW(0x6a80);
   }
 }
 
@@ -331,25 +333,35 @@ void handleStartCommPacket() {
 //  }
   commContext.started = true;
   commContext.read = 0;
+  commContext.totalAmount = 0;
   commContext.isDataInNVRAM = false; // For now.
 
-  uint16_t totalAmountOfData = G_io_apdu_buffer[5] << 8;
-  totalAmountOfData += G_io_apdu_buffer[6];
+  commContext.totalAmount = G_io_apdu_buffer[5] << 8;
+  commContext.totalAmount += G_io_apdu_buffer[6];
 
   // Debug
   initResponse();
-  os_memmove(rawData, &totalAmountOfData, 2);
+  os_memmove(rawData, &commContext.totalAmount, 2);
   addToResponse(rawData, 2);
 
-  if (totalAmountOfData > 800) {
+  if (commContext.totalAmount > 10*1024) {
+    // We exceed the totalAmount of data possible.
+    // we throw
+    THROW(0x6a84); // NOT_ENOUGH_MEMORY_SPACE
+  }
+
+  if (commContext.totalAmount > 800) {
     commContext.isDataInNVRAM = true;
     commContext.data = PIC(&N_rawData);
   } else {
     commContext.data = rawData;
   }
-//  commContext.data = rawData;
+
 }
 void handleCommPacket() {
+  if (commContext.started == false) {
+    THROW(0x9802); // CODE_NOT_INITIALIZED
+  }
   if (commContext.isDataInNVRAM) {
     nvm_write(commContext.data + commContext.read, G_io_apdu_buffer + 5, G_io_apdu_buffer[4]);
   } else {
@@ -358,8 +370,15 @@ void handleCommPacket() {
 
   initResponse();
   commContext.read += G_io_apdu_buffer[4];
-  crc = cx_crc16(commContext.data, commContext.read);
-  addToResponse(&crc, 2);
+  if (commContext.read <= commContext.totalAmount) {
+    crc = cx_crc16(commContext.data, commContext.read);
+    addToResponse(&crc, 2);
+  } else {
+    // Somehow the totalAmount of data sent is wrong. hence we set the thing as unstarted.
+    commContext.started = false;
+    THROW(0x6700); // INCORRECT_LENGTH
+  }
+
 }
 
 
@@ -393,7 +412,7 @@ void processCommPacket(volatile unsigned int *flags) {
       break;
 
     default:
-      THROW(0x6D00);
+      THROW(0x6a80); // INCORRECT_DATA
   }
 
   commContext.started = false;
