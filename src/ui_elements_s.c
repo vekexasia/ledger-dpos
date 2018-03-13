@@ -213,7 +213,7 @@ void lineBufferRegDelegateTxProcessor(signContext_t *signContext, uint8_t step) 
       os_memmove(lineBuffer, "delegate\0", 11);
       break;
     case 2:
-      deriveAddressStringRepresentation(signContext->tx.recipientId, lineBuffer);
+      deriveAddressStringRepresentation(signContext->sourceAddress, lineBuffer);
       break;
     case 3:
       os_memmove(lineBuffer, signContext->tx.shortDesc, 21);
