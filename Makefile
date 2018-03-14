@@ -41,6 +41,7 @@ else ifeq($(COIN), rise)
 endif
 
 
+
 # Build configuration
 
 APP_SOURCE_PATH += src
@@ -63,6 +64,7 @@ DEFINES   += U2F_REQUEST_TIMEOUT=10000 # 10 seconds
 DEFINES   += UNUSED\(x\)=\(void\)x
 DEFINES   += APPVERSION=\"$(APPVERSION)\"
 DEFINES   += APPNAME=\"$(APPNAME)\"
+DEFINES   += COINID=$(COIN)
 
 
 ICONNAME=badge_$(COIN).gif

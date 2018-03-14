@@ -11,9 +11,13 @@ const ux_menu_entry_t menu_about[];
  */
 char lineBuffer[50];
 
+#define __NAME3(a, b, c) a##b##c
+#define NAME3(a, b, c) __NAME3(a, b, c)
+
+
 
 const ux_menu_entry_t menu_main[] = {
-  {NULL, NULL, 0, &C_badge_lisk, "Use wallet to", "view accounts", 33, 12},
+  {NULL, NULL, 0, &NAME3(C_badge_, COINID, ) , "Use wallet to", "view accounts", 33, 12},
   {menu_about, NULL, 0, NULL, "About", NULL, 0, 0},
   {NULL, os_sched_exit, 0, &C_icon_dashboard, "Quit app", NULL, 50, 29},
   UX_MENU_END
