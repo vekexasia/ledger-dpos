@@ -18,6 +18,7 @@
 #include <stdbool.h>
 #include <inttypes.h>
 #include <bagl.h>
+#include <memory.h>
 #include "os.h"
 #include "main.h"
 #include "ui_elements_s.h"
@@ -392,6 +393,7 @@ void processCommPacket(volatile unsigned int *flags) {
     case INS_VERSION:
       initResponse();
       addToResponse(APPVERSION, 5);
+      addToResponse(APPNAME, strlen(APPNAME));
       break;
     case INS_PING:
       initResponse();

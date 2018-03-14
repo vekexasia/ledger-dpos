@@ -27,7 +27,7 @@ ifndef COIN
 endif
 
 APPVERSION = 1.0.0
-APP_LOAD_PARAMS =--appFlags 0x40  --curve secp256k1  --curve ed25519 $(COMMON_LOAD_PARAMS)
+APP_LOAD_PARAMS =--appFlags 0x40 --curve ed25519 $(COMMON_LOAD_PARAMS)
 
 ifeq ($(COIN), all)
 	APPNAME = "dPoS"
@@ -62,6 +62,7 @@ DEFINES   += BLE_SEGMENT_SIZE=32 #max MTU, min 20
 DEFINES   += U2F_REQUEST_TIMEOUT=10000 # 10 seconds
 DEFINES   += UNUSED\(x\)=\(void\)x
 DEFINES   += APPVERSION=\"$(APPVERSION)\"
+DEFINES   += APPNAME=\"$(APPNAME)\"
 
 
 ICONNAME=badge_$(COIN).gif
