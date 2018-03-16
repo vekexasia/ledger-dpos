@@ -44,14 +44,11 @@ typedef void (*processor_callback)(signContext_t *ctx, uint8_t step);
 processor_callback pcallback;
 static bagl_element_t *bagl_ui_sign_tx; // Real holder of the ui array.
 enum UI_STATE {
-    UI_IDLE, UI_TEXT, UI_APPROVAL
+    UI_IDLE, UI_TEXT, UI_ADDRESS_REVIEW, UI_APPROVAL
 };
 
 enum UI_STATE uiState;
 ux_state_t ux;
-
-
-
 
 
 /**
@@ -85,6 +82,17 @@ static void ui_text(void) {
   UX_DISPLAY(bagl_ui_text_review_nanos, NULL);
 #endif
 }
+
+static void ui_address(void) {
+  uiState = UI_ADDRESS_REVIEW;
+
+  uint64_t address = deriveAddressFromPublic(&signContext.publicKey);
+  uint8_t length = deriveAddressStringRepresentation(address, lineBuffer);
+  lineBuffer[length] = '\0';
+
+  UX_DISPLAY(bagl_ui_address_review_nanos, NULL);
+}
+
 
 /**
  * Used to verify what is going to be displayed
@@ -219,6 +227,28 @@ unsigned short io_exchange_al(unsigned char channel, unsigned short tx_len) {
   return 0;
 }
 
+unsigned int bagl_ui_address_review_nanos_button(unsigned int button_mask, unsigned int button_mask_counter) {
+  switch (button_mask) {
+    case BUTTON_EVT_RELEASED | BUTTON_RIGHT:
+      createPublicKeyResponse();
+
+      unsigned int tx = flushResponseToIO(G_io_apdu_buffer);
+      G_io_apdu_buffer[tx]   = 0x90;
+      G_io_apdu_buffer[tx+1] = 0x00;
+
+      io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx+2);
+
+      // Display back the original UX
+      ui_idle();
+      return 0; // do not redraw the widget
+      break;
+
+    case BUTTON_EVT_RELEASED | BUTTON_LEFT:
+      io_seproxyhal_touch_deny(NULL);
+      break;
+  }
+  return 0;
+}
 
 unsigned int bagl_ui_text_review_nanos_button(unsigned int button_mask, unsigned int button_mask_counter) {
   switch (button_mask) {
@@ -260,18 +290,18 @@ bagl_element_t * io_seproxyhal_touch_approve(const bagl_element_t *e) {
  * @param tx
  */
 void handleGetPublic(uint8_t *bip32DataBuffer) {
-  cx_ecfp_private_key_t privateKey;
-  cx_ecfp_public_key_t publicKey;
+  derivePrivatePublic(bip32DataBuffer, &signContext.privateKey, &signContext.publicKey);
+  os_memset(&signContext.privateKey, 0, sizeof(signContext.privateKey));
+}
 
-  derivePrivatePublic(bip32DataBuffer, &privateKey, &publicKey);
-  getEncodedPublicKey(&publicKey, rawData);
-  os_memset(&privateKey, 0, sizeof(privateKey));
-
+void createPublicKeyResponse() {
   initResponse();
+  getEncodedPublicKey(&signContext.publicKey, rawData);
   addToResponse(rawData, 32);
-  uint64_t address = deriveAddressFromPublic(&publicKey);
+  uint64_t address = deriveAddressFromPublic(&signContext.publicKey);
   uint8_t length = deriveAddressStringRepresentation(address, (char *) (rawData + 32));
-  addToResponse(rawData+32, length);
+
+  addToResponse(rawData + 32, length);
 }
 
 /**
@@ -388,12 +418,12 @@ void handleCommPacket() {
 
 
 void processCommPacket(volatile unsigned int *flags) {
-
+  uint8_t tmp;
   switch(commContext.data[0]) {
     case INS_VERSION:
       initResponse();
       addToResponse(APPVERSION, 5);
-      addToResponse(APPNAME, strlen(APPNAME));
+      addToResponse(COINID, strlen(COINID));
       break;
     case INS_PING:
       initResponse();
@@ -401,7 +431,19 @@ void processCommPacket(volatile unsigned int *flags) {
       addToResponse(pong, 4);
       break;
     case INS_GET_PUBLIC_KEY:
-      handleGetPublic(commContext.data + 1);
+      // init response
+      tmp = commContext.data[1];
+      handleGetPublic(commContext.data + 2);
+
+      if (tmp == true) { // show address?
+        // Show on ledger
+        *flags |= IO_ASYNCH_REPLY;
+        ui_address();
+      } else {
+        createPublicKeyResponse();
+      }
+
+
       break;
     case INS_SIGN_MSG:
       getSignContext(commContext.data + 1, &signContext);
@@ -529,6 +571,10 @@ unsigned char io_event(unsigned char channel) {
           (os_seph_features() &
            SEPROXYHAL_TAG_SESSION_START_EVENT_FEATURE_SCREEN_BIG)) {
         ui_approval();
+      } else if ((uiState == UI_ADDRESS_REVIEW) &&
+                 (os_seph_features() &
+                  SEPROXYHAL_TAG_SESSION_START_EVENT_FEATURE_SCREEN_BIG)) {
+
       } else {
         UX_DISPLAYED_EVENT();
       }

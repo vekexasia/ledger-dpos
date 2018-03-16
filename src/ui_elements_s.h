@@ -13,6 +13,7 @@ extern const bagl_element_t bagl_ui_approval_nanos[5];
 extern const bagl_element_t bagl_ui_text_review_nanos[5];
 extern const bagl_element_t bagl_ui_multisignature_nanos[11];
 extern const bagl_element_t bagl_ui_vote_nanos[9];
+extern const bagl_element_t bagl_ui_address_review_nanos[5];
 extern char lineBuffer[50];
 
 void satoshiToString(uint64_t amount, char *out);

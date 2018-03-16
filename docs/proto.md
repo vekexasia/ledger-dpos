@@ -92,6 +92,22 @@ All commands will accept bip32 path as input parameter. BIP32 Path is encoded us
 
 ### Get Public Key/Address
 This command let you have the publickey associated to a specific bip32 path.
+
+Data will be:
+
+|  Description                       | Length (bytes) |  Data  |      Info                |
+|------------------------------------|----------------|--------|--------------------------|
+| Command                            |       1        |   04   |                          |
+| Display Address on ledger?         |       1        | 0 or 1 | 0 = no show, 1 = display |                             |
+| # Of Bip32 paths                   |       1        |        |                          |
+| First Derivation path              |       1        |        |    bigendian encoded     |
+|               ...                  |       1        |        |           ^^             |
+| Last Derivation path               |       1        |        |           ^^             |
+
+Depending on the Display flag, the command will either return immediately or asynchronously after user confirmation.
+
+
+
 ```
  04 -> command
    x -> number of paths in bip32 string

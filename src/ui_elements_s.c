@@ -149,6 +149,17 @@ const bagl_element_t bagl_ui_text_review_nanos[] = {
   LINEBUFFER,
 };
 
+/**
+ * Review text to sign (message)
+ */
+const bagl_element_t bagl_ui_address_review_nanos[] = {
+  CLEAN_SCREEN,
+  TITLE_ITEM("Verify Address", 0x00),
+  ICON_CROSS(0x00),
+  ICON_CHECK(0x00),
+  LINEBUFFER,
+};
+
 uint8_t intToString(uint64_t amount, char *out) {
   uint8_t i = 0;
   if (amount == 0) {
