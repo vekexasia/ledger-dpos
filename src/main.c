@@ -116,7 +116,7 @@ const int signprocessor(const bagl_element_t *element) {
 /**
  * Cleans memory.
  */
-void nullifyContext() {
+void nullifyPrivKeyInContext() {
   os_memset(&signContext.privateKey, 0, sizeof(signContext.privateKey));
 }
 
@@ -169,7 +169,7 @@ bagl_element_t *io_seproxyhal_touch_deny(const bagl_element_t *e) {
   commContext.started = false;
   commContext.read = 0;
 
-  nullifyContext();
+  nullifyPrivKeyInContext();
   // Send back the response, do not restart the event loop
   io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
   // Display back the original UX
@@ -285,15 +285,19 @@ bagl_element_t * io_seproxyhal_touch_approve(const bagl_element_t *e) {
 
 
 /**
- * Handle publicKey request given the bip32Db
+ * Handle publicKey request given the bip32Db. It will derive the publickey from the
+ * given bip32.
  * @param bip32DataBuffer
- * @param tx
  */
 void handleGetPublic(uint8_t *bip32DataBuffer) {
   derivePrivatePublic(bip32DataBuffer, &signContext.privateKey, &signContext.publicKey);
-  os_memset(&signContext.privateKey, 0, sizeof(signContext.privateKey));
+  nullifyPrivKeyInContext();
 }
 
+/**
+ * Creates the response for the getPublicKey command.
+ * It returns both publicKey and derived Address
+ */
 void createPublicKeyResponse() {
   initResponse();
   getEncodedPublicKey(&signContext.publicKey, rawData);
@@ -328,7 +332,10 @@ void getSignContext(uint8_t *dataBuffer, signContext_t *whereTo) {
   deriveAddressStringRepresentation(whereTo->sourceAddress, whereTo->sourceAddressStr);
 }
 
-
+/**
+ * Handles the sign transaction command.
+ * @param dataBuffer
+ */
 void handleSignTX(uint8_t *dataBuffer) {
   getSignContext(dataBuffer, &signContext);
   parseTransaction(signContext.msg, signContext.msgLength, signContext.hasRequesterPublicKey, &signContext.tx);
@@ -359,12 +366,10 @@ void handleSignTX(uint8_t *dataBuffer) {
   }
 }
 
-
+/**
+ * Handles the start communication packet
+ */
 void handleStartCommPacket() {
-//  if (commContext.started) {
-//    THROW(0x6D00);
-////    return;
-//  }
   commContext.started = true;
   commContext.read = 0;
   commContext.totalAmount = 0;
@@ -392,6 +397,10 @@ void handleStartCommPacket() {
   }
 
 }
+
+/**
+ * Handles a single communication packet.
+ */
 void handleCommPacket() {
   if (commContext.started == false) {
     THROW(0x9802); // CODE_NOT_INITIALIZED
@@ -423,7 +432,7 @@ void processCommPacket(volatile unsigned int *flags) {
     case INS_VERSION:
       initResponse();
       addToResponse(APPVERSION, 5);
-      addToResponse(COINID, strlen(COINID));
+      addToResponse(COINIDSTR, strlen(COINIDSTR));
       break;
     case INS_PING:
       initResponse();
@@ -571,10 +580,6 @@ unsigned char io_event(unsigned char channel) {
           (os_seph_features() &
            SEPROXYHAL_TAG_SESSION_START_EVENT_FEATURE_SCREEN_BIG)) {
         ui_approval();
-      } else if ((uiState == UI_ADDRESS_REVIEW) &&
-                 (os_seph_features() &
-                  SEPROXYHAL_TAG_SESSION_START_EVENT_FEATURE_SCREEN_BIG)) {
-
       } else {
         UX_DISPLAYED_EVENT();
       }

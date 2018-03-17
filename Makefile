@@ -29,15 +29,20 @@ endif
 APPVERSION = 1.0.0
 APP_LOAD_PARAMS =--appFlags 0x40 --curve ed25519 $(COMMON_LOAD_PARAMS)
 
+ADDRESS_SUFFIX_LENGTH=1
+
 ifeq ($(COIN), all)
 	APPNAME = "dPoS"
 	APP_LOAD_PARAMS += --path "44'/134'" --path "44'/1120'"
+	ADDRESS_SUFFIX = "D"
 else ifeq ($(COIN), lisk)
 	APPNAME = "Lisk"
 	APP_LOAD_PARAMS += --path "44'/134'"
+	ADDRESS_SUFFIX = "L"
 else ifeq($(COIN), rise)
 	APPNAME = "Rise"
 	APP_LOAD_PARAMS += --path "44'/1120'"
+	ADDRESS_SUFFIX = "R"
 endif
 
 
@@ -65,6 +70,9 @@ DEFINES   += UNUSED\(x\)=\(void\)x
 DEFINES   += APPVERSION=\"$(APPVERSION)\"
 DEFINES   += APPNAME=\"$(APPNAME)\"
 DEFINES   += COINID=$(COIN)
+DEFINES   += COINIDSTR=\"$(COIN)\"
+DEFINES   += ADDRESS_SUFFIX=\"$(ADDRESS_SUFFIX)\"
+DEFINES   += ADDRESS_SUFFIX_LENGTH=$(ADDRESS_SUFFIX_LENGTH)
 
 
 ICONNAME=badge_$(COIN).gif

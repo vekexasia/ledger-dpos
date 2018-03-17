@@ -1,3 +1,4 @@
+#include <string.h>
 #include "os_io_seproxyhal.h"
 #include "dposutils.h"
 #include "structs.h"
@@ -222,7 +223,7 @@ void satoshiToString(uint64_t amount, char *out) {
 
 
 void lineBufferRegDelegateTxProcessor(signContext_t *signContext, uint8_t step) {
-  os_memset(lineBuffer, 0, 20);
+  os_memset(lineBuffer, 0, 50);
   switch (step) {
     case 1:
       os_memmove(lineBuffer, "delegate\0", 11);
@@ -231,14 +232,14 @@ void lineBufferRegDelegateTxProcessor(signContext_t *signContext, uint8_t step) 
       deriveAddressStringRepresentation(signContext->sourceAddress, lineBuffer);
       break;
     case 3:
-      os_memmove(lineBuffer, signContext->tx.shortDesc, 21);
+      os_memmove(lineBuffer, signContext->tx.shortDesc, 22);
       break;
   }
 }
 
 
 void lineBufferSecondSignProcessor(signContext_t *signContext, uint8_t step) {
-  os_memset(lineBuffer, 0, 20);
+  os_memset(lineBuffer, 0, 50);
   switch (step) {
     case 1:
       os_memmove(lineBuffer, "signature\0", 11);
@@ -247,7 +248,7 @@ void lineBufferSecondSignProcessor(signContext_t *signContext, uint8_t step) {
       deriveAddressStringRepresentation(signContext->sourceAddress, lineBuffer);
       break;
     case 3:
-      os_memmove(lineBuffer, signContext->tx.shortDesc, 21);
+      os_memmove(lineBuffer, signContext->tx.shortDesc, 22);
       break;
   }
 }
@@ -255,7 +256,7 @@ void lineBufferSecondSignProcessor(signContext_t *signContext, uint8_t step) {
 
 void lineBufferVoteProcessor(signContext_t *signContext, uint8_t step) {
   uint64_t tmp = 0;
-  os_memset(lineBuffer, 0, 20);
+  os_memset(lineBuffer, 0, 50);
   switch (step) {
     case 1:
       deriveAddressStringRepresentation(signContext->sourceAddress, lineBuffer);
@@ -278,7 +279,7 @@ void lineBufferVoteProcessor(signContext_t *signContext, uint8_t step) {
 
 
 void lineBufferSendTxProcessor(signContext_t *signContext, uint8_t step) {
-  os_memset(lineBuffer, 0, 20);
+  os_memset(lineBuffer, 0, 50);
   switch (step) {
     case 1:
       deriveAddressStringRepresentation(signContext->sourceAddress, lineBuffer);
@@ -295,7 +296,7 @@ void lineBufferSendTxProcessor(signContext_t *signContext, uint8_t step) {
 
 void lineBufferMultisigProcessor(signContext_t *signContext, uint8_t step) {
   uint64_t tmp = 0;
-  os_memset(lineBuffer, 0, 20);
+  os_memset(lineBuffer, 0, 50);
   switch (step) {
     case 1:
       os_memmove(lineBuffer, "Multi-sig account\0", 17);

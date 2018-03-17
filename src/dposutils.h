@@ -6,15 +6,13 @@
 #define TXTYPE_CREATEMULTISIG 4
 
 
-#define ADDRESS_SUFFIX "L"
-#define ADDRESS_SUFFIX_LENGTH 1
 #ifndef STRUCT_TX
 #define STRUCT_TX
 typedef struct transaction {
     uint8_t type;
     uint64_t recipientId;
     uint64_t amountSatoshi;
-    char shortDesc[21];
+    char shortDesc[22];
 };
 
 #endif

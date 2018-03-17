@@ -68,9 +68,9 @@ uint8_t deriveAddressStringRepresentation(uint64_t encodedAddress, char *output)
     output[total - 1 - i] = brocca[i];
   }
 
-  os_memmove(&output[total], ADDRESS_SUFFIX, strlen(ADDRESS_SUFFIX));
-  output[total + strlen(ADDRESS_SUFFIX)] = '\0'; // for strlen
-  return (uint8_t) (total + strlen(ADDRESS_SUFFIX) /*suffix*/);
+  os_memmove(&output[total], ADDRESS_SUFFIX, ADDRESS_SUFFIX_LENGTH);
+  output[total + ADDRESS_SUFFIX_LENGTH] = '\0'; // for strlen
+  return (uint8_t) (total + ADDRESS_SUFFIX_LENGTH /*suffix*/);
 }
 
 //uint8_t deriveAddressShortRepresentation(uint64_t encodedAddress, char *output) {
@@ -126,7 +126,7 @@ void parseTransaction(uint8_t *txBytes, uint32_t txLength, bool hasRequesterPubl
     out->amountSatoshi |= ((uint64_t )txBytes[recIndex + 8 + i]) << (8*i);
   }
 
-  os_memset(out->shortDesc, 0, 21);
+  os_memset(out->shortDesc, 0, 22);
   if (out->type == TXTYPE_CREATESIGNATURE) {
     // Read publickey from bytes.
     // it's 32 bytes.
@@ -140,8 +140,8 @@ void parseTransaction(uint8_t *txBytes, uint32_t txLength, bool hasRequesterPubl
     }
     out->shortDesc[7] = '.';
   } else if (out->type == TXTYPE_REGISTERDELEGATE) {
-    os_memmove(out->shortDesc, txBytes+recIndex + 8 + 8, MIN(20, txLength - (recIndex + 8 + 8)));
-    for (i=0; i<MIN(20, txLength - (recIndex + 8 + 8)); i++) {
+    os_memmove(out->shortDesc, txBytes+recIndex + 8 + 8, MIN(21, txLength - (recIndex + 8 + 8)));
+    for (i=0; i<MIN(21, txLength - (recIndex + 8 + 8)); i++) {
       char c = out->shortDesc[i];
       if (
         !(c >= 'a' && c <= 'z') &&
