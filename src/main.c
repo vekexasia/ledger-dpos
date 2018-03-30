@@ -34,6 +34,7 @@
 #define INS_PING 0x08
 #define INS_VERSION 0x09
 
+#define IS_PRINTABLE(c) ((c >= 0x20 && c <= 0x7e) || (c >= 0x80 && c <= 0xFF))
 
 static unsigned int currentStep;
 static unsigned int totalSteps;
@@ -44,7 +45,7 @@ typedef void (*processor_callback)(signContext_t *ctx, uint8_t step);
 processor_callback pcallback;
 static bagl_element_t *bagl_ui_sign_tx; // Real holder of the ui array.
 enum UI_STATE {
-    UI_IDLE, UI_TEXT, UI_ADDRESS_REVIEW, UI_APPROVAL
+    UI_IDLE, UI_WARNING, UI_TEXT, UI_ADDRESS_REVIEW, UI_APPROVAL
 };
 
 enum UI_STATE uiState;
@@ -74,13 +75,16 @@ void ui_approval(void) {
 #endif
 }
 
+void ui_warning(void) {
+  uiState = UI_WARNING;
+  os_memmove(lineBuffer, "You could be signing a transaction!\0", 36);
+
+  UX_DISPLAY(bagl_ui_warning_msg_possible_tx, NULL);
+}
+
 static void ui_text(void) {
   uiState = UI_TEXT;
-#ifdef TARGET_BLUE
-  UX_DISPLAY(bagl_ui_text, NULL);
-#else
   UX_DISPLAY(bagl_ui_text_review_nanos, NULL);
-#endif
 }
 
 static void ui_address(void) {
@@ -177,11 +181,54 @@ bagl_element_t *io_seproxyhal_touch_deny(const bagl_element_t *e) {
   return 0; // do not redraw the widget
 }
 
+unsigned int bagl_ui_warning_msg_possible_tx_button(unsigned int button_mask, unsigned int button_mask_counter) {
+  bagl_ui_text_review_nanos_button(button_mask, button_mask_counter);
+}
 
 unsigned int bagl_ui_approval_nanos_button(unsigned int button_mask, unsigned int button_mask_counter) {
   switch (button_mask) {
     case BUTTON_EVT_RELEASED | BUTTON_RIGHT:
       io_seproxyhal_touch_approve(NULL);
+      break;
+
+    case BUTTON_EVT_RELEASED | BUTTON_LEFT:
+      io_seproxyhal_touch_deny(NULL);
+      break;
+  }
+  return 0;
+}
+
+unsigned int bagl_ui_address_review_nanos_button(unsigned int button_mask, unsigned int button_mask_counter) {
+  switch (button_mask) {
+    case BUTTON_EVT_RELEASED | BUTTON_RIGHT:
+      createPublicKeyResponse();
+
+      unsigned int tx = flushResponseToIO(G_io_apdu_buffer);
+      G_io_apdu_buffer[tx]   = 0x90;
+      G_io_apdu_buffer[tx+1] = 0x00;
+
+      io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx+2);
+
+      // Display back the original UX
+      ui_idle();
+      return 0; // do not redraw the widget
+      break;
+
+    case BUTTON_EVT_RELEASED | BUTTON_LEFT:
+      io_seproxyhal_touch_deny(NULL);
+      break;
+  }
+  return 0;
+}
+
+unsigned int bagl_ui_text_review_nanos_button(unsigned int button_mask, unsigned int button_mask_counter) {
+  switch (button_mask) {
+    case BUTTON_EVT_RELEASED | BUTTON_RIGHT:
+      if (signContext.msgLength == 32 && uiState != UI_WARNING) {
+        ui_warning();
+      } else {
+        ui_approval();
+      }
       break;
 
     case BUTTON_EVT_RELEASED | BUTTON_LEFT:
@@ -227,41 +274,7 @@ unsigned short io_exchange_al(unsigned char channel, unsigned short tx_len) {
   return 0;
 }
 
-unsigned int bagl_ui_address_review_nanos_button(unsigned int button_mask, unsigned int button_mask_counter) {
-  switch (button_mask) {
-    case BUTTON_EVT_RELEASED | BUTTON_RIGHT:
-      createPublicKeyResponse();
 
-      unsigned int tx = flushResponseToIO(G_io_apdu_buffer);
-      G_io_apdu_buffer[tx]   = 0x90;
-      G_io_apdu_buffer[tx+1] = 0x00;
-
-      io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx+2);
-
-      // Display back the original UX
-      ui_idle();
-      return 0; // do not redraw the widget
-      break;
-
-    case BUTTON_EVT_RELEASED | BUTTON_LEFT:
-      io_seproxyhal_touch_deny(NULL);
-      break;
-  }
-  return 0;
-}
-
-unsigned int bagl_ui_text_review_nanos_button(unsigned int button_mask, unsigned int button_mask_counter) {
-  switch (button_mask) {
-    case BUTTON_EVT_RELEASED | BUTTON_RIGHT:
-      ui_approval();
-      break;
-
-    case BUTTON_EVT_RELEASED | BUTTON_LEFT:
-      io_seproxyhal_touch_deny(NULL);
-      break;
-  }
-  return 0;
-}
 
 
 bagl_element_t * io_seproxyhal_touch_approve(const bagl_element_t *e) {
@@ -427,7 +440,7 @@ void handleCommPacket() {
 
 
 void processCommPacket(volatile unsigned int *flags) {
-  uint8_t tmp;
+  uint8_t tmp, tmp2;
   switch(commContext.data[0]) {
     case INS_VERSION:
       initResponse();
@@ -459,6 +472,22 @@ void processCommPacket(volatile unsigned int *flags) {
       signContext.isTx = false;
       os_memset(lineBuffer, 0, 50);
       os_memmove(lineBuffer, signContext.msg, MIN(50, signContext.msgLength));
+
+      tmp2 = 0; // Will contain the amount of chars that are non printable in string
+      // If first char is non-ascii (binary data). Rewrite the whole message to show it
+      for (tmp=0; tmp < MIN(50, signContext.msgLength); tmp++) {
+        tmp2 += IS_PRINTABLE(lineBuffer[tmp]) ?
+                0 /* Printable Char */:
+                1 /* Non Printable Char */;
+      }
+
+      // We rewrite the line buffer to <binary data> in case >= than 40% is non printable or first char is not printable.
+      if ((tmp2*100) / MIN(50, signContext.msgLength) >= 40 || ! IS_PRINTABLE(lineBuffer[0])) {
+        // More than 30% of chars are binary. hence we rewrite the message to binary
+        os_memmove(lineBuffer, "< binary data >\0", 16);
+      }
+
+
       *flags |= IO_ASYNCH_REPLY;
       ui_text();
       break;

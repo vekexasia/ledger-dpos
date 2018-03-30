@@ -16,7 +16,6 @@ char lineBuffer[50];
 #define NAME3(a, b, c) __NAME3(a, b, c)
 
 
-
 const ux_menu_entry_t menu_main[] = {
   {NULL, NULL, 0, &NAME3(C_badge_, COINID, ) , "Use wallet to", "view accounts", 33, 12},
   {menu_about, NULL, 0, NULL, "About", NULL, 0, 0},
@@ -117,6 +116,17 @@ const bagl_element_t bagl_ui_approval_nanos[] = {
   CLEAN_SCREEN,
   TITLE_ITEM("Sign with", 0x01),
   ICON_CHECK(0x00),
+  ICON_CROSS(0x00),
+  LINEBUFFER,
+};
+
+/**
+ * Sign with address
+ */
+const bagl_element_t bagl_ui_warning_msg_possible_tx[] = {
+  CLEAN_SCREEN,
+  TITLE_ITEM("** WARNING **", 0x01),
+  ICON_DOWN(0x00),
   ICON_CROSS(0x00),
   LINEBUFFER,
 };
