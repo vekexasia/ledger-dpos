@@ -56,10 +56,10 @@ uint32_t derivePrivatePublic(uint8_t *bip32DataBuffer, cx_ecfp_private_key_t *pr
 void sign(cx_ecfp_private_key_t *privateKey, void *whatToSign, uint32_t length, unsigned char *output, bool isTx) {
   if (isTx == true) {
     uint8_t hash[32];
-    cx_hash_sha256(whatToSign, length, hash);
-    cx_eddsa_sign(privateKey, NULL, CX_SHA512, hash, 32, NULL, 0, output, 0);
+    cx_hash_sha256(whatToSign, length, hash, 32);
+    cx_eddsa_sign(privateKey, NULL, CX_SHA512, hash, 32, NULL, 0, output, 0, 0);
   } else {
-    cx_eddsa_sign(privateKey, NULL, CX_SHA512, whatToSign, length, NULL, 0, output, 0);
+    cx_eddsa_sign(privateKey, NULL, CX_SHA512, whatToSign, length, NULL, 0, output, 0, 0);
   }
 
 }

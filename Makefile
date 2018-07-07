@@ -39,7 +39,7 @@ else ifeq ($(COIN), lisk)
 	APPNAME = "Lisk"
 	APP_LOAD_PARAMS += --path "44'/134'"
 	ADDRESS_SUFFIX = "L"
-else ifeq($(COIN), rise)
+else ifeq ($(COIN), rise)
 	APPNAME = "Rise"
 	APP_LOAD_PARAMS += --path "44'/1120'"
 	ADDRESS_SUFFIX = "R"
@@ -81,7 +81,7 @@ ICONNAME=badge_$(COIN).gif
 ifneq ($(BOLOS_ENV),)
 $(info BOLOS_ENV=$(BOLOS_ENV))
 CLANGPATH := $(BOLOS_ENV)/clang-arm-fropi/bin/
-GCCPATH := $(BOLOS_ENV)/gcc-arm-none-eabi-5_3-2016q1/bin/
+GCCPATH := $(BOLOS_ENV)/gcc-arm-none-eabi-5_4-2016q3/bin/
 else
 $(info BOLOS_ENV is not set: falling back to CLANGPATH and GCCPATH)
 endif

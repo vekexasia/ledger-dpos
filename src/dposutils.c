@@ -99,7 +99,7 @@ uint64_t deriveAddressFromPublic(cx_ecfp_public_key_t *publicKey) {
   getEncodedPublicKey(publicKey, encodedPkey);
 
   unsigned char hashedPkey[32];
-  cx_hash_sha256(encodedPkey, 32, hashedPkey);
+  cx_hash_sha256(encodedPkey, 32, hashedPkey, 32);
 
   return deriveAddressFromUintArray(
     hashedPkey,
