@@ -57,9 +57,9 @@ void sign(cx_ecfp_private_key_t *privateKey, void *whatToSign, uint32_t length, 
   if (isTx == true) {
     uint8_t hash[32];
     cx_hash_sha256(whatToSign, length, hash, 32);
-    cx_eddsa_sign(privateKey, NULL, CX_SHA512, hash, 32, NULL, 0, output, 0, 0);
+    cx_eddsa_sign(privateKey, NULL, CX_SHA512, hash, 32, NULL, 0, output, CX_SHA512_SIZE, NULL);
   } else {
-    cx_eddsa_sign(privateKey, NULL, CX_SHA512, whatToSign, length, NULL, 0, output, 0, 0);
+    cx_eddsa_sign(privateKey, NULL, CX_SHA512, whatToSign, length, NULL, 0, output, CX_SHA512_SIZE, NULL);
   }
 
 }
