@@ -26,7 +26,7 @@ typedef struct commContext_t {
 } commContext_t;
 #endif
 extern uint8_t rawData [1000];
-extern uint8_t N_rawData [10*1024];
+extern uint8_t N_rawData [NVRAM_MAX];
 extern signContext_t signContext;
 extern commContext_t commContext;
 

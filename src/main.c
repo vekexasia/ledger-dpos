@@ -75,13 +75,6 @@ void ui_approval(void) {
 #endif
 }
 
-void ui_warning(void) {
-  uiState = UI_WARNING;
-  os_memmove(lineBuffer, "You could be signing a transaction!\0", 36);
-
-  UX_DISPLAY(bagl_ui_warning_msg_possible_tx, NULL);
-}
-
 static void ui_text(void) {
   uiState = UI_TEXT;
   UX_DISPLAY(bagl_ui_text_review_nanos, NULL);
@@ -181,9 +174,6 @@ bagl_element_t *io_seproxyhal_touch_deny(const bagl_element_t *e) {
   return 0; // do not redraw the widget
 }
 
-unsigned int bagl_ui_warning_msg_possible_tx_button(unsigned int button_mask, unsigned int button_mask_counter) {
-  bagl_ui_text_review_nanos_button(button_mask, button_mask_counter);
-}
 
 unsigned int bagl_ui_approval_nanos_button(unsigned int button_mask, unsigned int button_mask_counter) {
   switch (button_mask) {
@@ -224,11 +214,7 @@ unsigned int bagl_ui_address_review_nanos_button(unsigned int button_mask, unsig
 unsigned int bagl_ui_text_review_nanos_button(unsigned int button_mask, unsigned int button_mask_counter) {
   switch (button_mask) {
     case BUTTON_EVT_RELEASED | BUTTON_RIGHT:
-      if (signContext.msgLength == 32 && uiState != UI_WARNING) {
-        ui_warning();
-      } else {
-        ui_approval();
-      }
+      ui_approval();
       break;
 
     case BUTTON_EVT_RELEASED | BUTTON_LEFT:
@@ -396,13 +382,13 @@ void handleStartCommPacket() {
   os_memmove(rawData, &commContext.totalAmount, 2);
   addToResponse(rawData, 2);
 
-  if (commContext.totalAmount > 10*1024) {
+  if (commContext.totalAmount > MAX(NVRAM_MAX, 1000)) {
     // We exceed the totalAmount of data possible.
     // we throw
     THROW(0x6a84); // NOT_ENOUGH_MEMORY_SPACE
   }
 
-  if (commContext.totalAmount > 800) {
+  if (commContext.totalAmount > 1000) {
     commContext.isDataInNVRAM = true;
     commContext.data = PIC(&N_rawData);
   } else {
@@ -470,19 +456,24 @@ void processCommPacket(volatile unsigned int *flags) {
     case INS_SIGN_MSG:
       getSignContext(commContext.data + 1, &signContext);
       signContext.isTx = false;
+      if (os_memcmp(SIGNED_MESSAGE_PREFIX, signContext.msg, strlen(SIGNED_MESSAGE_PREFIX)) != 0) {
+        THROW(0x6a80);
+      }
+
+      uint8_t realMessageLength = signContext.msgLength - strlen(SIGNED_MESSAGE_PREFIX);
       os_memset(lineBuffer, 0, 50);
-      os_memmove(lineBuffer, signContext.msg, MIN(50, signContext.msgLength));
+      os_memmove(lineBuffer, signContext.msg + strlen(SIGNED_MESSAGE_PREFIX), MIN(50, realMessageLength));
 
       tmp2 = 0; // Will contain the amount of chars that are non printable in string
       // If first char is non-ascii (binary data). Rewrite the whole message to show it
-      for (tmp=0; tmp < MIN(50, signContext.msgLength); tmp++) {
+      for (tmp=0; tmp < MIN(50, realMessageLength); tmp++) {
         tmp2 += IS_PRINTABLE(lineBuffer[tmp]) ?
                 0 /* Printable Char */:
                 1 /* Non Printable Char */;
       }
 
       // We rewrite the line buffer to <binary data> in case >= than 40% is non printable or first char is not printable.
-      if ((tmp2*100) / MIN(50, signContext.msgLength) >= 40 || ! IS_PRINTABLE(lineBuffer[0])) {
+      if ((tmp2*100) / MIN(50, realMessageLength) >= 40 || ! IS_PRINTABLE(lineBuffer[0])) {
         // More than 30% of chars are binary. hence we rewrite the message to binary
         os_memmove(lineBuffer, "< binary data >\0", 16);
       }

@@ -120,17 +120,6 @@ const bagl_element_t bagl_ui_approval_nanos[] = {
   LINEBUFFER,
 };
 
-/**
- * Sign with address
- */
-const bagl_element_t bagl_ui_warning_msg_possible_tx[] = {
-  CLEAN_SCREEN,
-  TITLE_ITEM("** WARNING **", 0x01),
-  ICON_DOWN(0x00),
-  ICON_CROSS(0x00),
-  LINEBUFFER,
-};
-
 
 /**
  * Sign with address
@@ -201,7 +190,7 @@ void satoshiToString(uint64_t amount, char *out) {
 
   uint8_t i = 0;
 
-  // TODO: CAlc the # of digits for partInt
+  // TODO: Calc the # of digits for partInt
   while(partInt > 0) {
     out[i++] = (uint8_t) (partInt % 10 + '0');
     partInt /=10;

@@ -35,17 +35,24 @@ ifeq ($(COIN), all)
 	APPNAME = "dPoS"
 	APP_LOAD_PARAMS += --path "44'/134'" --path "44'/1120'"
 	ADDRESS_SUFFIX = "D"
+	SIGNED_MESSAGE_PREFIX = 'dPoS|Signed|Message:\n'
+	NVRAM_MAX = 2500
 else ifeq ($(COIN), lisk)
 	APPNAME = "Lisk"
 	APP_LOAD_PARAMS += --path "44'/134'"
 	ADDRESS_SUFFIX = "L"
+	SIGNED_MESSAGE_PREFIX = "Lisk|Signed|Message:\n"
+	NVRAM_MAX = 2500
 else ifeq ($(COIN), rise)
 	APPNAME = "Rise"
 	APP_LOAD_PARAMS += --path "44'/1120'"
 	ADDRESS_SUFFIX = "R"
+	SIGNED_MESSAGE_PREFIX = "RISE|Signed|Message:\n"
+	NVRAM_MAX = 0
 endif
 
 
+$(info APPNAME=$(APPNAME) SIGNED_MESSAGE_PREFIX=$(SIGNED_MESSAGE_PREFIX))
 
 # Build configuration
 
@@ -73,6 +80,8 @@ DEFINES   += COINID=$(COIN)
 DEFINES   += COINIDSTR=\"$(COIN)\"
 DEFINES   += ADDRESS_SUFFIX=\"$(ADDRESS_SUFFIX)\"
 DEFINES   += ADDRESS_SUFFIX_LENGTH=$(ADDRESS_SUFFIX_LENGTH)
+DEFINES   += SIGNED_MESSAGE_PREFIX=\"$(SIGNED_MESSAGE_PREFIX)\"
+DEFINES   += NVRAM_MAX=$(NVRAM_MAX)
 
 
 ICONNAME=badge_$(COIN).gif
@@ -118,3 +127,4 @@ delete:
 # Import generic rules from the SDK
 
 include $(BOLOS_SDK)/Makefile.rules
+cc_cmdline = $(CC) -c $(CFLAGS) $(subst |, ,$(addprefix -D,$(2))) $(addprefix -I,$(1)) -o $(4) $(3)
