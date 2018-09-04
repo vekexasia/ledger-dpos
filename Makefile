@@ -23,7 +23,7 @@ include $(BOLOS_SDK)/Makefile.defines
 # Main app configuration
 
 ifndef COIN
-	COIN=all
+	COIN=lisk
 endif
 
 APPVERSION = 1.0.0
@@ -49,6 +49,10 @@ else ifeq ($(COIN), rise)
 	ADDRESS_SUFFIX = "R"
 	SIGNED_MESSAGE_PREFIX = "RISE|Signed|Message:\n"
 	NVRAM_MAX = 0
+else
+ifeq ($(filter clean,$(MAKECMDGOALS)),)
+$(error Unsupported COIN - use lisk, rise, all)
+endif
 endif
 
 
@@ -90,7 +94,7 @@ ICONNAME=badge_$(COIN).gif
 ifneq ($(BOLOS_ENV),)
 $(info BOLOS_ENV=$(BOLOS_ENV))
 CLANGPATH := $(BOLOS_ENV)/clang-arm-fropi/bin/
-GCCPATH := $(BOLOS_ENV)/gcc-arm-none-eabi-5_4-2016q3/bin/
+GCCPATH := $(BOLOS_ENV)/gcc-arm-none-eabi-5_3-2016q1/bin/
 else
 $(info BOLOS_ENV is not set: falling back to CLANGPATH and GCCPATH)
 endif
@@ -128,3 +132,8 @@ delete:
 
 include $(BOLOS_SDK)/Makefile.rules
 cc_cmdline = $(CC) -c $(CFLAGS) $(subst |, ,$(addprefix -D,$(2))) $(addprefix -I,$(1)) -o $(4) $(3)
+
+
+
+listvariants:
+	@echo VARIANTS COIN lisk rise
