@@ -13,6 +13,7 @@ typedef struct transaction {
     uint64_t recipientId;
     uint64_t amountSatoshi;
     char shortDesc[22];
+    char message[64];
 };
 
 #endif

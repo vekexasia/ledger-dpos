@@ -6,7 +6,7 @@
 extern const ux_menu_entry_t menu_main[4];
 extern const ux_menu_entry_t menu_about[3];
 
-extern const bagl_element_t bagl_ui_approval_send_nanos[9];
+extern const bagl_element_t bagl_ui_approval_send_nanos[11];
 extern const bagl_element_t bagl_ui_regdelegate_nanos[9];
 extern const bagl_element_t bagl_ui_secondsign_nanos[9];
 extern const bagl_element_t bagl_ui_approval_nanos[5];

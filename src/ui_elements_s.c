@@ -35,6 +35,7 @@ const ux_menu_entry_t menu_about[] = {
 #define ICON_RIGHT(which, userid)       ICON(which, userid, 117, 13, 8, 6)
 #define ICON_CROSS(userid)              ICON_LEFT(BAGL_GLYPH_ICON_CROSS, userid)
 #define ICON_CHECK(userid)              ICON_RIGHT(BAGL_GLYPH_ICON_CHECK, userid)
+#define ICON_ARROW_RIGHT(userid)        ICON_RIGHT(BAGL_GLYPH_ICON_RIGHT, userid)
 #define ICON_DOWN(userid)               ICON_RIGHT(BAGL_GLYPH_ICON_DOWN, userid)
 #define SECONDLINE(txt, userid) \
 { \
@@ -56,10 +57,12 @@ const bagl_element_t bagl_ui_approval_send_nanos[] = {
   CLEAN_SCREEN,
   TITLE_ITEM("Send from", 0x01),
   TITLE_ITEM("To", 0x02),
-  TITLE_ITEM("Amount", 0x03),
-  ICON_DOWN(0x01),
-  ICON_DOWN(0x02),
-  ICON_CHECK(0x03),
+  TITLE_ITEM("Message", 0x03),
+  TITLE_ITEM("Amount", 0x04),
+  ICON_ARROW_RIGHT(0x01),
+  ICON_ARROW_RIGHT(0x02),
+  ICON_ARROW_RIGHT(0x03),
+  ICON_CHECK(0x04),
   ICON_CROSS(0x00),
   LINEBUFFER,
 };
@@ -72,8 +75,8 @@ const bagl_element_t bagl_ui_secondsign_nanos[] = {
   TITLE_ITEM("Create second", 0x01),
   TITLE_ITEM("For account", 0x02),
   TITLE_ITEM("With public", 0x03),
-  ICON_DOWN(0x01),
-  ICON_DOWN(0x02),
+  ICON_ARROW_RIGHT(0x01),
+  ICON_ARROW_RIGHT(0x02),
   ICON_CHECK(0x03),
   ICON_CROSS(0x00),
   LINEBUFFER,
@@ -87,8 +90,8 @@ const bagl_element_t bagl_ui_regdelegate_nanos[] = {
   TITLE_ITEM("Register", 0x01),
   TITLE_ITEM("For account", 0x02),
   TITLE_ITEM("With name", 0x03),
-  ICON_DOWN(0x01),
-  ICON_DOWN(0x02),
+  ICON_ARROW_RIGHT(0x01),
+  ICON_ARROW_RIGHT(0x02),
   ICON_CHECK(0x03),
   ICON_CROSS(0x00),
   LINEBUFFER,
@@ -102,8 +105,8 @@ const bagl_element_t bagl_ui_vote_nanos[] = {
   TITLE_ITEM("Vote from", 0x01),
   TITLE_ITEM("Added", 0x02),
   TITLE_ITEM("Removed", 0x03),
-  ICON_DOWN(0x01),
-  ICON_DOWN(0x02),
+  ICON_ARROW_RIGHT(0x01),
+  ICON_ARROW_RIGHT(0x02),
   ICON_CHECK(0x03),
   ICON_CROSS(0x00),
   LINEBUFFER,
@@ -130,9 +133,9 @@ const bagl_element_t bagl_ui_multisignature_nanos[] = {
   TITLE_ITEM("Using", 0x02),
   TITLE_ITEM("Minimum", 0x03),
   TITLE_ITEM("Lifetime", 0x04),
-  ICON_DOWN(0x01),
-  ICON_DOWN(0x02),
-  ICON_DOWN(0x03),
+  ICON_ARROW_RIGHT(0x01),
+  ICON_ARROW_RIGHT(0x02),
+  ICON_ARROW_RIGHT(0x03),
   ICON_CHECK(0x04),
   ICON_CROSS(0x00),
   LINEBUFFER,
@@ -145,7 +148,7 @@ const bagl_element_t bagl_ui_text_review_nanos[] = {
   CLEAN_SCREEN,
   TITLE_ITEM("Verify text", 0x00),
   ICON_CROSS(0x00),
-  ICON_DOWN(0x00),
+  ICON_CHECK(0x00),
   LINEBUFFER,
 };
 
@@ -287,6 +290,9 @@ void lineBufferSendTxProcessor(signContext_t *signContext, uint8_t step) {
       deriveAddressStringRepresentation(signContext->tx.recipientId, lineBuffer);
       break;
     case 3:
+      os_memmove(lineBuffer, signContext->tx.message, 50);
+      break;
+    case 4:
       satoshiToString(signContext->tx.amountSatoshi, lineBuffer);
       break;
   }
