@@ -290,7 +290,10 @@ void lineBufferSendTxProcessor(signContext_t *signContext, uint8_t step) {
       deriveAddressStringRepresentation(signContext->tx.recipientId, lineBuffer);
       break;
     case 3:
-      os_memmove(lineBuffer, signContext->tx.message, 50);
+      os_memmove(lineBuffer, signContext->tx.message, MIN(50, strlen(signContext->tx.message)));
+      if (strlen(signContext->tx.message) > 47) {
+        os_memmove(lineBuffer+47, "...", 3);
+      }
       break;
     case 4:
       satoshiToString(signContext->tx.amountSatoshi, lineBuffer);

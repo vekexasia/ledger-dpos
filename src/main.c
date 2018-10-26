@@ -465,6 +465,9 @@ void processCommPacket(volatile unsigned int *flags) {
 
       os_memset(lineBuffer, 0, 50);
       os_memmove(lineBuffer, signContext.msg, MIN(50, signContext.msgLength));
+      if (strlen(signContext.msg) > 47) {
+        os_memmove(lineBuffer+47, "...", 3);
+      }
 
       tmp2 = 0; // Will contain the amount of chars that are non printable in string
       // If first char is non-ascii (binary data). Rewrite the whole message to show it
