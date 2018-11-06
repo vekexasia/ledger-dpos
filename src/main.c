@@ -122,6 +122,10 @@ unsigned int bagl_ui_sign_tx_button(unsigned int button_mask, unsigned int butto
     case BUTTON_EVT_RELEASED | BUTTON_RIGHT:
       if (currentStep < totalSteps) {
         currentStep++;
+        // Skip message step if no message bundled
+        if (signContext.isTx && signContext.tx.type == TXTYPE_SEND && currentStep == 3 && strlen(signContext.tx.message) == 0) {
+          currentStep++;
+        }
         pcallback(&signContext, currentStep);
         UX_REDISPLAY();
       } else {
@@ -261,8 +265,6 @@ unsigned short io_exchange_al(unsigned char channel, unsigned short tx_len) {
 }
 
 
-
-
 bagl_element_t * io_seproxyhal_touch_approve(const bagl_element_t *e) {
   uint8_t signature[64];
 
@@ -343,7 +345,7 @@ void handleSignTX(uint8_t *dataBuffer) {
   if (signContext.tx.type == TXTYPE_SEND) {
     pcallback = lineBufferSendTxProcessor;
     bagl_ui_sign_tx = bagl_ui_approval_send_nanos;
-    ui_signtx(3, sizeof(bagl_ui_approval_send_nanos)/sizeof(bagl_ui_approval_send_nanos[0]));
+    ui_signtx(4, sizeof(bagl_ui_approval_send_nanos)/sizeof(bagl_ui_approval_send_nanos[0]));
   } else if (signContext.tx.type == TXTYPE_REGISTERDELEGATE) {
     pcallback = lineBufferRegDelegateTxProcessor;
     bagl_ui_sign_tx = bagl_ui_regdelegate_nanos;
@@ -456,28 +458,59 @@ void processCommPacket(volatile unsigned int *flags) {
     case INS_SIGN_MSG:
       getSignContext(commContext.data + 1, &signContext);
       signContext.isTx = false;
-      if (os_memcmp(SIGNED_MESSAGE_PREFIX, signContext.msg, strlen(SIGNED_MESSAGE_PREFIX)) != 0) {
+      if( signContext.msgLength + strlen(SIGNED_MESSAGE_PREFIX) + 4 > 1000 ) {
+        // Message is too long!
         THROW(0x6a80);
       }
 
-      uint8_t realMessageLength = signContext.msgLength - strlen(SIGNED_MESSAGE_PREFIX);
       os_memset(lineBuffer, 0, 50);
-      os_memmove(lineBuffer, signContext.msg + strlen(SIGNED_MESSAGE_PREFIX), MIN(50, realMessageLength));
+      os_memmove(lineBuffer, signContext.msg, MIN(50, signContext.msgLength));
+      if (strlen(signContext.msg) > 47) {
+        os_memmove(lineBuffer+47, "...", 3);
+      }
 
       tmp2 = 0; // Will contain the amount of chars that are non printable in string
       // If first char is non-ascii (binary data). Rewrite the whole message to show it
-      for (tmp=0; tmp < MIN(50, realMessageLength); tmp++) {
+      for (tmp=0; tmp < MIN(50, signContext.msgLength); tmp++) {
         tmp2 += IS_PRINTABLE(lineBuffer[tmp]) ?
                 0 /* Printable Char */:
                 1 /* Non Printable Char */;
       }
 
       // We rewrite the line buffer to <binary data> in case >= than 40% is non printable or first char is not printable.
-      if ((tmp2*100) / MIN(50, realMessageLength) >= 40 || ! IS_PRINTABLE(lineBuffer[0])) {
+      if ((tmp2*100) / MIN(50, signContext.msgLength) >= 40 || ! IS_PRINTABLE(lineBuffer[0])) {
         // More than 30% of chars are binary. hence we rewrite the message to binary
         os_memmove(lineBuffer, "< binary data >\0", 16);
       }
 
+      // Prepare signContext for signable message Data.
+      os_memmove(
+        rawData + 1 + strlen(SIGNED_MESSAGE_PREFIX) + (signContext.msgLength < 0xfd ? 1 : 3), /* <- varuint btc */
+        signContext.msg,
+        signContext.msgLength
+      );
+
+      uint8_t pos = 0;
+      uint16_t tmp = strlen(SIGNED_MESSAGE_PREFIX);
+      os_memmove(rawData+pos, &tmp, 1); pos+=1;
+      os_memmove(rawData+pos, SIGNED_MESSAGE_PREFIX, strlen(SIGNED_MESSAGE_PREFIX)); pos+=strlen(SIGNED_MESSAGE_PREFIX);
+      tmp = signContext.msgLength;
+      if (tmp < 0xfd) {
+        os_memmove(rawData+pos, &tmp, 1); pos+=1;
+      } else {
+        uint8_t tmp2 = 0xfd;
+        os_memmove(rawData+pos, &tmp2, 1); pos+=1;
+        os_memmove(rawData+pos, &tmp, 2); pos+=2;
+      }
+
+      uint8_t hash[32];
+      cx_hash_sha256(rawData, signContext.msgLength+pos, hash, 32);
+      os_memmove(rawData, hash, 32);
+      cx_hash_sha256(rawData, 32, hash, 32);
+      os_memmove(rawData, hash, 32);
+
+      signContext.msgLength = 32;
+      signContext.msg = rawData;
 
       *flags |= IO_ASYNCH_REPLY;
       ui_text();

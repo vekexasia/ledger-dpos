@@ -122,12 +122,18 @@ void parseTransaction(uint8_t *txBytes, uint32_t txLength, bool hasRequesterPubl
   out->recipientId = deriveAddressFromUintArray(txBytes + recIndex, false);
   uint32_t i = 0;
   out->amountSatoshi = 0;
+
   for (i = 0; i < 8; i++) {
     out->amountSatoshi |= ((uint64_t )txBytes[recIndex + 8 + i]) << (8*i);
   }
-
+  os_memset(out->message, 0, 64);
   os_memset(out->shortDesc, 0, 22);
-  if (out->type == TXTYPE_CREATESIGNATURE) {
+
+  if (out->type == TXTYPE_SEND) {
+    if (txLength - recIndex - 8 /*recipientId */ - 8 /*amount*/ > 0) {
+      os_memmove(out->message, txBytes+recIndex + 8 + 8, MIN(64, txLength - (recIndex + 8 + 8)));
+    }
+  } else if (out->type == TXTYPE_CREATESIGNATURE) {
     // Read publickey from bytes.
     // it's 32 bytes.
     for (i=0; i < 3; i++) {
