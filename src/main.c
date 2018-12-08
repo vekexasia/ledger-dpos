@@ -145,28 +145,6 @@ unsigned int bagl_ui_approval_nanos_button(unsigned int button_mask, unsigned in
   return 0;
 }
 
-unsigned int bagl_ui_address_review_nanos_button(unsigned int button_mask, unsigned int button_mask_counter) {
-  switch (button_mask) {
-    case BUTTON_EVT_RELEASED | BUTTON_RIGHT:
-      createPublicKeyResponse();
-
-      unsigned int tx = flushResponseToIO(G_io_apdu_buffer);
-      G_io_apdu_buffer[tx]   = 0x90;
-      G_io_apdu_buffer[tx+1] = 0x00;
-
-      io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx+2);
-
-      // Display back the original UX
-      ui_idle();
-      return 0; // do not redraw the widget
-      break;
-
-    case BUTTON_EVT_RELEASED | BUTTON_LEFT:
-      io_seproxyhal_touch_deny(NULL);
-      break;
-  }
-  return 0;
-}
 
 unsigned int bagl_ui_text_review_nanos_button(unsigned int button_mask, unsigned int button_mask_counter) {
   switch (button_mask) {
@@ -248,19 +226,6 @@ void handleGetPublic(uint8_t *bip32DataBuffer) {
   nullifyPrivKeyInContext();
 }
 
-/**
- * Creates the response for the getPublicKey command.
- * It returns both publicKey and derived Address
- */
-void createPublicKeyResponse() {
-  initResponse();
-  getEncodedPublicKey(&signContext.publicKey, rawData);
-  addToResponse(rawData, 32);
-  uint64_t address = deriveAddressFromPublic(&signContext.publicKey);
-  uint8_t length = deriveAddressStringRepresentation(address, (char *) (rawData + 32));
-
-  addToResponse(rawData + 32, length);
-}
 
 /**
  * Reads the databuffer and sets different data on a signContext which is then returned

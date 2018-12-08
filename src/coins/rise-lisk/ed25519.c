@@ -3,9 +3,6 @@
 #include "cx.h"
 #define MAX_BIP32_PATH 10
 
-#define INS_GET_PUBLIC_KEY 0x04
-#define INS_SIGN 0x05
-#define INS_SIGN_MSG 0x06
 
 #define TXTYPE_SEND 0
 #define TXTYPE_CREATESIGNATURE 1
@@ -117,12 +114,6 @@ void handleSignTX(uint8_t *dataBuffer) {
   }
 }
 
-void innerHandleCommPacket(comPacket_t packet, commContext_t context) {
-  switch (context.command) {
-    case INS_GET_PUBLIC_KEY:
-
-  }
-}
 
 bool innerProcessCommPacket(volatile unsigned int *flags, commPacket_t packet, commContext_t context) {
 
