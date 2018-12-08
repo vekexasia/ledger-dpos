@@ -73,21 +73,6 @@ uint8_t deriveAddressStringRepresentation(uint64_t encodedAddress, char *output)
   return (uint8_t) (total + ADDRESS_SUFFIX_LENGTH /*suffix*/);
 }
 
-//uint8_t deriveAddressShortRepresentation(uint64_t encodedAddress, char *output) {
-//  char tmp[14];
-//  deriveAddressStringRepresentation(encodedAddress, output);
-//  size_t length = strlen(output);
-//
-//
-//  os_memmove(tmp, output, 5);
-//  os_memmove(tmp + 5, "...", 3);
-//  os_memmove(tmp + 5 + 3, output + length - 5, 5);
-//  tmp[13] = '\0';
-//
-//  os_memmove(output, tmp, 14);
-//  return 13;
-//}
-const char hexChars[] = "0123456789abcdef";
 /**
  * Derive address associated to the specific publicKey.
  * @param publicKey original publicKey
@@ -106,12 +91,6 @@ uint64_t deriveAddressFromPublic(cx_ecfp_public_key_t *publicKey) {
     true
   );
 }
-
-void toHex(uint8_t what, char * whereTo) {
-  whereTo[0] = hexChars[what / 16];
-  whereTo[1] = hexChars[what % 16];
-}
-
 
 void parseTransaction(uint8_t *txBytes, uint32_t txLength, bool hasRequesterPublicKey, struct transaction *out) {
   out->type = txBytes[0];

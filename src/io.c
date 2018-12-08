@@ -1,7 +1,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <inttypes.h>
-#include "io_protocol.h"
+#include "io.h"
 #include "os.h"
 
 /**
@@ -52,3 +52,6 @@ unsigned int flushResponseToIO(void *out) {
   return total;
 }
 
+
+commContext_t commContext;
+commPacket_t commPacket;

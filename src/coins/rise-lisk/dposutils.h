@@ -1,10 +1,4 @@
 #include <stdbool.h>
-#define TXTYPE_SEND 0
-#define TXTYPE_CREATESIGNATURE 1
-#define TXTYPE_REGISTERDELEGATE 2
-#define TXTYPE_VOTE 3
-#define TXTYPE_CREATEMULTISIG 4
-
 
 #ifndef STRUCT_TX
 #define STRUCT_TX

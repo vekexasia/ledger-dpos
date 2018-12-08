@@ -21,42 +21,29 @@
 #include <memory.h>
 #include "os.h"
 #include "main.h"
-#include "ui_elements_s.h"
-#include "io_protocol.h"
-#include "ed25519.h"
+#include "coins/rise-lisk/ui_elements_s.h"
+#include "io.h"
+#include "coins/rise-lisk/ed25519.h"
 #define INS_COM_START 89
 #define INS_COM_CONTINUE 90
 #define INS_COM_END 91
 
-#define INS_GET_PUBLIC_KEY 0x04
-#define INS_SIGN 0x05
-#define INS_SIGN_MSG 0x06
 #define INS_PING 0x08
 #define INS_VERSION 0x09
 
-#define IS_PRINTABLE(c) ((c >= 0x20 && c <= 0x7e) || (c >= 0x80 && c <= 0xFF))
 
-static unsigned int currentStep;
-static unsigned int totalSteps;
 static unsigned int text_y;           // current location of the displayed text
 short crc; // holds the crc16 of the content.
+short prevCRC; // holds the crc16 of the prevpacket for comm layer.
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
-typedef void (*processor_callback)(signContext_t *ctx, uint8_t step);
-processor_callback pcallback;
-static bagl_element_t *bagl_ui_sign_tx; // Real holder of the ui array.
-enum UI_STATE {
-    UI_IDLE, UI_WARNING, UI_TEXT, UI_ADDRESS_REVIEW, UI_APPROVAL
-};
 
-enum UI_STATE uiState;
-ux_state_t ux;
+
 
 
 /**
  * Sets ui to idle.
  */
 void ui_idle() {
-  uiState = UI_IDLE;
   UX_MENU_DISPLAY(0, menu_main, NULL);
 }
 
@@ -64,7 +51,6 @@ void ui_idle() {
  *
  */
 void ui_approval(void) {
-  uiState = UI_APPROVAL;
   deriveAddressStringRepresentation(signContext.sourceAddress, lineBuffer);
 
 
@@ -91,24 +77,7 @@ static void ui_address(void) {
 }
 
 
-/**
- * Used to verify what is going to be displayed
- * @param element
- * @return 0 or 1
- */
-const int signprocessor(const bagl_element_t *element) {
-  if (element->component.userid == 0x0) {
-    return 1;
-  }
 
-  if ((element->component.type & (~BAGL_FLAG_TOUCHABLE)) == BAGL_NONE) {
-    return 0;
-  }
-  if (element->component.userid == currentStep) {
-    return 1;
-  }
-  return 0;
-}
 
 /**
  * Cleans memory.
@@ -139,22 +108,6 @@ unsigned int bagl_ui_sign_tx_button(unsigned int button_mask, unsigned int butto
   }
   return 0;
 }
-
-
-void ui_signtx(uint8_t steps, uint8_t uielements) {
-  currentStep = 1;
-  totalSteps = steps;
-  pcallback(&signContext, 1);
-  // IMPLEMENT BLUE
-  ux.elements = bagl_ui_sign_tx;
-  ux.elements_count = uielements;
-  ux.button_push_handler = bagl_ui_sign_tx_button;
-  ux.elements_preprocessor = signprocessor;
-  UX_WAKE_UP();
-  UX_REDISPLAY();
-}
-
-
 
 
 
@@ -373,6 +326,7 @@ void handleSignTX(uint8_t *dataBuffer) {
 void handleStartCommPacket() {
   commContext.started = true;
   commContext.read = 0;
+  commContext.crc16 = 0;
   commContext.totalAmount = 0;
   commContext.isDataInNVRAM = false; // For now.
 
@@ -406,17 +360,27 @@ void handleCommPacket() {
   if (commContext.started == false) {
     THROW(0x9802); // CODE_NOT_INITIALIZED
   }
-  if (commContext.isDataInNVRAM) {
-    nvm_write(commContext.data + commContext.read, G_io_apdu_buffer + 5, G_io_apdu_buffer[4]);
-  } else {
-    os_memmove(commContext.data + commContext.read, G_io_apdu_buffer + 5, G_io_apdu_buffer[4]);
+  if (commContext.read === 0) {
+    commContext.command = G_io_apdu_buffer[5];
   }
+  comPacket.data = os_memmove(comPacket.data, G_io_apdu_buffer + 5, G_io_apdu_buffer[4]);
+  comPacket.length = G_io_apdu_buffer[4];
 
   initResponse();
   commContext.read += G_io_apdu_buffer[4];
+
+
   if (commContext.read <= commContext.totalAmount) {
-    crc = cx_crc16(commContext.data, commContext.read);
+    // Allow real implementation to handle current comm Packet. (and possibly throw if error occurred)
+    innerHandleCommPacket(comPacket, commContext);
+
+    // Compute current crc and replace it with the prevOne.
+    crc = cx_crc16(comPacket.data, commContext.read);
+    prevCRC = commContext.crc16;
+    commContext.crc16 = crc;
+
     addToResponse(&crc, 2);
+    addToResponse(&prevCRC, 2);
   } else {
     // Somehow the totalAmount of data sent is wrong. hence we set the thing as unstarted.
     commContext.started = false;
@@ -427,9 +391,9 @@ void handleCommPacket() {
 
 
 
-void processCommPacket(volatile unsigned int *flags) {
+void processCommPacket(volatile unsigned int *flags, commPacket_t packet, commContext_t context) {
   uint8_t tmp, tmp2;
-  switch(commContext.data[0]) {
+  switch(context.command) {
     case INS_VERSION:
       initResponse();
       addToResponse(APPVERSION, 5);
@@ -661,7 +625,6 @@ __attribute__((section(".boot"))) int main(void) {
 
   UX_INIT();
   // Set ui state to idle.
-  uiState = UI_IDLE;
 
   // ensure exception will work as planned
   os_boot();
