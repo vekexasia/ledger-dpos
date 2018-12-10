@@ -84,9 +84,46 @@ void processSignMessage(volatile unsigned int *flags) {
   os_memmove(&signContext.digest, finalHash, 32);
   // Init user flow.
   *flags |= IO_ASYNCH_REPLY;
-  PRINTF("DISPLAY\n");
   PRINTF("DIGEST: %.*h\n", 32, finalHash);
   PRINTF("lineBuffer: %s\n", lineBuffer);
-  UX_DISPLAY(sign_message_ui, NULL);
+  ux.elements = sign_message_ui;
+  PRINTF("DISPLAY\n");
+  ux.elements_count = sizeof(sign_message_ui) / sizeof(sign_message_ui[0]);
+  PRINTF("DISPLAY %d\n", ux.elements_count);
+  ux.elements_current = 0;
+  ux.button_push_handler = sign_message_ui_button;
+  PRINTF("DISPLAY\n");
+  ux.elements_preprocessor = NULL;
+  PRINTF("UX_WAKE_UP\n");
+  UX_WAKE_UP();
+  PRINTF("UX_REDISPLAY\n");
+//  UX_REDISPLAY();
+  io_seproxyhal_init_ux();
+  PRINTF("AFTER_INIT\n");
+    ux.elements_current = 0;
+    /* REDRAW is redisplay already */
+    if (ux.params.len != BOLOS_UX_IGNORE &&
+        ux.params.len != BOLOS_UX_CONTINUE) {
+      PRINTF("Inner, DISPLAY_NEXT_ELEMENT\n");
+      while (ux.elements && ux.elements_current < ux.elements_count &&
+           !io_seproxyhal_spi_is_status_sent()) {
+        const bagl_element_t *element = &ux.elements[ux.elements_current];
+        if (!ux.elements_preprocessor ||
+            (element = ux.elements_preprocessor(element))) {
+            if ((unsigned int)element ==
+                1) { /*backward compat with coding to avoid smashing
+                        everything*/
+                element = &ux.elements[ux.elements_current];
+            }
+            PRINTF("CIAO\n %s", element);
+            io_seproxyhal_display(element);
+            PRINTF("OU\n");
+        }
+        ux.elements_current++;
+    }
+
+    }
+  PRINTF("DISPLAY\n");
+//  UX_DISPLAY(sign_message_ui, NULL);
   PRINTF("After Display\n");
 }

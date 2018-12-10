@@ -138,9 +138,8 @@ void handleCommPacket() {
 
 
 void processCommPacket(volatile unsigned int *flags) {
-  PRINTF("What a lovely buffer:\n %.*H \n\n", commPacket.length, commPacket.data);
-  uint8_t tst[1] = {commContext.command};
-  PRINTF("context commant:\n %.*H \n\n", 1, tst);
+  PRINTF("Compacket data:\n %.*H \n\n", commPacket.length, commPacket.data);
+
   if (commContext.command == INS_VERSION) {
     initResponse();
     addToResponse(APPVERSION, 5);
@@ -150,7 +149,6 @@ void processCommPacket(volatile unsigned int *flags) {
     char * pong = "PONG";
     addToResponse(pong, 4);
   } else {
-//    THROW(0x9000 + commContext.command);
     innerProcessCommPacket(flags, &commPacket, &commContext);
   }
 
@@ -187,7 +185,7 @@ static void dpos_main(void) {
               THROW(0x6982);
             }
 
-            PRINTF("omm incoming %d", G_io_apdu_buffer[1]);
+            PRINTF("\n\n## comm incoming %d ##\n\n", G_io_apdu_buffer[1]);
             switch (G_io_apdu_buffer[1]) {
               case INS_COM_START:
                 PRINTF("start\n");
