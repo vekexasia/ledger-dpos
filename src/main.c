@@ -21,9 +21,9 @@
 #include <memory.h>
 #include "os.h"
 #include "main.h"
-#include "coins/rise-lisk/ui_elements_s.h"
+//#include "coins/rise-lisk/ui_elements_s.h"
 #include "io.h"
-#include "coins/rise-lisk/ed25519.h"
+#include "coins/rise-lisk/impl.h"
 #define INS_COM_START 89
 #define INS_COM_CONTINUE 90
 #define INS_COM_END 91
@@ -37,136 +37,6 @@ short crc; // holds the crc16 of the content.
 short prevCRC; // holds the crc16 of the prevpacket for comm layer.
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
-
-
-
-/**
- * Sets ui to idle.
- */
-void ui_idle() {
-  UX_MENU_DISPLAY(0, menu_main, NULL);
-}
-
-/**
- *
- */
-void ui_approval(void) {
-  deriveAddressStringRepresentation(signContext.sourceAddress, lineBuffer);
-
-
-#ifdef TARGET_BLUE
-  UX_DISPLAY(bagl_ui_approval_blue, NULL);
-#else
-  UX_DISPLAY(bagl_ui_approval_nanos, NULL);
-#endif
-}
-
-static void ui_text(void) {
-  uiState = UI_TEXT;
-  UX_DISPLAY(bagl_ui_text_review_nanos, NULL);
-}
-
-static void ui_address(void) {
-  uiState = UI_ADDRESS_REVIEW;
-
-  uint64_t address = deriveAddressFromPublic(&signContext.publicKey);
-  uint8_t length = deriveAddressStringRepresentation(address, lineBuffer);
-  lineBuffer[length] = '\0';
-
-  UX_DISPLAY(bagl_ui_address_review_nanos, NULL);
-}
-
-
-
-
-/**
- * Cleans memory.
- */
-void nullifyPrivKeyInContext() {
-  os_memset(&signContext.privateKey, 0, sizeof(signContext.privateKey));
-}
-
-unsigned int bagl_ui_sign_tx_button(unsigned int button_mask, unsigned int button_mask_counter) {
-  switch (button_mask) {
-    case BUTTON_EVT_RELEASED | BUTTON_RIGHT:
-      if (currentStep < totalSteps) {
-        currentStep++;
-        // Skip message step if no message bundled
-        if (signContext.isTx && signContext.tx.type == TXTYPE_SEND && currentStep == 3 && strlen(signContext.tx.message) == 0) {
-          currentStep++;
-        }
-        pcallback(&signContext, currentStep);
-        UX_REDISPLAY();
-      } else {
-        io_seproxyhal_touch_approve(NULL);
-      }
-      break;
-
-    case BUTTON_EVT_RELEASED | BUTTON_LEFT:
-      io_seproxyhal_touch_deny(NULL);
-      break;
-  }
-  return 0;
-}
-
-
-
-// ********************************************************************************
-// Ledger Nano S specific UI
-// ********************************************************************************
-
-bagl_element_t *io_seproxyhal_touch_deny(const bagl_element_t *e) {
-  G_io_apdu_buffer[0] = 0x69;
-  G_io_apdu_buffer[1] = 0x85;
-
-  // Allow restart of operation
-  commContext.started = false;
-  commContext.read = 0;
-
-  nullifyPrivKeyInContext();
-  // Send back the response, do not restart the event loop
-  io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
-  // Display back the original UX
-  ui_idle();
-  return 0; // do not redraw the widget
-}
-
-
-unsigned int bagl_ui_approval_nanos_button(unsigned int button_mask, unsigned int button_mask_counter) {
-  switch (button_mask) {
-    case BUTTON_EVT_RELEASED | BUTTON_RIGHT:
-      io_seproxyhal_touch_approve(NULL);
-      break;
-
-    case BUTTON_EVT_RELEASED | BUTTON_LEFT:
-      io_seproxyhal_touch_deny(NULL);
-      break;
-  }
-  return 0;
-}
-
-
-unsigned int bagl_ui_text_review_nanos_button(unsigned int button_mask, unsigned int button_mask_counter) {
-  switch (button_mask) {
-    case BUTTON_EVT_RELEASED | BUTTON_RIGHT:
-      ui_approval();
-      break;
-
-    case BUTTON_EVT_RELEASED | BUTTON_LEFT:
-      io_seproxyhal_touch_deny(NULL);
-      break;
-  }
-  return 0;
-}
-
-/**/
-
-// unsigned int io_seproxyhal_touch_exit(const bagl_element_t *e) {
-bagl_element_t *io_seproxyhal_touch_exit(const bagl_element_t *e) {
-  // Go back to the dashboard
-  os_sched_exit(0);
-  return NULL;
-}
 
 // Don't need to change?
 unsigned short io_exchange_al(unsigned char channel, unsigned short tx_len) {
@@ -196,95 +66,6 @@ unsigned short io_exchange_al(unsigned char channel, unsigned short tx_len) {
 }
 
 
-bagl_element_t * io_seproxyhal_touch_approve(const bagl_element_t *e) {
-  uint8_t signature[64];
-
-  sign(&signContext.privateKey, signContext.msg, signContext.msgLength, signature, signContext.isTx);
-
-  initResponse();
-  addToResponse(signature, 64);
-
-  unsigned int tx = flushResponseToIO(G_io_apdu_buffer);
-  G_io_apdu_buffer[tx]   = 0x90;
-  G_io_apdu_buffer[tx+1] = 0x00;
-
-  io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx+2);
-
-  // Display back the original UX
-  ui_idle();
-  return 0; // do not redraw the widget
-}
-
-
-/**
- * Handle publicKey request given the bip32Db. It will derive the publickey from the
- * given bip32.
- * @param bip32DataBuffer
- */
-void handleGetPublic(uint8_t *bip32DataBuffer) {
-  derivePrivatePublic(bip32DataBuffer, &signContext.privateKey, &signContext.publicKey);
-  nullifyPrivKeyInContext();
-}
-
-
-/**
- * Reads the databuffer and sets different data on a signContext which is then returned
- * @param dataBuffer the  buffer to read from.
- * @param whereTo
- * @return the signContext.
- */
-void getSignContext(uint8_t *dataBuffer, signContext_t *whereTo) {
-  uint32_t bytesRead = derivePrivatePublic(dataBuffer, &(*whereTo).privateKey, &(*whereTo).publicKey);
-  whereTo->msgLength = (*(dataBuffer + bytesRead)) << 8;
-  whereTo->msgLength += (*(dataBuffer + bytesRead + 1));
-  if (whereTo->msgLength >= commContext.totalAmount) {
-    THROW(0x6700); // INCORRECT_LENGTH
-  }
-  bytesRead += 2;
-  whereTo->hasRequesterPublicKey = *(dataBuffer + bytesRead);
-  bytesRead++;
-
-  whereTo->msg = dataBuffer + bytesRead;
-
-  whereTo->sourceAddress = deriveAddressFromPublic(&whereTo->publicKey);
-
-  deriveAddressStringRepresentation(whereTo->sourceAddress, whereTo->sourceAddressStr);
-}
-
-/**
- * Handles the sign transaction command.
- * @param dataBuffer
- */
-void handleSignTX(uint8_t *dataBuffer) {
-  getSignContext(dataBuffer, &signContext);
-  parseTransaction(signContext.msg, signContext.msgLength, signContext.hasRequesterPublicKey, &signContext.tx);
-  signContext.isTx = true;
-
-  if (signContext.tx.type == TXTYPE_SEND) {
-    pcallback = lineBufferSendTxProcessor;
-    bagl_ui_sign_tx = bagl_ui_approval_send_nanos;
-    ui_signtx(4, sizeof(bagl_ui_approval_send_nanos)/sizeof(bagl_ui_approval_send_nanos[0]));
-  } else if (signContext.tx.type == TXTYPE_REGISTERDELEGATE) {
-    pcallback = lineBufferRegDelegateTxProcessor;
-    bagl_ui_sign_tx = bagl_ui_regdelegate_nanos;
-    ui_signtx(3, sizeof(bagl_ui_regdelegate_nanos)/sizeof(bagl_ui_regdelegate_nanos[0]));
-  } else if (signContext.tx.type == TXTYPE_CREATESIGNATURE) {
-    pcallback = lineBufferSecondSignProcessor;
-    bagl_ui_sign_tx = bagl_ui_secondsign_nanos;
-    ui_signtx(3, sizeof(bagl_ui_secondsign_nanos)/sizeof(bagl_ui_secondsign_nanos[0]));
-  } else if (signContext.tx.type == TXTYPE_VOTE) {
-    pcallback = lineBufferVoteProcessor;
-    bagl_ui_sign_tx = bagl_ui_vote_nanos;
-    ui_signtx(3, sizeof(bagl_ui_vote_nanos)/sizeof(bagl_ui_vote_nanos[0]));
-  } else if (signContext.tx.type == TXTYPE_CREATEMULTISIG) {
-    pcallback = lineBufferMultisigProcessor;
-    bagl_ui_sign_tx = bagl_ui_multisignature_nanos;
-    ui_signtx(4, sizeof(bagl_ui_multisignature_nanos)/sizeof(bagl_ui_multisignature_nanos[0]));
-  } else {
-    THROW(0x6a80);
-  }
-}
-
 /**
  * Handles the start communication packet
  */
@@ -293,29 +74,19 @@ void handleStartCommPacket() {
   commContext.read = 0;
   commContext.crc16 = 0;
   commContext.totalAmount = 0;
-  commContext.isDataInNVRAM = false; // For now.
 
   commContext.totalAmount = G_io_apdu_buffer[5] << 8;
   commContext.totalAmount += G_io_apdu_buffer[6];
 
-  // Debug
+  prevCRC = 0;
   initResponse();
-  os_memmove(rawData, &commContext.totalAmount, 2);
-  addToResponse(rawData, 2);
+  addToResponse(&commContext.totalAmount, 2);
 
   if (commContext.totalAmount > MAX(NVRAM_MAX, 1000)) {
     // We exceed the totalAmount of data possible.
     // we throw
     THROW(0x6a84); // NOT_ENOUGH_MEMORY_SPACE
   }
-
-  if (commContext.totalAmount > 1000) {
-    commContext.isDataInNVRAM = true;
-    commContext.data = PIC(&N_rawData);
-  } else {
-    commContext.data = rawData;
-  }
-
 }
 
 /**
@@ -325,27 +96,37 @@ void handleCommPacket() {
   if (commContext.started == false) {
     THROW(0x9802); // CODE_NOT_INITIALIZED
   }
-  if (commContext.read === 0) {
-    commContext.command = G_io_apdu_buffer[5];
-  }
-  comPacket.data = os_memmove(comPacket.data, G_io_apdu_buffer + 5, G_io_apdu_buffer[4]);
-  comPacket.length = G_io_apdu_buffer[4];
 
+  if (commContext.read == 0) {
+    // IF first packet we read command and strip it away from the data packet
+    commContext.command = G_io_apdu_buffer[5];
+    os_memmove(commPacket.data, G_io_apdu_buffer + 6, G_io_apdu_buffer[4] - 1);
+    commPacket.length = G_io_apdu_buffer[4] - 1;
+    commPacket.first = true;
+  } else {
+    os_memmove(commPacket.data, G_io_apdu_buffer + 5, G_io_apdu_buffer[4]);
+    commPacket.length = G_io_apdu_buffer[4];
+    commPacket.first = false;
+  }
+
+  PRINTF("handleCompacket\n");
   initResponse();
   commContext.read += G_io_apdu_buffer[4];
 
-
   if (commContext.read <= commContext.totalAmount) {
+    PRINTF("innerHandleComPacket\n");
     // Allow real implementation to handle current comm Packet. (and possibly throw if error occurred)
-    innerHandleCommPacket(comPacket, commContext);
+    innerHandleCommPacket(&commPacket, &commContext);
+    PRINTF("POST innerHandleComPacket\n");
 
     // Compute current crc and replace it with the prevOne.
-    crc = cx_crc16(comPacket.data, commContext.read);
+    crc = cx_crc16(G_io_apdu_buffer + 5, G_io_apdu_buffer[4]);
+    PRINTF("postCRC %d %d\n", crc, prevCRC);
     prevCRC = commContext.crc16;
     commContext.crc16 = crc;
-
     addToResponse(&crc, 2);
     addToResponse(&prevCRC, 2);
+    PRINTF("Add to response\n");
   } else {
     // Somehow the totalAmount of data sent is wrong. hence we set the thing as unstarted.
     commContext.started = false;
@@ -356,101 +137,21 @@ void handleCommPacket() {
 
 
 
-void processCommPacket(volatile unsigned int *flags, commPacket_t packet, commContext_t context) {
-  uint8_t tmp, tmp2;
-  switch(context.command) {
-    case INS_VERSION:
-      initResponse();
-      addToResponse(APPVERSION, 5);
-      addToResponse(COINIDSTR, strlen(COINIDSTR));
-      break;
-    case INS_PING:
-      initResponse();
-      char * pong = "PONG";
-      addToResponse(pong, 4);
-      break;
-    case INS_GET_PUBLIC_KEY:
-      // init response
-      tmp = commContext.data[1];
-      handleGetPublic(commContext.data + 2);
-
-      if (tmp == true) { // show address?
-        // Show on ledger
-        *flags |= IO_ASYNCH_REPLY;
-        ui_address();
-      } else {
-        createPublicKeyResponse();
-      }
-
-
-      break;
-    case INS_SIGN_MSG:
-      getSignContext(commContext.data + 1, &signContext);
-      signContext.isTx = false;
-      if( signContext.msgLength + strlen(SIGNED_MESSAGE_PREFIX) + 4 > 1000 ) {
-        // Message is too long!
-        THROW(0x6a80);
-      }
-
-      os_memset(lineBuffer, 0, 50);
-      os_memmove(lineBuffer, signContext.msg, MIN(50, signContext.msgLength));
-      if (strlen(signContext.msg) > 47) {
-        os_memmove(lineBuffer+47, "...", 3);
-      }
-
-      tmp2 = 0; // Will contain the amount of chars that are non printable in string
-      // If first char is non-ascii (binary data). Rewrite the whole message to show it
-      for (tmp=0; tmp < MIN(50, signContext.msgLength); tmp++) {
-        tmp2 += IS_PRINTABLE(lineBuffer[tmp]) ?
-                0 /* Printable Char */:
-                1 /* Non Printable Char */;
-      }
-
-      // We rewrite the line buffer to <binary data> in case >= than 40% is non printable or first char is not printable.
-      if ((tmp2*100) / MIN(50, signContext.msgLength) >= 40 || ! IS_PRINTABLE(lineBuffer[0])) {
-        // More than 30% of chars are binary. hence we rewrite the message to binary
-        os_memmove(lineBuffer, "< binary data >\0", 16);
-      }
-
-      // Prepare signContext for signable message Data.
-      os_memmove(
-        rawData + 1 + strlen(SIGNED_MESSAGE_PREFIX) + (signContext.msgLength < 0xfd ? 1 : 3), /* <- varuint btc */
-        signContext.msg,
-        signContext.msgLength
-      );
-
-      uint8_t pos = 0;
-      uint16_t tmp = strlen(SIGNED_MESSAGE_PREFIX);
-      os_memmove(rawData+pos, &tmp, 1); pos+=1;
-      os_memmove(rawData+pos, SIGNED_MESSAGE_PREFIX, strlen(SIGNED_MESSAGE_PREFIX)); pos+=strlen(SIGNED_MESSAGE_PREFIX);
-      tmp = signContext.msgLength;
-      if (tmp < 0xfd) {
-        os_memmove(rawData+pos, &tmp, 1); pos+=1;
-      } else {
-        uint8_t tmp2 = 0xfd;
-        os_memmove(rawData+pos, &tmp2, 1); pos+=1;
-        os_memmove(rawData+pos, &tmp, 2); pos+=2;
-      }
-
-      uint8_t hash[32];
-      cx_hash_sha256(rawData, signContext.msgLength+pos, hash, 32);
-      os_memmove(rawData, hash, 32);
-      cx_hash_sha256(rawData, 32, hash, 32);
-      os_memmove(rawData, hash, 32);
-
-      signContext.msgLength = 32;
-      signContext.msg = rawData;
-
-      *flags |= IO_ASYNCH_REPLY;
-      ui_text();
-      break;
-    case INS_SIGN:
-      handleSignTX(commContext.data + 1);
-      *flags |= IO_ASYNCH_REPLY;
-      break;
-
-    default:
-      THROW(0x6a80); // INCORRECT_DATA
+void processCommPacket(volatile unsigned int *flags) {
+  PRINTF("What a lovely buffer:\n %.*H \n\n", commPacket.length, commPacket.data);
+  uint8_t tst[1] = {commContext.command};
+  PRINTF("context commant:\n %.*H \n\n", 1, tst);
+  if (commContext.command == INS_VERSION) {
+    initResponse();
+    addToResponse(APPVERSION, 5);
+    addToResponse(COINIDSTR, strlen(COINIDSTR));
+  } else if (commContext.command == INS_PING) {
+    initResponse();
+    char * pong = "PONG";
+    addToResponse(pong, 4);
+  } else {
+//    THROW(0x9000 + commContext.command);
+    innerProcessCommPacket(flags, &commPacket, &commContext);
   }
 
   commContext.started = false;
@@ -486,23 +187,28 @@ static void dpos_main(void) {
               THROW(0x6982);
             }
 
+            PRINTF("omm incoming %d", G_io_apdu_buffer[1]);
             switch (G_io_apdu_buffer[1]) {
               case INS_COM_START:
+                PRINTF("start\n");
                 handleStartCommPacket();
                 tx = flushResponseToIO(G_io_apdu_buffer);
                 THROW(0x9000);
                 break;
               case INS_COM_CONTINUE:
+                PRINTF("continue\n");
                 handleCommPacket();
+                PRINTF("after handleComPacket\n");
                 tx = flushResponseToIO(G_io_apdu_buffer);
+                PRINTF("flush\n");
                 THROW(0x9000);
                 break;
               case INS_COM_END:
+                PRINTF("end\n");
                 processCommPacket(&flags);
                 tx = flushResponseToIO(G_io_apdu_buffer);
                 THROW(0x9000);
                 break;
-
               case 0xFF: // return to dashboard
                 goto return_to_dashboard;
 
@@ -558,13 +264,14 @@ unsigned char io_event(unsigned char channel) {
       break;
 
     case SEPROXYHAL_TAG_DISPLAY_PROCESSED_EVENT:
-      if ((uiState == UI_TEXT) &&
-          (os_seph_features() &
-           SEPROXYHAL_TAG_SESSION_START_EVENT_FEATURE_SCREEN_BIG)) {
-        ui_approval();
-      } else {
-        UX_DISPLAYED_EVENT();
-      }
+//      if ((uiState == UI_TEXT) &&
+//          (os_seph_features() &
+//           SEPROXYHAL_TAG_SESSION_START_EVENT_FEATURE_SCREEN_BIG)) {
+//        ui_approval();
+//      } else {
+//        UX_DISPLAYED_EVENT();
+//      }
+      UX_DISPLAYED_EVENT();
       break;
 
       // unknown events are acknowledged

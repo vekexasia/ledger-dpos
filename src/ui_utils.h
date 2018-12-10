@@ -32,9 +32,6 @@
   }
 
   void toHex(uint8_t what, char * whereTo);
-  // the callback processor for the ui display
-  typedef void (*processor_callback)(signContext_t *ctx, uint8_t step);
-  extern processor_callback pcallback;
-
-  const int uiprocessor(const bagl_element_t *element);
+  int uiprocessor(const bagl_element_t *element);
+  uint8_t intToString(uint64_t amount, char *out);
 #endif //LEDGER_NANO2_UI_UTILS_H

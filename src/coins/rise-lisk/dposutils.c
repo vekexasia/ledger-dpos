@@ -5,7 +5,10 @@
 #include "os.h"
 #include "cx.h"
 #include "dposutils.h"
+#include "../../io.h"
+#include "ed25519.h"
 
+signContext_t signContext;
 
 /**
  * Gets a bigendian representation of the usable publicKey
@@ -92,65 +95,29 @@ uint64_t deriveAddressFromPublic(cx_ecfp_public_key_t *publicKey) {
   );
 }
 
-void parseTransaction(uint8_t *txBytes, uint32_t txLength, bool hasRequesterPublicKey, struct transaction *out) {
-  out->type = txBytes[0];
-  uint32_t recIndex = 1 /*type*/
-                      + 4 /*timestamp*/
-                      + 32 /*senderPublicKey */
-                      + (hasRequesterPublicKey == true ? 32 : 0) /*requesterPublicKey */;
-  out->recipientId = deriveAddressFromUintArray(txBytes + recIndex, false);
-  uint32_t i = 0;
-  out->amountSatoshi = 0;
 
-  for (i = 0; i < 8; i++) {
-    out->amountSatoshi |= ((uint64_t )txBytes[recIndex + 8 + i]) << (8*i);
+/**
+ * Reads the packet, sets the signContext and patches the packet data values by skipping the header.
+ * @param dataBuffer the  buffer to read from.
+ * @return the amount of bytesRead
+ */
+void setSignContext(commPacket_t *packet) {
+  // reset current result
+  uint8_t tmp[256];
+  os_memset(&signContext.digest, 0, 32);
+  uint32_t bytesRead = derivePrivatePublic(packet->data, &signContext.privateKey, &signContext.publicKey);
+  signContext.signableContentLength = (*(packet->data + bytesRead)) << 8;
+  signContext.signableContentLength += (*(packet->data + bytesRead + 1));
+  if (signContext.signableContentLength >= commContext.totalAmount) {
+    THROW(0x6700); // INCORRECT_LENGTH
   }
-  os_memset(out->message, 0, 64);
-  os_memset(out->shortDesc, 0, 22);
+  bytesRead += 2;
+  signContext.reserved = *(packet->data + bytesRead);
+  bytesRead++;
 
-  if (out->type == TXTYPE_SEND) {
-    if (txLength - recIndex - 8 /*recipientId */ - 8 /*amount*/ > 0) {
-      os_memmove(out->message, txBytes+recIndex + 8 + 8, MIN(64, txLength - (recIndex + 8 + 8)));
-    }
-  } else if (out->type == TXTYPE_CREATESIGNATURE) {
-    // Read publickey from bytes.
-    // it's 32 bytes.
-    for (i=0; i < 3; i++) {
-      toHex(txBytes[recIndex + 8 + 8 + i], out->shortDesc + i*2);
-    }
-    out->shortDesc[5] = '.';
-    out->shortDesc[6] = '.';
-    for (i=0; i < 3; i++) {
-      toHex(txBytes[recIndex + 8 + 8 + 32 - 3 + i], out->shortDesc + 7 + i*2);
-    }
-    out->shortDesc[7] = '.';
-  } else if (out->type == TXTYPE_REGISTERDELEGATE) {
-    os_memmove(out->shortDesc, txBytes+recIndex + 8 + 8, MIN(21, txLength - (recIndex + 8 + 8)));
-    for (i=0; i<MIN(21, txLength - (recIndex + 8 + 8)); i++) {
-      char c = out->shortDesc[i];
-      if (
-        !(c >= 'a' && c <= 'z') &&
-        !(c >= '0' && c <= '9') &&
-        !(c == '!' || c == '@' || c == '$' || c == '&' || c == '_' || c == '.')) {
-        out->shortDesc[i] = '\0';
-      }
-    }
-  } else if (out->type == TXTYPE_VOTE) {
-    uint8_t added = 0;
-    uint8_t removed = 0;
-    for (i=recIndex + 8 + 8; i<txLength; i++) {
-      if (txBytes[i] == '+') {
-        added++;
-      } else if (txBytes[i] == '-') {
-        removed++;
-      }
-    }
-    // Storing the amount of added and removed votes in shortDesc.
-    // Will later be used in the ui_elements thing.
-    out->shortDesc[0] = added;
-    out->shortDesc[1] = removed;
-  } else if (out->type == TXTYPE_CREATEMULTISIG) {
-    out->shortDesc[0] = txBytes[recIndex+8+8];
-    out->shortDesc[1] = txBytes[recIndex+8+8+1];
-  }
+  // clean up packet->data by removing the consumed content (sign context)
+  os_memmove(tmp, packet->data + bytesRead, packet->length - bytesRead);
+  os_memmove(packet->data, tmp, packet->length - bytesRead);
+  packet->length -= bytesRead;
+//  return bytesRead;
 }

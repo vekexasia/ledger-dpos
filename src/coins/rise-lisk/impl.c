@@ -7,39 +7,49 @@
 #include "./ed25519.h"
 #include "./dposutils.h"
 #include "./ui_elements_s.h"
+#include "./commands/getPubKey.h"
+#include "./commands/signMsg.h"
+#include "./commands/signTx.h"
+
 
 #define INS_GET_PUBLIC_KEY 0x04
 #define INS_SIGN 0x05
 #define INS_SIGN_MSG 0x06
-
-
-
-
-
-void innerHandleCommPacket(comPacket_t packet, commContext_t context) {
-  switch (context.command) {
+#define INS_PING 0x08
+#define INS_VERSION 0x09
+void innerHandleCommPacket(commPacket_t *packet, commContext_t *context) {
+  switch (context->command) {
     case INS_GET_PUBLIC_KEY:
-
+      break;
+    case INS_SIGN_MSG:
+      handleSignMessagePacket(packet, context);
+      break;
+    case INS_SIGN:
+      handleSignTxPacket(packet, context);
+      break;
+    case INS_PING:
+    case INS_VERSION:
+      // Ping and version are handled at main scope level (main.c)
+      break;
+    default:
+      THROW(0x6a81); // INCORRECT_DATA
   }
 }
 
-
-bool innerProcessCommPacket(volatile unsigned int *flags, commPacket_t lastPacket, commContext_t context) {
-  uint8_t tmp, tmp2;
-
-  switch(context.command) {
+bool innerProcessCommPacket(volatile unsigned int *flags, commPacket_t *lastPacket, commContext_t *context) {
+  switch(context->command) {
     case INS_GET_PUBLIC_KEY:
-      tmp = lastPacket.data;
-      // Derive pubKey
-      derivePrivatePublic(commContext.data + 1, &signContext.privateKey, &signContext.publicKey);
-      os_memset(&signContext.privateKey, 0, sizeof(signContext.privateKey));
-
-      if (tmp == true) { // show address?
-        // Show on ledger
-        *flags |= IO_ASYNCH_REPLY;
-        ui_address();
-      } else {
-        createPublicKeyResponse();
-      }
+      handleGetPublicKey(flags, lastPacket->data + 1, lastPacket->data[0]);
+      break;
+    case INS_SIGN_MSG:
+      PRINTF("Processing signed message\n");
+      processSignMessage(flags);
+      break;
+    case INS_SIGN:
+      finalizeSignTx(flags);
+      break;
+    default:
+      THROW(0x6a82); // INCORRECT_DATA
   }
+  return true;
 }

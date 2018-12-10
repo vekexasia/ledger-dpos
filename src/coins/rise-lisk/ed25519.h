@@ -1,4 +1,6 @@
-#include "stdbool.h"
+#include <inttypes.h>
+#include <stdbool.h>
+#include "os.h"
 
 /**
  * Derive private and public from bip32

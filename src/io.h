@@ -1,4 +1,5 @@
-
+#include <stdbool.h>
+#include <inttypes.h>
 #ifndef IO_PROTOCOL
   #define IO_PROTOCOL
   /**
@@ -28,11 +29,15 @@
       short crc16;
   } commContext_t;
 
-  typedef  struct commPacket_t {
-      uint8_t data[256]:
+  typedef struct commPacket_t {
+      uint8_t data[256];
       uint8_t length;
-  };
+      bool first;
+  } commPacket_t;
 
   extern commContext_t commContext;
-  extern commPacket_t comPacket;
+  extern commPacket_t commPacket;
+
+  uint64_t readUint64LE(uint8_t * data);
+  uint8_t encodeVarInt(uint64_t value, uint8_t * whereTo);
 #endif

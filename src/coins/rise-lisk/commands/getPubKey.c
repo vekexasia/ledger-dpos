@@ -9,31 +9,34 @@
 #include "../ui_elements_s.h"
 #include "../../../ui_utils.h"
 #include "../../../io.h"
+#include "../approval.h"
+#include "os.h"
 
+uint8_t pubKeyResponseBuffer[32+22];
+
+static const bagl_element_t verify_address_ui[] = {
+  CLEAN_SCREEN,
+  TITLE_ITEM("Verify Address", 0x00),
+  ICON_CROSS(0x00),
+  ICON_CHECK(0x00),
+  LINEBUFFER,
+};
 
 /**
  * Creates the response for the getPublicKey command.
  * It returns both publicKey and derived Address
  */
-void createPublicKeyResponse() {
+static void createPublicKeyResponse() {
   initResponse();
-  getEncodedPublicKey(&signContext.publicKey, rawData);
-  addToResponse(rawData, 32);
+  getEncodedPublicKey(&signContext.publicKey, pubKeyResponseBuffer);
+  addToResponse(pubKeyResponseBuffer, 32);
   uint64_t address = deriveAddressFromPublic(&signContext.publicKey);
-  uint8_t length = deriveAddressStringRepresentation(address, (char *) (rawData + 32));
+  uint8_t length = deriveAddressStringRepresentation(address, (char *) (pubKeyResponseBuffer + 32));
 
-  addToResponse(rawData + 32, length);
+  addToResponse(pubKeyResponseBuffer + 32, length);
 }
 
-static void ui_address(void) {
-  uint64_t address = deriveAddressFromPublic(&signContext.publicKey);
-  uint8_t length = deriveAddressStringRepresentation(address, lineBuffer);
-  lineBuffer[length] = '\0';
-  UX_DISPLAY(bagl_ui_address_review_nanos, NULL);
-}
-
-
-unsigned int bagl_ui_address_review_nanos_button(unsigned int button_mask, unsigned int button_mask_counter) {
+unsigned int verify_address_ui_button(unsigned int button_mask, unsigned int button_mask_counter) {
   switch (button_mask) {
     case BUTTON_EVT_RELEASED | BUTTON_RIGHT:
       createPublicKeyResponse();
@@ -46,20 +49,23 @@ unsigned int bagl_ui_address_review_nanos_button(unsigned int button_mask, unsig
 
       // Display back the original UX
       ui_idle();
-      return 0; // do not redraw the widget
       break;
-
     case BUTTON_EVT_RELEASED | BUTTON_LEFT:
-      io_seproxyhal_touch_deny(NULL);
+      touch_deny();
       break;
   }
   return 0;
 }
 
 
+static void ui_address(void) {
+  uint64_t address = deriveAddressFromPublic(&signContext.publicKey);
+  uint8_t length = deriveAddressStringRepresentation(address, lineBuffer);
+  lineBuffer[length] = '\0';
+  UX_DISPLAY(verify_address_ui, NULL);
+}
 
-
-public void handleGetPublicKey(volatile unsigned int *flags, uint8_t *bip32Path, bool confirmationRequest) {
+void handleGetPublicKey(volatile unsigned int *flags, uint8_t *bip32Path, bool confirmationRequest) {
   // Derive pubKey
   derivePrivatePublic(bip32Path, &signContext.privateKey, &signContext.publicKey);
   os_memset(&signContext.privateKey, 0, sizeof(signContext.privateKey));

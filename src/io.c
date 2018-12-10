@@ -36,6 +36,7 @@ void initResponse() {
 unsigned int flushResponseToIO(void *out) {
   // Write how many infos toWrite
   os_memmove(out, &(response.n), 1);
+  PRINTF("Flushing %d responses\n", response.n);
   unsigned int total = 1;
   uint8_t i = 0;
   for (i = 0; i < response.n; i++) {
@@ -46,8 +47,12 @@ unsigned int flushResponseToIO(void *out) {
     os_memmove(out + total, response.what[i], response.whatLength[i]);
     total += response.whatLength[i];
   }
+
+  PRINTF("Written %d bytes to stdout\n", total);
 //     Reset.
   initResponse();
+
+  PRINTF("Reset\n");
 
   return total;
 }
@@ -55,3 +60,37 @@ unsigned int flushResponseToIO(void *out) {
 
 commContext_t commContext;
 commPacket_t commPacket;
+
+uint64_t readUint64LE(uint8_t * data) {
+  uint32_t toRet = 0;
+  uint8_t i;
+  for (i = 0; i < 8; i++) {
+    toRet |= ((uint64_t ) data[i]) << (8*i);
+  }
+  return toRet;
+}
+
+uint8_t encodeVarInt(uint64_t value, uint8_t * whereTo) {
+  uint8_t tmp;
+  if (value <= 0xfc) {
+    os_memmove(whereTo, &value, 1);
+    return 1;
+  } else if (value <= 0xffff) {
+    tmp = 0xfd;
+    os_memmove(whereTo, &tmp, 1);
+    os_memmove(whereTo+1, &value, 2);
+    return 3;
+  } else if (value <= 0xffffffff) {
+    tmp = 0xfe;
+    os_memmove(whereTo, &tmp, 1);
+    os_memmove(whereTo+1, &value, 4);
+    return 5;
+  } else if (value <= 0xffffffffffffffff) {
+    tmp = 0xff;
+    os_memmove(whereTo, &tmp, 1);
+    os_memmove(whereTo+1, &value, 8);
+    return 9;
+  }
+  // Error
+  return -1;
+}

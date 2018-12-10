@@ -18,6 +18,9 @@
 ifeq ($(BOLOS_SDK),)
 $(error BOLOS_SDK is not set)
 endif
+ifeq (customCA.key,$(wildcard customCA.key))
+  SCP_PRIVKEY=`cat customCA.key`
+endif
 include $(BOLOS_SDK)/Makefile.defines
 
 # Main app configuration
@@ -36,13 +39,13 @@ ifeq ($(COIN), all)
 	APP_LOAD_PARAMS += --path "44'/134'" --path "44'/1120'"
 	ADDRESS_SUFFIX = "D"
 	SIGNED_MESSAGE_PREFIX = 'dPoS|Signed|Message:\n'
-	NVRAM_MAX = 2500
+	NVRAM_MAX = 0
 else ifeq ($(COIN), lisk)
 	APPNAME = "Lisk"
 	APP_LOAD_PARAMS += --path "44'/134'"
 	ADDRESS_SUFFIX = "L"
 	SIGNED_MESSAGE_PREFIX = "Lisk|Signed|Message:\n"
-	NVRAM_MAX = 2500
+	NVRAM_MAX = 0
 else ifeq ($(COIN), rise)
 	APPNAME = "Rise"
 	APP_LOAD_PARAMS += --path "44'/1120'"
@@ -65,8 +68,8 @@ SDK_SOURCE_PATH += lib_u2f lib_stusb lib_stusb_impl
 
 DEFINES   += OS_IO_SEPROXYHAL IO_SEPROXYHAL_BUFFER_SIZE_B=300
 DEFINES   += HAVE_BAGL HAVE_SPRINTF
-#DEFINES   += HAVE_PRINTF PRINTF=screen_printf
-DEFINES   += PRINTF\(...\)=
+DEFINES   += HAVE_PRINTF PRINTF=screen_printf
+#DEFINES   += PRINTF\(...\)=
 DEFINES   += HAVE_IO_USB HAVE_L4_USBLIB IO_USB_MAX_ENDPOINTS=6 IO_HID_EP_LENGTH=64 HAVE_USB_APDU
 DEFINES   += APP_MAJOR_VERSION=$(APPVERSION_M) APP_MINOR_VERSION=$(APPVERSION_N) APP_PATCH_VERSION=$(APPVERSION_P)
 DEFINES   += MAX_ADPU_OUTPUT_SIZE=$(MAX_ADPU_OUTPUT_SIZE)

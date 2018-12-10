@@ -1,15 +1,20 @@
 #include <stdbool.h>
-
+#include "os.h"
+#include <inttypes.h>
+#include "../../io.h"
 #ifndef STRUCT_TX
 #define STRUCT_TX
-typedef struct transaction {
-    uint8_t type;
-    uint64_t recipientId;
-    uint64_t amountSatoshi;
-    char shortDesc[22];
-    char message[64];
-};
+typedef struct signContext_t {
+    cx_ecfp_private_key_t privateKey;
+    cx_ecfp_public_key_t publicKey;
+    uint16_t signableContentLength;
+    uint8_t reserved;
 
+    // Holds digest to sign
+    uint8_t digest[32];
+} signContext_t;
+
+extern signContext_t signContext;
 #endif
 
 /**
@@ -45,12 +50,4 @@ uint8_t deriveAddressStringRepresentation(uint64_t encodedAddress, char *output)
  */
 uint64_t deriveAddressFromPublic(cx_ecfp_public_key_t *publicKey);
 
-/**
- * Parse a transaction.
- * @param txBytes transaction bytes as returned by getBytes.
- * @param length length of bytes
- * @param hasRequesterPublicKey true if the tx has requesterPublicKey field set
- * @param out output
- */
-void parseTransaction(uint8_t *txBytes, uint32_t length, bool hasRequesterPublicKey, struct transaction *out);
-
+void setSignContext(commPacket_t *packet);
