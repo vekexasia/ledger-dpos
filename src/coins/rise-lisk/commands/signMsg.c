@@ -38,11 +38,13 @@ void handleSignMessagePacket(commPacket_t *packet, commContext_t *context) {
     tmp = strlen(SIGNED_MESSAGE_PREFIX);
 
     varintLength = encodeVarInt(tmp, varint);
-
+      PRINTF("VarInt %.*H", varintLength, varint);
     cx_hash(&messageHash, 0, varint, varintLength, 0, 0);
     cx_hash(&messageHash, 0, SIGNED_MESSAGE_PREFIX, strlen(SIGNED_MESSAGE_PREFIX), 0, 0);
 
-    varintLength = encodeVarInt(context->totalAmount, varint);
+    varintLength = encodeVarInt(context->totalAmount - 1, varint);
+    PRINTF("VarInt %.*H", varintLength, varint);
+    PRINTF("Total Amount %d", context->totalAmount - 1);
     cx_hash(&messageHash, 0, varint, varintLength, 0, 0);
 
     os_memset(lineBuffer, 0, 50);
@@ -55,7 +57,6 @@ void handleSignMessagePacket(commPacket_t *packet, commContext_t *context) {
 }
 
 unsigned int sign_message_ui_button(unsigned int button_mask, unsigned int button_mask_counter) {
-  PRINTF("DIObubu\n");
   switch (button_mask) {
     case BUTTON_EVT_RELEASED | BUTTON_RIGHT:
       ui_approval();
@@ -74,56 +75,17 @@ void processSignMessage(volatile unsigned int *flags) {
   uint8_t finalHash[32];
 
   // Close first sha256
-  PRINTF("Closing first hash\n");
   cx_hash(&messageHash, CX_LAST, finalHash, 0, preFinalHash, 32);
-  PRINTF("Closing second hash\n");
 
   // Second sha256
   cx_hash_sha256(preFinalHash, 32, finalHash, 32);
+  PRINTF("HASH is: %.*h", 32, preFinalHash);
+  PRINTF("2. HASH is: %.*h", 32, finalHash);
 
-  os_memmove(&signContext.digest, finalHash, 32);
+  os_memmove(signContext.digest, finalHash, 32);
   // Init user flow.
-  *flags |= IO_ASYNCH_REPLY;
-  PRINTF("DIGEST: %.*h\n", 32, finalHash);
-  PRINTF("lineBuffer: %s\n", lineBuffer);
-  ux.elements = sign_message_ui;
-  PRINTF("DISPLAY\n");
-  ux.elements_count = sizeof(sign_message_ui) / sizeof(sign_message_ui[0]);
-  PRINTF("DISPLAY %d\n", ux.elements_count);
-  ux.elements_current = 0;
-  ux.button_push_handler = sign_message_ui_button;
-  PRINTF("DISPLAY\n");
-  ux.elements_preprocessor = NULL;
-  PRINTF("UX_WAKE_UP\n");
-  UX_WAKE_UP();
-  PRINTF("UX_REDISPLAY\n");
-//  UX_REDISPLAY();
-  io_seproxyhal_init_ux();
-  PRINTF("AFTER_INIT\n");
-    ux.elements_current = 0;
-    /* REDRAW is redisplay already */
-    if (ux.params.len != BOLOS_UX_IGNORE &&
-        ux.params.len != BOLOS_UX_CONTINUE) {
-      PRINTF("Inner, DISPLAY_NEXT_ELEMENT\n");
-      while (ux.elements && ux.elements_current < ux.elements_count &&
-           !io_seproxyhal_spi_is_status_sent()) {
-        const bagl_element_t *element = &ux.elements[ux.elements_current];
-        if (!ux.elements_preprocessor ||
-            (element = ux.elements_preprocessor(element))) {
-            if ((unsigned int)element ==
-                1) { /*backward compat with coding to avoid smashing
-                        everything*/
-                element = &ux.elements[ux.elements_current];
-            }
-            PRINTF("CIAO\n %s", element);
-            io_seproxyhal_display(element);
-            PRINTF("OU\n");
-        }
-        ux.elements_current++;
-    }
-
-    }
-  PRINTF("DISPLAY\n");
+//  *flags |= IO_ASYNCH_REPLY;
 //  UX_DISPLAY(sign_message_ui, NULL);
-  PRINTF("After Display\n");
+
+  touch_approve();
 }

@@ -119,5 +119,7 @@ void setSignContext(commPacket_t *packet) {
   os_memmove(tmp, packet->data + bytesRead, packet->length - bytesRead);
   os_memmove(packet->data, tmp, packet->length - bytesRead);
   packet->length -= bytesRead;
+  PRINTF("REmoved data %d %d %d", bytesRead, commContext.totalAmount, commContext.totalAmount-bytesRead);
+  commContext.totalAmount -= bytesRead;
 //  return bytesRead;
 }
