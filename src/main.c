@@ -81,12 +81,6 @@ void handleStartCommPacket() {
   prevCRC = 0;
   initResponse();
   addToResponse(&commContext.totalAmount, 2);
-
-  if (commContext.totalAmount > MAX(NVRAM_MAX, 1000)) {
-    // We exceed the totalAmount of data possible.
-    // we throw
-    THROW(0x6a84); // NOT_ENOUGH_MEMORY_SPACE
-  }
 }
 
 /**

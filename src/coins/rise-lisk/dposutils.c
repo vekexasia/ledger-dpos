@@ -101,7 +101,7 @@ uint64_t deriveAddressFromPublic(cx_ecfp_public_key_t *publicKey) {
  * @param dataBuffer the  buffer to read from.
  * @return the amount of bytesRead
  */
-void setSignContext(commPacket_t *packet) {
+uint32_t setSignContext(commPacket_t *packet) {
   // reset current result
   uint8_t tmp[256];
   os_memset(&signContext.digest, 0, 32);
@@ -120,6 +120,6 @@ void setSignContext(commPacket_t *packet) {
   os_memmove(packet->data, tmp, packet->length - bytesRead);
   packet->length -= bytesRead;
   PRINTF("REmoved data %d %d %d", bytesRead, commContext.totalAmount, commContext.totalAmount-bytesRead);
-  commContext.totalAmount -= bytesRead;
-//  return bytesRead;
+
+  return bytesRead;
 }
