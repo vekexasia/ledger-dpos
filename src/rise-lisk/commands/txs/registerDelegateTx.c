@@ -5,8 +5,8 @@
 #include "registerDelegateTx.h"
 #include "../signTx.h"
 #include "../../dposutils.h"
-#include "../../../../io.h"
-#include "../../../../ui_utils.h"
+#include "../../../io.h"
+#include "../../../ui_utils.h"
 
 static char username[21];
 static uint8_t read;

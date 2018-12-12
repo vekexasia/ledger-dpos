@@ -5,7 +5,7 @@
 #include "os.h"
 #include "cx.h"
 #include "dposutils.h"
-#include "../../io.h"
+#include "../io.h"
 #include "ed25519.h"
 
 signContext_t signContext;

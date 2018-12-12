@@ -5,8 +5,8 @@
 #include "createMultiSig.h"
 #include "../signTx.h"
 #include "../../dposutils.h"
-#include "../../../../io.h"
-#include "../../../../ui_utils.h"
+#include "../../../io.h"
+#include "../../../ui_utils.h"
 #include "os.h"
 
 static uint8_t minKeys = 0;

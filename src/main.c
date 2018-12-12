@@ -23,7 +23,7 @@
 #include "main.h"
 //#include "coins/rise-lisk/ui_elements_s.h"
 #include "io.h"
-#include "coins/rise-lisk/impl.h"
+#include "rise-lisk/impl.h"
 #define INS_COM_START 89
 #define INS_COM_CONTINUE 90
 #define INS_COM_END 91
@@ -70,6 +70,7 @@ unsigned short io_exchange_al(unsigned char channel, unsigned short tx_len) {
  * Handles the start communication packet
  */
 void handleStartCommPacket() {
+  PRINTF("handleStartCommPacket\n");
   commContext.started = true;
   commContext.read = 0;
   commContext.crc16 = 0;
@@ -132,7 +133,7 @@ void handleCommPacket() {
 
 
 void processCommPacket(volatile unsigned int *flags) {
-  PRINTF("Compacket data:\n %.*H \n\n", commPacket.length, commPacket.data);
+  //PRINTF("Compacket data:\n %.*H \n\n", commPacket.length, commPacket.data);
 
   if (commContext.command == INS_VERSION) {
     initResponse();

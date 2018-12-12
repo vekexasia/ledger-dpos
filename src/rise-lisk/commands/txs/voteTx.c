@@ -3,7 +3,7 @@
 //
 
 #include "voteTx.h"
-#include "../../../../ui_utils.h"
+#include "../../../ui_utils.h"
 #include "../signTx.h"
 #include "../../dposutils.h"
 

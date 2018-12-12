@@ -1,7 +1,7 @@
 //
 // Created by andrea on 09/12/18.
 //
-#include "../../../../io.h"
+#include "../../../io.h"
 #include "../signTx.h"
 #ifndef PROJECT_SENDTX_H
 #define PROJECT_SENDTX_H

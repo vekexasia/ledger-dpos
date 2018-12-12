@@ -3,7 +3,7 @@
 //
 
 #include "signTx.h"
-#include "../../../io.h"
+#include "../../io.h"
 #include "../dposutils.h"
 #include "./txs/sendTx.h"
 #include "./txs/voteTx.h"
@@ -11,7 +11,7 @@
 #include "./txs/createSignatureTx.h"
 #include "./txs/registerDelegateTx.h"
 #include "../approval.h"
-#include "../../../ui_utils.h"
+#include "../../ui_utils.h"
 
 #define TXTYPE_SEND 0
 #define TXTYPE_CREATESIGNATURE 1
@@ -81,22 +81,30 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
     // Set signing context from first packet and patches the .data and .length by removing header length
     setSignContext(packet);
 
+    PRINTF("AFTER setSignContext\n");
+
     // Reset sha256
     cx_sha256_init(&txHash);
 
+    PRINTF("AFTER cx_sha256_init\n");
+
     // fetch transaction type
     transaction.type = packet->data[0];
+    PRINTF("transaction.type: %d\n", transaction.type);
     uint32_t recIndex = 1 /*type*/
                         + 4 /*timestamp*/
                         + 32 /*senderPublicKey */
                         + (signContext.reserved == true ? 32 : 0) /*requesterPublicKey */;
+    PRINTF("recIndex: %d\n", recIndex);
     transaction.recipientId = deriveAddressFromUintArray(packet->data + recIndex, false);
+    PRINTF("transaction.recipientId: %d\n", transaction.recipientId);
     uint32_t i = 0;
 
     transaction.amountSatoshi = 0;
     for (i = 0; i < 8; i++) {
       transaction.amountSatoshi |= ((uint64_t )packet->data[recIndex + 8 + i]) << (8*i);
     }
+    PRINTF("transaction.amountSatoshi: %d\n", transaction.amountSatoshi);
 
     os_memset(transaction.shortDesc, 0, 22);
 

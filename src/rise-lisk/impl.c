@@ -3,7 +3,7 @@
 //
 
 #include "impl.h"
-#include "../../io.h"
+#include "../io.h"
 #include "./ed25519.h"
 #include "./dposutils.h"
 #include "./ui_elements_s.h"
@@ -17,6 +17,7 @@
 #define INS_SIGN_MSG 0x06
 #define INS_PING 0x08
 #define INS_VERSION 0x09
+
 void innerHandleCommPacket(commPacket_t *packet, commContext_t *context) {
   switch (context->command) {
     case INS_GET_PUBLIC_KEY:

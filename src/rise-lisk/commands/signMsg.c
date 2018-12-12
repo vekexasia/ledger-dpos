@@ -3,8 +3,8 @@
 //
 
 #include "signMsg.h"
-#include "../../../io.h"
-#include "../../../ui_utils.h"
+#include "../../io.h"
+#include "../../ui_utils.h"
 #include "cx.h"
 #include "os.h"
 #include "../dposutils.h"

@@ -1,6 +1,6 @@
 #include "stdbool.h"
-#include "coins/rise-lisk/ui_elements_s.h"
-#include "coins/rise-lisk/dposutils.h"
+#include "rise-lisk/ui_elements_s.h"
+#include "rise-lisk/dposutils.h"
 
 static bagl_element_t *io_seproxyhal_touch_exit(const bagl_element_t *e);
 static bagl_element_t *io_seproxyhal_touch_approve(const bagl_element_t *e);

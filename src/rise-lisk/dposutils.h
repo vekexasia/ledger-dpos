@@ -1,7 +1,7 @@
 #include <stdbool.h>
 #include "os.h"
 #include <inttypes.h>
-#include "../../io.h"
+#include "../io.h"
 #ifndef STRUCT_TX
 #define STRUCT_TX
 typedef struct signContext_t {

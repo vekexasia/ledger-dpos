@@ -4,7 +4,7 @@
 
 #include "createSignatureTx.h"
 #include "../../dposutils.h"
-#include "../../../../ui_utils.h"
+#include "../../../ui_utils.h"
 
 static uint8_t pubkey[32];
 static uint8_t read;
@@ -53,15 +53,21 @@ static uint8_t stepProcessor_2nd_sign(uint8_t step) {
 }
 
 void tx_init_2ndsig() {
+  PRINTF("tx_init_2ndsig\n");
   os_memset(pubkey, 0, 32);
   read = 0;
 }
 
 void tx_chunk_2ndsig(commPacket_t *packet, transaction_t *tx) {
-  if (read + packet->length > 32) {
+  PRINTF("tx_chunk_2ndsig\n");
+  PRINTF("read: %d | packet lenght: %d\n", read, packet->length);
+  /*if (read + packet->length > 32) {
+	  PRINTF("PRE THROW INVALID_PARAMETER\n");
     THROW(INVALID_PARAMETER);
-  }
+  }*/
+  PRINTF("NO THROW INVALID_PARAMETER\n");
   os_memmove(pubkey + read, packet->data, packet->length);
+
   read += packet->length;
 }
 

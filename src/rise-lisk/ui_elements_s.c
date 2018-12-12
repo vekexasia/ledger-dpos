@@ -1,8 +1,8 @@
 #include <string.h>
 #include "os_io_seproxyhal.h"
 #include "dposutils.h"
-#include "../../glyphs.h"
-#include "../../ui_utils.h"
+#include "../glyphs.h"
+#include "../ui_utils.h"
 
 const ux_menu_entry_t menu_main[];
 const ux_menu_entry_t menu_about[];
