@@ -156,11 +156,12 @@ void finalizeSignTx(volatile unsigned int *flags) {
   os_memmove(&signContext.digest, txHash.acc, 32);
 
   // Init user flow.
-  *flags |= IO_ASYNCH_REPLY;
   step_processor = default_step_processor;
   ui_processor = NULL;
   tx_end(&transaction);
+
   currentStep = 1;
+  *flags |= IO_ASYNCH_REPLY;
 
   ux.button_push_handler = ui_sign_tx_button;
   ux.elements_preprocessor = signtx_ui_preprocessor;

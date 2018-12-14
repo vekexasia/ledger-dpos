@@ -73,7 +73,7 @@ void tx_end_regdel(transaction_t *tx) {
       !(c == '!' || c == '@' || c == '$' || c == '&' || c == '_' || c == '.')) {
       username[i] = '\0';
       read = i;
-      //THROW(INVALID_PARAMETER);
+      THROW(INVALID_PARAMETER);
     }
   }
 
