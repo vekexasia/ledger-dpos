@@ -107,8 +107,6 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
     }
     PRINTF("transaction.amountSatoshi: %d\n", transaction.amountSatoshi);
 
-    os_memset(transaction.shortDesc, 0, 22);
-
     if (transaction.type == TXTYPE_SEND) {
       tx_init  = tx_init_send;
       tx_chunk = tx_chunk_send;
@@ -133,16 +131,14 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
     tx_init();
   }
 
-  // Lets skip first bytes and craft a new packet with only bytes starting from asset
-  commPacket_t tmp;
-
-  uint8_t headerLength = ! packet->first ? 0 :  1 /*type*/
-                                                + 4 /*timestamp*/
-                                                + 32 /*senderPublicKey */
-                                                + (signContext.reserved == true ? 32 : 0) /*requesterPublicKey */
-                                                + 8 /*recid */
-                                                + 8 /*amount */;
-  tx_chunk(packet->data + headerLength, packet->length - headerLength, packet, &transaction);
+  // Lets skip first bytes pass data starting from asset
+  uint8_t assetIndex = ! packet->first ? 0 :  1 /*type*/
+                                            + 4 /*timestamp*/
+                                            + 32 /*senderPublicKey */
+                                            + (signContext.reserved == true ? 32 : 0) /*requesterPublicKey */
+                                            + 8 /*recid */
+                                            + 8 /*amount */;
+  tx_chunk(packet->data + assetIndex, packet->length - assetIndex, packet, &transaction);
 
   cx_hash(&txHash, NULL, packet->data, packet->length, NULL, NULL);
 }

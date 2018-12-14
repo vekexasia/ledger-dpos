@@ -10,6 +10,8 @@
 
 static char username[21];
 static uint8_t read;
+static uint16_t totalLengthAfterAsset;
+
 
 /**
  * Create second signature with address
@@ -47,18 +49,23 @@ static void stepProcessor_regDelegate(uint8_t step) {
 void tx_init_regdel() {
   os_memset(username, 0, 21);
   read = 0;
+  totalLengthAfterAsset = 0;
 }
 
 void tx_chunk_regdel(uint8_t * data, uint8_t length, commPacket_t *sourcePacket, transaction_t *tx) {
-  // TODO: check username validity.
-  os_memmove(username + read, data, MIN(20-read, length ));
-  read += MIN(20-read, length);
+  uint8_t toReadLength = MAX(0, MIN(20 - read, length));
+  os_memmove(username + read, data, toReadLength);
+  read += toReadLength;
+  totalLengthAfterAsset += length;
 }
 
 void tx_end_regdel(transaction_t *tx) {
+  uint8_t usernameLength = totalLengthAfterAsset - (totalLengthAfterAsset / 64) * 64;
+  os_memmove(username, username, MIN(20, usernameLength));
+  read = usernameLength;
   // chunk username
   uint8_t i;
-  for (i=0; i<read; i++) {
+  for (i=0; i<usernameLength; i++) {
     char c = username[i];
     if (
       !(c >= 'a' && c <= 'z') &&
@@ -66,6 +73,7 @@ void tx_end_regdel(transaction_t *tx) {
       !(c == '!' || c == '@' || c == '$' || c == '&' || c == '_' || c == '.')) {
       username[i] = '\0';
       read = i;
+      //THROW(INVALID_PARAMETER);
     }
   }
 

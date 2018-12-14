@@ -12,7 +12,6 @@
 static char message[64];
 static uint8_t curLength;
 static uint16_t totalLengthAfterAsset;
-static bool stopProcessingMessage;
 /**
  * Sign with address
  */
@@ -64,7 +63,6 @@ static void uiProcessor_send(uint8_t step) {
 void tx_init_send() {
   curLength = 0;
   totalLengthAfterAsset = 0;
-  stopProcessingMessage = false;
   os_memset(message, 0, 64);
 }
 

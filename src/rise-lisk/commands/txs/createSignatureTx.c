@@ -59,7 +59,7 @@ void tx_init_2ndsig() {
 
 void tx_chunk_2ndsig(uint8_t * data, uint8_t length, commPacket_t *sourcePacket, transaction_t *tx) {
   PRINTF("tx_chunk_2ndsig\n");
-  PRINTF("read: %d | packet lenght: %d\n", read, packet->length);
+  PRINTF("read: %d | packet lenght: %d\n", read, length);
   /*if (read + packet->length > 32) {
 	  PRINTF("PRE THROW INVALID_PARAMETER\n");
     THROW(INVALID_PARAMETER);
