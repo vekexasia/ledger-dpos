@@ -11,6 +11,8 @@
 
 static char message[64];
 static uint8_t curLength;
+static uint16_t totalLengthAfterAsset;
+static bool stopProcessingMessage;
 /**
  * Sign with address
  */
@@ -28,46 +30,57 @@ static const bagl_element_t ui_send_nano[] = {
   LINEBUFFER,
 };
 
-static uint8_t stepProcessor_send_ui(uint8_t step) {
+static uint8_t stepProcessor_send(uint8_t step) {
+  if (step == 2 && curLength == 0) {
+    return 4;
+  }
+  return step + 1;
+}
+
+static void uiProcessor_send(uint8_t step) {
   uint64_t address;
   os_memset(lineBuffer, 0, 50);
   switch (step) {
     case 1:
       address = deriveAddressFromPublic(&signContext.publicKey);
       deriveAddressStringRepresentation(address, lineBuffer);
-      return 2;
+      break;
     case 2:
       deriveAddressStringRepresentation(transaction.recipientId, lineBuffer);
-      if (curLength == 0) {
-        return 4;
-      }
-      return 3;
+      break;
     case 3:
       os_memmove(lineBuffer, message, MIN(50, curLength));
       // ellipsis
       if (curLength > 47) {
         os_memmove(lineBuffer + 47, "...", 3);
       }
-      return 4;
+      break;
     case 4:
       satoshiToString(transaction.amountSatoshi, lineBuffer);
   }
-  return 0;
 }
 
 
 void tx_init_send() {
   curLength = 0;
+  totalLengthAfterAsset = 0;
+  stopProcessingMessage = false;
   os_memset(message, 0, 64);
 }
 
-void tx_chunk_send(commPacket_t *packet, transaction_t *tx) {
-  os_memmove(message+curLength, packet->data, MIN(64 - curLength, packet->length));
+void tx_chunk_send(uint8_t * data, uint8_t length, commPacket_t *sourcePacket, transaction_t *tx) {
+  uint8_t toReadLength = MAX(0, MIN(64 - curLength, length));
+  os_memmove(message+curLength, data, toReadLength);
+  curLength += toReadLength;
+  totalLengthAfterAsset += length;
 }
 
 void tx_end_send(transaction_t *tx) {
+  // Remove signature and/or secondSignature from message.
+  curLength = totalLengthAfterAsset - (totalLengthAfterAsset / 64) * 64;
   ux.elements = ui_send_nano;
   ux.elements_count = 11;
   totalSteps = 4;
-  step_processor = stepProcessor_send_ui;
+  step_processor = stepProcessor_send;
+  ui_processor = uiProcessor_send;
 }

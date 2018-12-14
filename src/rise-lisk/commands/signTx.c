@@ -20,13 +20,13 @@
 #define TXTYPE_CREATEMULTISIG 4
 
 typedef void (*tx_init_fn)();
-typedef void (*tx_chunk_fn)(commPacket_t *packet, transaction_t *tx);
+typedef void (*tx_chunk_fn)(uint8_t * data, uint8_t length, commPacket_t *sourcePacket, transaction_t *tx);
 typedef void (*tx_end_fn)(transaction_t *tx);
 
 tx_init_fn tx_init;
 tx_chunk_fn tx_chunk;
 tx_end_fn tx_end;
-
+ui_processor_fn ui_processor;
 step_processor_fn step_processor;
 
 static const bagl_element_t sign_message_ui[] = {
@@ -62,6 +62,7 @@ static void ui_sign_tx_button(unsigned int button_mask, unsigned int button_mask
     case BUTTON_EVT_RELEASED | BUTTON_RIGHT:
       if (currentStep < totalSteps) {
         currentStep = step_processor(currentStep);
+        ui_processor(currentStep);
         UX_REDISPLAY();
       } else {
         touch_approve();
@@ -132,10 +133,23 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
     tx_init();
   }
 
-  tx_chunk(packet, &transaction);
+  // Lets skip first bytes and craft a new packet with only bytes starting from asset
+  commPacket_t tmp;
+
+  uint8_t headerLength = ! packet->first ? 0 :  1 /*type*/
+                                                + 4 /*timestamp*/
+                                                + 32 /*senderPublicKey */
+                                                + (signContext.reserved == true ? 32 : 0) /*requesterPublicKey */
+                                                + 8 /*recid */
+                                                + 8 /*amount */;
+  tx_chunk(packet->data + headerLength, packet->length - headerLength, packet, &transaction);
 
   cx_hash(&txHash, NULL, packet->data, packet->length, NULL, NULL);
 }
+static uint8_t default_step_processor(uint8_t cur) {
+  return cur + 1;
+}
+
 
 void finalizeSignTx(volatile unsigned int *flags) {
   uint8_t finalHash[32];
@@ -147,12 +161,15 @@ void finalizeSignTx(volatile unsigned int *flags) {
 
   // Init user flow.
   *flags |= IO_ASYNCH_REPLY;
+  step_processor = default_step_processor;
+  ui_processor = NULL;
   tx_end(&transaction);
   currentStep = 1;
 
   ux.button_push_handler = ui_sign_tx_button;
   ux.elements_preprocessor = signtx_ui_preprocessor;
 
+  ui_processor(1);
   UX_WAKE_UP();
   UX_REDISPLAY();
 }

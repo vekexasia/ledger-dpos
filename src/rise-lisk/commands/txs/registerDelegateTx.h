@@ -7,7 +7,7 @@
 #define PROJECT_REGISTERDELEGATETX_H
 void tx_init_regdel();
 
-void tx_chunk_regdel(commPacket_t *packet, transaction_t *tx);
+void tx_chunk_regdel(uint8_t * data, uint8_t length, commPacket_t *sourcePacket, transaction_t *tx);
 
 void tx_end_regdel(transaction_t *tx);
 #endif //PROJECT_REGISTERDELEGATETX_H

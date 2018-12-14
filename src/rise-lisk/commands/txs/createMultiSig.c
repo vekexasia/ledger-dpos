@@ -30,7 +30,7 @@ static const bagl_element_t ui_multisig_nano[] = {
 };
 
 
-static uint8_t stepProcessor_multi(uint8_t step) {
+static void stepProcessor_multi(uint8_t step) {
   uint64_t tmp = 0;
   os_memset(lineBuffer, 0, 50);
   switch (step) {
@@ -52,7 +52,6 @@ static uint8_t stepProcessor_multi(uint8_t step) {
       os_memmove(lineBuffer+tmp, " hours\0", 7);
       break;
   }
-  return step + 1;
 }
 
 void tx_init_multisig(){
@@ -60,10 +59,10 @@ void tx_init_multisig(){
   lifetime = 0;
 }
 
-void tx_chunk_multisig(commPacket_t *packet, transaction_t *tx){
+void tx_chunk_multisig(uint8_t * data, uint8_t length, commPacket_t *sourcePacket, transaction_t *tx){
   if (minKeys == 0) {
-    minKeys = packet->data[0];
-    lifetime = packet->data[1];
+    minKeys = data[0];
+    lifetime = data[1];
   }
 }
 
@@ -71,5 +70,5 @@ void tx_end_multisig(transaction_t *tx){
   ux.elements = ui_multisig_nano;
   ux.elements_count = 11;
   totalSteps = 4;
-  step_processor = stepProcessor_multi;
+  ui_processor = stepProcessor_multi;
 }

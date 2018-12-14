@@ -26,7 +26,7 @@ static const bagl_element_t ui_regdelegate_nano[] = {
   LINEBUFFER,
 };
 
-static uint8_t stepProcessor_regDelegate(uint8_t step) {
+static void stepProcessor_regDelegate(uint8_t step) {
   os_memset(lineBuffer, 0, 50);
   uint64_t address;
   switch (step) {
@@ -41,7 +41,6 @@ static uint8_t stepProcessor_regDelegate(uint8_t step) {
       os_memmove(lineBuffer, username, read);
       break;
   }
-  return step + 1;
 }
 
 
@@ -50,10 +49,10 @@ void tx_init_regdel() {
   read = 0;
 }
 
-void tx_chunk_regdel(commPacket_t *packet, transaction_t *tx) {
+void tx_chunk_regdel(uint8_t * data, uint8_t length, commPacket_t *sourcePacket, transaction_t *tx) {
   // TODO: check username validity.
-  os_memmove(username + read, packet->data, MIN(20-read, packet->length ));
-  read += MIN(20-read, packet->length);
+  os_memmove(username + read, data, MIN(20-read, length ));
+  read += MIN(20-read, length);
 }
 
 void tx_end_regdel(transaction_t *tx) {
@@ -74,6 +73,6 @@ void tx_end_regdel(transaction_t *tx) {
   ux.elements = ui_regdelegate_nano;
   ux.elements_count = 9;
   totalSteps = 3;
-  step_processor = stepProcessor_regDelegate;
+  ui_processor = stepProcessor_regDelegate;
 
 }

@@ -26,7 +26,7 @@ const bagl_element_t ui_vote_nano[] = {
 };
 
 
-static uint8_t stepProcessor_vote(uint8_t step) {
+static void stepProcessor_vote(uint8_t step) {
   uint64_t address;
   os_memset(lineBuffer, 0, 50);
   switch (step) {
@@ -43,7 +43,6 @@ static uint8_t stepProcessor_vote(uint8_t step) {
       intToString(votesRemoved, lineBuffer);
       break;
   }
-  return step + 1;
 }
 
 void tx_init_vote() {
@@ -51,13 +50,13 @@ void tx_init_vote() {
   votesRemoved = 0;
 }
 
-void tx_chunk_vote(commPacket_t *packet, transaction_t *tx) {
+void tx_chunk_vote(uint8_t * data, uint8_t length, commPacket_t *sourcePacket, transaction_t *tx) {
   uint16_t i;
-  for (i=0; i< packet->length; i++) {
-    if (packet->data[i] == '+') {
+  for (i=0; i< length; i++) {
+    if (data[i] == '+') {
       votesAdded++;
-    } else if (packet->data[i] == '-') {
-      votesRemoved--;
+    } else if (data[i] == '-') {
+      votesRemoved++;
     }
   }
 }
@@ -66,5 +65,5 @@ void tx_end_vote(transaction_t *tx) {
   ux.elements = ui_vote_nano;
   ux.elements_count = 9;
   totalSteps = 3;
-  step_processor = stepProcessor_vote;
+  ui_processor = stepProcessor_vote;
 }

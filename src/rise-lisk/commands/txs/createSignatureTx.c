@@ -25,7 +25,7 @@ static const bagl_element_t ui_2ndsign_nano[] = {
 };
 
 
-static uint8_t stepProcessor_2nd_sign(uint8_t step) {
+static void stepProcessor_2nd_sign(uint8_t step) {
   os_memset(lineBuffer, 0, 50);
   uint64_t address;
   uint8_t i;
@@ -49,7 +49,6 @@ static uint8_t stepProcessor_2nd_sign(uint8_t step) {
       lineBuffer[14] = '\0';
       break;
   }
-  return step + 1;
 }
 
 void tx_init_2ndsig() {
@@ -58,7 +57,7 @@ void tx_init_2ndsig() {
   read = 0;
 }
 
-void tx_chunk_2ndsig(commPacket_t *packet, transaction_t *tx) {
+void tx_chunk_2ndsig(uint8_t * data, uint8_t length, commPacket_t *sourcePacket, transaction_t *tx) {
   PRINTF("tx_chunk_2ndsig\n");
   PRINTF("read: %d | packet lenght: %d\n", read, packet->length);
   /*if (read + packet->length > 32) {
@@ -66,14 +65,14 @@ void tx_chunk_2ndsig(commPacket_t *packet, transaction_t *tx) {
     THROW(INVALID_PARAMETER);
   }*/
   PRINTF("NO THROW INVALID_PARAMETER\n");
-  os_memmove(pubkey + read, packet->data, packet->length);
+  os_memmove(pubkey + read, data, length);
 
-  read += packet->length;
+  read += length;
 }
 
 void tx_end_2ndsig(transaction_t *tx) {
   ux.elements = ui_2ndsign_nano;
   ux.elements_count = 9;
   totalSteps = 3;
-  step_processor = stepProcessor_2nd_sign;
+  ui_processor = stepProcessor_2nd_sign;
 }

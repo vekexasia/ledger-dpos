@@ -8,7 +8,7 @@
 
 void tx_init_send();
 
-void tx_chunk_send(commPacket_t *packet, transaction_t *tx);
+void tx_chunk_send(uint8_t * data, uint8_t length, commPacket_t *sourcePacket, transaction_t *tx);
 
 void tx_end_send(transaction_t *tx);
 
