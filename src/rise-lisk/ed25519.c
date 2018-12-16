@@ -3,6 +3,8 @@
 #include "cx.h"
 
 #define MAX_BIP32_PATH 10
+#define LIBN_CURVE CX_CURVE_Ed25519
+#define LIBN_SEED_KEY "ed25519 seed"
 
 /**
  *
@@ -31,9 +33,13 @@ uint32_t derivePrivatePublic(uint8_t *bip32DataBuffer, cx_ecfp_private_key_t *pr
     bip32DataBuffer += 4;
     readData += 4;
   }
-  os_perso_derive_node_bip32(CX_CURVE_Ed25519, bip32Path, bip32PathLength,
-                             privateKeyData,
-                             NULL /* CHAIN CODE */);
+
+  os_perso_derive_node_bip32_seed_key(
+          HDW_ED25519_SLIP10, LIBN_CURVE,
+          bip32Path, bip32PathLength,
+          privateKeyData, NULL,
+          (unsigned char *)LIBN_SEED_KEY, sizeof(LIBN_SEED_KEY)
+  );
 
   cx_ecfp_init_private_key(CX_CURVE_Ed25519, privateKeyData, 32, privateKey);
 
