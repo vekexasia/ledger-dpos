@@ -45,6 +45,8 @@ void touch_approve() {
   initResponse();
   addToResponse(signature, 64);
 
+  PRINTF("2. SignedData is: %.*h\n", 64, signature);
+
   // Allow restart of operation
   commContext.started = false;
   commContext.read = 0;

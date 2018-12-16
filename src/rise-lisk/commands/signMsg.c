@@ -26,34 +26,55 @@ void handleSignMessagePacket(commPacket_t *packet, commContext_t *context) {
     // Set signing context from first packet and patches the .data and .length by removing header length
 
     uint8_t varint[9];
-    uint8_t varintLength;
-    uint64_t tmp;
     uint32_t headersLength = setSignContext(packet);
 
     // Rest sha256
     cx_sha256_init(&messageHash);
 
     // Signing header.
-
-    tmp = strlen(SIGNED_MESSAGE_PREFIX);
-
-    varintLength = encodeVarInt(tmp, varint);
-//      PRINTF("VarInt %.*H", varintLength, varint);
+    uint64_t prefixLength = strlen(SIGNED_MESSAGE_PREFIX);
+    uint8_t varintLength = encodeVarInt(prefixLength, varint);
+    PRINTF("VarInt %.*H\n", varintLength, varint);
     cx_hash(&messageHash, 0, varint, varintLength, NULL, 0);
-    cx_hash(&messageHash, 0, SIGNED_MESSAGE_PREFIX, strlen(SIGNED_MESSAGE_PREFIX), NULL, 0);
+    cx_hash(&messageHash, 0, SIGNED_MESSAGE_PREFIX, prefixLength, NULL, 0);
 
     varintLength = encodeVarInt(context->totalAmount - headersLength - 1, varint);
-//    PRINTF("VarInt %.*H", varintLength, varint);
-//    PRINTF("Total Amount %d", context->totalAmount - headersLength - 1);
+    PRINTF("VarInt %.*H\n", varintLength, varint);
+    PRINTF("Total Amount %d\n", context->totalAmount - headersLength - 1);
     cx_hash(&messageHash, 0, varint, varintLength, NULL, 0);
 
-    os_memset(lineBuffer, 0, 50);
-    os_memmove(lineBuffer, packet->data, MIN(50, packet->length));
-//    PRINTF("Signing %s %d", lineBuffer, packet->length);
+    prepareMsgLineBuffer(packet); //Enough doing it here for display purpose
+
+    PRINTF("Signing %s %d\n", lineBuffer, strlen(lineBuffer));
   }
 
   cx_hash(&messageHash, 0, packet->data, packet->length, NULL, 0);
 
+}
+
+void prepareMsgLineBuffer(commPacket_t *packet) {
+  os_memset(lineBuffer, 0, 50);
+  uint8_t msgDisplayLenth = MIN(50, packet->length);
+  os_memmove(lineBuffer, packet->data, msgDisplayLenth);
+  if (msgDisplayLenth > 46) {
+    os_memmove(lineBuffer+46, "...\0", 4);
+  }
+
+  uint8_t npc = 0; //Non Printable Chars Counter
+  for (uint8_t i=0; i < msgDisplayLenth; i++) {
+    PRINTF("IS_PRINTABLE %c\n", lineBuffer[i]);
+    npc += IS_PRINTABLE(lineBuffer[i]) ?
+            0 /* Printable Char */:
+            1 /* Non Printable Char */;
+  }
+
+  PRINTF("npc %d\n", npc);
+
+  // We rewrite the line buffer to <binary data> in case >= than 40% is non printable or first char is not printable.
+  if ((npc*100) / msgDisplayLenth >= 40 || ! IS_PRINTABLE(lineBuffer[0])) {
+    PRINTF("BINARY DATA here\n");
+    os_memmove(lineBuffer, "< binary data >\0", 16);
+  }
 }
 
 unsigned int sign_message_ui_button(unsigned int button_mask, unsigned int button_mask_counter) {
@@ -79,15 +100,11 @@ void processSignMessage(volatile unsigned int *flags) {
 
   // Second sha256
   cx_hash_sha256(preFinalHash, 32, finalHash, 32);
-//  PRINTF("HASH is: %.*h\n", 32, preFinalHash);
-//  PRINTF("2. HASH is: %.*h\n", 32, finalHash);
+  PRINTF("HASH is: %.*h\n", 32, preFinalHash);
+  PRINTF("2. HASH is: %.*h\n", 32, finalHash);
 
   os_memmove(signContext.digest, finalHash, 32);
   // Init user flow.
   *flags |= IO_ASYNCH_REPLY;
   UX_DISPLAY(sign_message_ui, NULL);
-//  sign(&signContext.privateKey, signContext.digest, 32, signedData);
-//  PRINTF("2. SignedData is: %.*h\n", 64, signedData);
-
-//  touch_approve();
 }

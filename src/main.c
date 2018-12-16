@@ -32,7 +32,6 @@
 #define INS_VERSION 0x09
 
 
-static unsigned int text_y;           // current location of the displayed text
 short crc; // holds the crc16 of the content.
 short prevCRC; // holds the crc16 of the prevpacket for comm layer.
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];

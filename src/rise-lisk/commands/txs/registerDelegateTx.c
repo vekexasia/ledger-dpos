@@ -60,27 +60,30 @@ void tx_chunk_regdel(uint8_t * data, uint8_t length, commPacket_t *sourcePacket,
 }
 
 void tx_end_regdel(transaction_t *tx) {
+
+  //Calculate the exact username length by removing signatures
   uint8_t usernameLength = totalLengthAfterAsset - (totalLengthAfterAsset / 64) * 64;
   os_memmove(username, username, MIN(20, usernameLength));
   read = usernameLength;
-  // chunk username
-  uint8_t i;
-  for (i=0; i<usernameLength; i++) {
-    char c = username[i];
-    if (
-      !(c >= 'a' && c <= 'z') &&
-      !(c >= '0' && c <= '9') &&
-      !(c == '!' || c == '@' || c == '$' || c == '&' || c == '_' || c == '.')) {
-      username[i] = '\0';
-      read = i;
-      THROW(INVALID_PARAMETER);
-    }
-  }
+
+  checkUsernameValidity();
 
   // set ui stuff.
   ux.elements = ui_regdelegate_nano;
   ux.elements_count = 9;
   totalSteps = 3;
   ui_processor = stepProcessor_regDelegate;
+}
 
+void checkUsernameValidity() {
+  uint8_t i;
+  for (i=0; i<read; i++) {
+    char c = username[i];
+    if (
+      !(c >= 'a' && c <= 'z') &&
+      !(c >= '0' && c <= '9') &&
+      !(c == '!' || c == '@' || c == '$' || c == '&' || c == '_' || c == '.')) {
+      THROW(INVALID_PARAMETER);
+    }
+  }
 }

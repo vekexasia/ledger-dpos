@@ -50,8 +50,8 @@ static void uiProcessor_send(uint8_t step) {
     case 3:
       os_memmove(lineBuffer, message, MIN(50, curLength));
       // ellipsis
-      if (curLength > 47) {
-        os_memmove(lineBuffer + 47, "...", 3);
+      if (curLength > 46) {
+        os_memmove(lineBuffer + 46, "...\0", 4);
       }
       break;
     case 4:
