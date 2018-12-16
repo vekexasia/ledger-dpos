@@ -25,7 +25,6 @@ const ux_menu_entry_t menu_about[] = {
   UX_MENU_END
 };
 
-
 void satoshiToString(uint64_t amount, char *out) {
 
   uint64_t partInt = amount / 100000000;
@@ -39,7 +38,6 @@ void satoshiToString(uint64_t amount, char *out) {
     partInt /=10;
   }
 
-
   // Swap elements
   uint8_t j = 0;
   uint8_t tmp;
@@ -48,7 +46,6 @@ void satoshiToString(uint64_t amount, char *out) {
     out[j] = out[i-1-j];
     out[i-1-j] = tmp;
   }
-
 
   if (partDecimal > 0) {
     out[i++] = '.';
@@ -59,14 +56,7 @@ void satoshiToString(uint64_t amount, char *out) {
       satoshi /= 10;
     }
   }
-
-
 }
-
-
-
-
-
 
 /**
  * Sets ui to idle.

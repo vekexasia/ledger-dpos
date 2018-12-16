@@ -39,24 +39,6 @@ static const bagl_element_t sign_message_ui[] = {
 static cx_sha256_t txHash;
 transaction_t transaction;
 
-/**
- * Used to verify what is going to be displayed
- * @param element
- * @return 0 or 1
- */
-static const int signtx_ui_preprocessor(const bagl_element_t *element) {
-  if (element->component.userid == 0x0) {
-    return 1;
-  }
-
-  if ((element->component.type & (~BAGL_FLAG_TOUCHABLE)) == BAGL_NONE) {
-    return 0;
-  }
-  if (element->component.userid == currentStep) {
-    return 1;
-  }
-  return 0;
-}
 static void ui_sign_tx_button(unsigned int button_mask, unsigned int button_mask_counter) {
   switch (button_mask) {
     case BUTTON_EVT_RELEASED | BUTTON_RIGHT:
@@ -82,30 +64,22 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
     // Set signing context from first packet and patches the .data and .length by removing header length
     setSignContext(packet);
 
-    PRINTF("AFTER setSignContext\n");
-
     // Reset sha256
     cx_sha256_init(&txHash);
 
-    PRINTF("AFTER cx_sha256_init\n");
-
     // fetch transaction type
     transaction.type = packet->data[0];
-    PRINTF("transaction.type: %d\n", transaction.type);
     uint32_t recIndex = 1 /*type*/
                         + 4 /*timestamp*/
                         + 32 /*senderPublicKey */
                         + (signContext.reserved == true ? 32 : 0) /*requesterPublicKey */;
-    PRINTF("recIndex: %d\n", recIndex);
     transaction.recipientId = deriveAddressFromUintArray(packet->data + recIndex, false);
-    PRINTF("transaction.recipientId: %d\n", transaction.recipientId);
     uint32_t i = 0;
 
     transaction.amountSatoshi = 0;
     for (i = 0; i < 8; i++) {
       transaction.amountSatoshi |= ((uint64_t )packet->data[recIndex + 8 + i]) << (8*i);
     }
-    PRINTF("transaction.amountSatoshi: %d\n", transaction.amountSatoshi);
 
     if (transaction.type == TXTYPE_SEND) {
       tx_init  = tx_init_send;
@@ -164,7 +138,7 @@ void finalizeSignTx(volatile unsigned int *flags) {
   *flags |= IO_ASYNCH_REPLY;
 
   ux.button_push_handler = ui_sign_tx_button;
-  ux.elements_preprocessor = signtx_ui_preprocessor;
+  ux.elements_preprocessor = uiprocessor;
 
   ui_processor(1);
   UX_WAKE_UP();

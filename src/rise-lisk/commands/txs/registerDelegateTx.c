@@ -60,7 +60,6 @@ void tx_chunk_regdel(uint8_t * data, uint8_t length, commPacket_t *sourcePacket,
 }
 
 void tx_end_regdel(transaction_t *tx) {
-
   //Calculate the exact username length by removing signatures
   uint8_t usernameLength = totalLengthAfterAsset - (totalLengthAfterAsset / 64) * 64;
   os_memmove(username, username, MIN(20, usernameLength));

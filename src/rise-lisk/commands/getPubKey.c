@@ -57,7 +57,6 @@ unsigned int verify_address_ui_button(unsigned int button_mask, unsigned int but
   return 0;
 }
 
-
 static void ui_address(void) {
   uint64_t address = deriveAddressFromPublic(&signContext.publicKey);
   uint8_t length = deriveAddressStringRepresentation(address, lineBuffer);

@@ -43,7 +43,6 @@ bool innerProcessCommPacket(volatile unsigned int *flags, commPacket_t *lastPack
       handleGetPublicKey(flags, lastPacket->data + 1, lastPacket->data[0]);
       break;
     case INS_SIGN_MSG:
-      PRINTF("Processing signed message\n");
       processSignMessage(flags);
       break;
     case INS_SIGN:

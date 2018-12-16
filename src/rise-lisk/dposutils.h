@@ -4,6 +4,7 @@
 #include "../io.h"
 #ifndef STRUCT_TX
 #define STRUCT_TX
+
 typedef struct signContext_t {
     cx_ecfp_private_key_t privateKey;
     cx_ecfp_public_key_t publicKey;
@@ -15,6 +16,7 @@ typedef struct signContext_t {
 } signContext_t;
 
 extern signContext_t signContext;
+
 #endif
 
 /**

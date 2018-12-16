@@ -51,7 +51,6 @@ uint32_t derivePrivatePublic(uint8_t *bip32DataBuffer, cx_ecfp_private_key_t *pr
   return readData;
 }
 
-
 /**
  * Signs an arbitrary message given the privateKey and the info
  * @param privateKey the privateKey to be used
@@ -61,6 +60,6 @@ uint32_t derivePrivatePublic(uint8_t *bip32DataBuffer, cx_ecfp_private_key_t *pr
  * @param output
  */
 void sign(cx_ecfp_private_key_t *privateKey, void *whatToSign, uint32_t length, unsigned char *output) {
-  // 2nd param was was null
+  // 2nd param was null
   cx_eddsa_sign(privateKey, 0, CX_SHA512, whatToSign, length, NULL, 0, output, CX_SHA512_SIZE, NULL);
 }

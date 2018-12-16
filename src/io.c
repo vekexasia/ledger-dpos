@@ -36,7 +36,6 @@ void initResponse() {
 unsigned int flushResponseToIO(void *out) {
   // Write how many infos toWrite
   os_memmove(out, &(response.n), 1);
-  PRINTF("Flushing %d responses\n", response.n);
   unsigned int total = 1;
   uint8_t i = 0;
   for (i = 0; i < response.n; i++) {
@@ -48,11 +47,8 @@ unsigned int flushResponseToIO(void *out) {
     total += response.whatLength[i];
   }
 
-  PRINTF("Written %d bytes to stdout\n", total);
 //     Reset.
   initResponse();
-
-  PRINTF("Reset\n");
 
   return total;
 }

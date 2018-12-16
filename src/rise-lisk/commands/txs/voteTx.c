@@ -25,7 +25,6 @@ const bagl_element_t ui_vote_nano[] = {
   LINEBUFFER,
 };
 
-
 static void stepProcessor_vote(uint8_t step) {
   uint64_t address;
   os_memset(lineBuffer, 0, 50);

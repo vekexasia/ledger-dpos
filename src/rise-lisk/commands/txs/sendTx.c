@@ -12,6 +12,7 @@
 static char message[64];
 static uint8_t curLength;
 static uint16_t totalLengthAfterAsset;
+
 /**
  * Sign with address
  */
@@ -58,7 +59,6 @@ static void uiProcessor_send(uint8_t step) {
       satoshiToString(transaction.amountSatoshi, lineBuffer);
   }
 }
-
 
 void tx_init_send() {
   curLength = 0;

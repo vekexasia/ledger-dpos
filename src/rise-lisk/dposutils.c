@@ -95,7 +95,6 @@ uint64_t deriveAddressFromPublic(cx_ecfp_public_key_t *publicKey) {
   );
 }
 
-
 /**
  * Reads the packet, sets the signContext and patches the packet data values by skipping the header.
  * @param dataBuffer the  buffer to read from.
@@ -119,7 +118,6 @@ uint32_t setSignContext(commPacket_t *packet) {
   os_memmove(tmp, packet->data + bytesRead, packet->length - bytesRead);
   os_memmove(packet->data, tmp, packet->length - bytesRead);
   packet->length -= bytesRead;
-  PRINTF("REmoved data %d %d %d", bytesRead, commContext.totalAmount, commContext.totalAmount-bytesRead);
 
   return bytesRead;
 }

@@ -24,7 +24,6 @@ static const bagl_element_t ui_2ndsign_nano[] = {
   LINEBUFFER,
 };
 
-
 static void stepProcessor_2nd_sign(uint8_t step) {
   os_memset(lineBuffer, 0, 50);
   uint64_t address;
@@ -52,19 +51,11 @@ static void stepProcessor_2nd_sign(uint8_t step) {
 }
 
 void tx_init_2ndsig() {
-  PRINTF("tx_init_2ndsig\n");
   os_memset(pubkey, 0, 32);
   read = 0;
 }
 
 void tx_chunk_2ndsig(uint8_t * data, uint8_t length, commPacket_t *sourcePacket, transaction_t *tx) {
-  PRINTF("tx_chunk_2ndsig\n");
-  PRINTF("read: %d | packet lenght: %d\n", read, length);
-  /*if (read + packet->length > 32) {
-	  PRINTF("PRE THROW INVALID_PARAMETER\n");
-    THROW(INVALID_PARAMETER);
-  }*/
-  PRINTF("NO THROW INVALID_PARAMETER\n");
   os_memmove(pubkey + read, data, length);
 
   read += length;

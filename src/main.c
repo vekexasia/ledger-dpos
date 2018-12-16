@@ -31,11 +31,9 @@
 #define INS_PING 0x08
 #define INS_VERSION 0x09
 
-
 short crc; // holds the crc16 of the content.
 short prevCRC; // holds the crc16 of the prevpacket for comm layer.
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
-
 
 // Don't need to change?
 unsigned short io_exchange_al(unsigned char channel, unsigned short tx_len) {
@@ -69,7 +67,6 @@ unsigned short io_exchange_al(unsigned char channel, unsigned short tx_len) {
  * Handles the start communication packet
  */
 void handleStartCommPacket() {
-  PRINTF("handleStartCommPacket\n");
   commContext.started = true;
   commContext.read = 0;
   commContext.crc16 = 0;
@@ -103,24 +100,19 @@ void handleCommPacket() {
     commPacket.first = false;
   }
 
-  PRINTF("handleCompacket\n");
   initResponse();
   commContext.read += G_io_apdu_buffer[4];
 
   if (commContext.read <= commContext.totalAmount) {
-    PRINTF("innerHandleComPacket\n");
     // Allow real implementation to handle current comm Packet. (and possibly throw if error occurred)
     innerHandleCommPacket(&commPacket, &commContext);
-    PRINTF("POST innerHandleComPacket\n");
 
     // Compute current crc and replace it with the prevOne.
     crc = cx_crc16(G_io_apdu_buffer + 5, G_io_apdu_buffer[4]);
-    PRINTF("postCRC %d %d\n", crc, prevCRC);
     prevCRC = commContext.crc16;
     commContext.crc16 = crc;
     addToResponse(&crc, 2);
     addToResponse(&prevCRC, 2);
-    PRINTF("Add to response\n");
   } else {
     // Somehow the totalAmount of data sent is wrong. hence we set the thing as unstarted.
     commContext.started = false;
@@ -129,11 +121,7 @@ void handleCommPacket() {
 
 }
 
-
-
 void processCommPacket(volatile unsigned int *flags) {
-  //PRINTF("Compacket data:\n %.*H \n\n", commPacket.length, commPacket.data);
-
   if (commContext.command == INS_VERSION) {
     initResponse();
     addToResponse(APPVERSION, 5);
@@ -179,24 +167,18 @@ static void dpos_main(void) {
               THROW(0x6982);
             }
 
-            PRINTF("\n\n## comm incoming %d ##\n\n", G_io_apdu_buffer[1]);
             switch (G_io_apdu_buffer[1]) {
               case INS_COM_START:
-                PRINTF("start\n");
                 handleStartCommPacket();
                 tx = flushResponseToIO(G_io_apdu_buffer);
                 THROW(0x9000);
                 break;
               case INS_COM_CONTINUE:
-                PRINTF("continue\n");
                 handleCommPacket();
-                PRINTF("after handleComPacket\n");
                 tx = flushResponseToIO(G_io_apdu_buffer);
-                PRINTF("flush\n");
                 THROW(0x9000);
                 break;
               case INS_COM_END:
-                PRINTF("end\n");
                 processCommPacket(&flags);
                 tx = flushResponseToIO(G_io_apdu_buffer);
                 THROW(0x9000);
@@ -256,17 +238,10 @@ unsigned char io_event(unsigned char channel) {
       break;
 
     case SEPROXYHAL_TAG_DISPLAY_PROCESSED_EVENT:
-//      if ((uiState == UI_TEXT) &&
-//          (os_seph_features() &
-//           SEPROXYHAL_TAG_SESSION_START_EVENT_FEATURE_SCREEN_BIG)) {
-//        ui_approval();
-//      } else {
-//        UX_DISPLAYED_EVENT();
-//      }
       UX_DISPLAYED_EVENT();
       break;
 
-      // unknown events are acknowledged
+    // unknown events are acknowledged
     default:
     UX_DEFAULT_EVENT();
       break;
@@ -288,12 +263,12 @@ __attribute__((section(".boot"))) int main(void) {
   __asm volatile("cpsie i");
 
   UX_INIT();
-  // Set ui state to idle.
 
   // ensure exception will work as planned
   os_boot();
-  commContext.read = 0;
+
   commContext.started = false;
+  commContext.read = 0;
 
   BEGIN_TRY
     {
@@ -306,6 +281,7 @@ __attribute__((section(".boot"))) int main(void) {
           USB_power(0);
           USB_power(1);
 
+          // Set ui state to idle.
           ui_idle();
 
           dpos_main();

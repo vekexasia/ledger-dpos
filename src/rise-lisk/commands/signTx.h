@@ -4,6 +4,7 @@
 #include "../../io.h"
 #ifndef PROJECT_SIGNTX_H
 #define PROJECT_SIGNTX_H
+
 typedef void (*transaction_chunk_handler)(commPacket_t packet);
 
 typedef struct transaction {

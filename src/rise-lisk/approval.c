@@ -30,7 +30,7 @@ void touch_deny() {
   commContext.started = false;
   commContext.read = 0;
 
-  // Kill private key - shouldnt be necessary but just in case.
+  // Kill private key - shouldn't be necessary but just in case.
   os_memset(&signContext.privateKey, 0, sizeof(signContext.privateKey));
 
   // Send back the response, do not restart the event loop
@@ -44,8 +44,6 @@ void touch_approve() {
   sign(&signContext.privateKey, signContext.digest, 32, signature);
   initResponse();
   addToResponse(signature, 64);
-
-  PRINTF("2. SignedData is: %.*h\n", 64, signature);
 
   // Allow restart of operation
   commContext.started = false;
@@ -75,9 +73,6 @@ unsigned int approval_nano_ui_button(unsigned int button_mask, unsigned int butt
   return 0;
 }
 
-/**
- *
- */
 void ui_approval() {
   uint64_t address = deriveAddressFromPublic(&signContext.publicKey);
   deriveAddressStringRepresentation(address, lineBuffer);

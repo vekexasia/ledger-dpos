@@ -29,7 +29,6 @@ static const bagl_element_t ui_multisig_nano[] = {
   LINEBUFFER,
 };
 
-
 static void stepProcessor_multi(uint8_t step) {
   uint64_t tmp = 0;
   os_memset(lineBuffer, 0, 50);
