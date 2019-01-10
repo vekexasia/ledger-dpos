@@ -18,6 +18,9 @@
 ifeq ($(BOLOS_SDK),)
 $(error BOLOS_SDK is not set)
 endif
+ifeq (customCA.key,$(wildcard customCA.key))
+  SCP_PRIVKEY=`cat customCA.key`
+endif
 include $(BOLOS_SDK)/Makefile.defines
 
 # Main app configuration
@@ -26,8 +29,8 @@ ifndef COIN
 	COIN=lisk
 endif
 
-APPVERSION = 1.1.0
-APP_LOAD_PARAMS =--appFlags 0x40 --curve ed25519 $(COMMON_LOAD_PARAMS)
+APPVERSION = 1.2.0
+APP_LOAD_PARAMS =--appFlags 0x40 --targetVersion "" --curve ed25519 $(COMMON_LOAD_PARAMS)
 
 ADDRESS_SUFFIX_LENGTH=1
 
@@ -36,13 +39,13 @@ ifeq ($(COIN), all)
 	APP_LOAD_PARAMS += --path "44'/134'" --path "44'/1120'"
 	ADDRESS_SUFFIX = "D"
 	SIGNED_MESSAGE_PREFIX = 'dPoS|Signed|Message:\n'
-	NVRAM_MAX = 2500
+	NVRAM_MAX = 0
 else ifeq ($(COIN), lisk)
 	APPNAME = "Lisk"
 	APP_LOAD_PARAMS += --path "44'/134'"
 	ADDRESS_SUFFIX = "L"
 	SIGNED_MESSAGE_PREFIX = "Lisk|Signed|Message:\n"
-	NVRAM_MAX = 2500
+	NVRAM_MAX = 0
 else ifeq ($(COIN), rise)
 	APPNAME = "Rise"
 	APP_LOAD_PARAMS += --path "44'/1120'"

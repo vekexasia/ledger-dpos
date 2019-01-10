@@ -1,7 +1,10 @@
 #include "stdbool.h"
 #include "os.h"
 #include "cx.h"
+
 #define MAX_BIP32_PATH 10
+#define LIBN_CURVE CX_CURVE_Ed25519
+#define LIBN_SEED_KEY "ed25519 seed"
 
 /**
  *
@@ -20,7 +23,7 @@ uint32_t derivePrivatePublic(uint8_t *bip32DataBuffer, cx_ecfp_private_key_t *pr
   bip32DataBuffer += 1;
 
   if ((bip32PathLength < 0x01) || (bip32PathLength > MAX_BIP32_PATH)) {
-    THROW(0x6a80);
+    THROW(0x6a80 + bip32PathLength);
   }
 
 
@@ -30,9 +33,13 @@ uint32_t derivePrivatePublic(uint8_t *bip32DataBuffer, cx_ecfp_private_key_t *pr
     bip32DataBuffer += 4;
     readData += 4;
   }
-  os_perso_derive_node_bip32(CX_CURVE_Ed25519, bip32Path, bip32PathLength,
-                             privateKeyData,
-                             NULL /* CHAIN CODE */);
+
+  os_perso_derive_node_bip32_seed_key(
+          HDW_ED25519_SLIP10, LIBN_CURVE,
+          bip32Path, bip32PathLength,
+          privateKeyData, NULL,
+          (unsigned char *)LIBN_SEED_KEY, sizeof(LIBN_SEED_KEY)
+  );
 
   cx_ecfp_init_private_key(CX_CURVE_Ed25519, privateKeyData, 32, privateKey);
 
@@ -44,7 +51,6 @@ uint32_t derivePrivatePublic(uint8_t *bip32DataBuffer, cx_ecfp_private_key_t *pr
   return readData;
 }
 
-
 /**
  * Signs an arbitrary message given the privateKey and the info
  * @param privateKey the privateKey to be used
@@ -53,13 +59,7 @@ uint32_t derivePrivatePublic(uint8_t *bip32DataBuffer, cx_ecfp_private_key_t *pr
  * @param isTx wether we're signing a tx or a text
  * @param output
  */
-void sign(cx_ecfp_private_key_t *privateKey, void *whatToSign, uint32_t length, unsigned char *output, bool isTx) {
-  if (isTx == true) {
-    uint8_t hash[32];
-    cx_hash_sha256(whatToSign, length, hash, 32);
-    cx_eddsa_sign(privateKey, NULL, CX_SHA512, hash, 32, NULL, 0, output, CX_SHA512_SIZE, NULL);
-  } else {
-    cx_eddsa_sign(privateKey, NULL, CX_SHA512, whatToSign, length, NULL, 0, output, CX_SHA512_SIZE, NULL);
-  }
-
+void sign(cx_ecfp_private_key_t *privateKey, void *whatToSign, uint32_t length, unsigned char *output) {
+  // 2nd param was null
+  cx_eddsa_sign(privateKey, 0, CX_SHA512, whatToSign, length, NULL, 0, output, CX_SHA512_SIZE, NULL);
 }

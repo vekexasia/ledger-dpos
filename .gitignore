@@ -2,3 +2,4 @@ obj/
 bin/
 debug/
 dep/
+customCA.key
