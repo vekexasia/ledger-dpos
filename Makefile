@@ -29,7 +29,7 @@ ifndef COIN
 	COIN=lisk
 endif
 
-APPVERSION = 1.2.0
+APPVERSION = 1.2.1
 APP_LOAD_PARAMS =--appFlags 0x40 --targetVersion "" --curve ed25519 $(COMMON_LOAD_PARAMS)
 
 ADDRESS_SUFFIX_LENGTH=1
