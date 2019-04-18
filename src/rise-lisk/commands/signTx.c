@@ -122,12 +122,10 @@ static uint8_t default_step_processor(uint8_t cur) {
 
 
 void finalizeSignTx(volatile unsigned int *flags) {
+  // Get the digest for the block
   uint8_t finalHash[32];
-
-  // Close first sha256
   cx_hash(&txHash, CX_LAST, finalHash, 0, NULL, NULL);
-
-  os_memmove(&signContext.digest, txHash.acc, 32);
+  os_memmove(signContext.digest, txHash.acc, 32);
 
   // Init user flow.
   step_processor = default_step_processor;
