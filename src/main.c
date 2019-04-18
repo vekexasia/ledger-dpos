@@ -122,6 +122,10 @@ void handleCommPacket() {
 }
 
 void processCommPacket(volatile unsigned int *flags) {
+  if (commContext.started == false) {
+    THROW(0x9802); // CODE_NOT_INITIALIZED
+  }
+
   if (commContext.command == INS_VERSION) {
     initResponse();
     addToResponse(APPVERSION, 5);
