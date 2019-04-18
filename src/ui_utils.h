@@ -32,6 +32,6 @@
   }
 
   void toHex(uint8_t what, char * whereTo);
-  int uiprocessor(const bagl_element_t *element);
+  const bagl_element_t *uiprocessor(const bagl_element_t *element);
   uint8_t intToString(uint64_t amount, char *out);
 #endif //LEDGER_NANO2_UI_UTILS_H
