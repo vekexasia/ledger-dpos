@@ -81,26 +81,34 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
       transaction.amountSatoshi |= ((uint64_t )packet->data[recIndex + 8 + i]) << (8*i);
     }
 
-    if (transaction.type == TXTYPE_SEND) {
+    switch (transaction.type) {
+    case TXTYPE_SEND:
       tx_init  = tx_init_send;
       tx_chunk = tx_chunk_send;
       tx_end   = tx_end_send;
-    } else if (transaction.type == TXTYPE_CREATEMULTISIG ) {
+      break;
+    case TXTYPE_CREATEMULTISIG:
       tx_init  = tx_init_multisig;
       tx_chunk = tx_chunk_multisig;
       tx_end   = tx_end_multisig;
-    } else if (transaction.type == TXTYPE_VOTE ) {
+      break;
+    case TXTYPE_VOTE:
       tx_init  = tx_init_vote;
       tx_chunk = tx_chunk_vote;
       tx_end   = tx_end_vote;
-    } else if (transaction.type == TXTYPE_REGISTERDELEGATE ) {
+      break;
+    case TXTYPE_REGISTERDELEGATE:
       tx_init  = tx_init_regdel;
       tx_chunk = tx_chunk_regdel;
       tx_end   = tx_end_regdel;
-    } else if (transaction.type == TXTYPE_CREATESIGNATURE) {
+      break;
+    case TXTYPE_CREATESIGNATURE:
       tx_init  = tx_init_2ndsig;
       tx_chunk = tx_chunk_2ndsig;
       tx_end   = tx_end_2ndsig;
+      break;
+    default:
+      THROW(0x6a80); // INCORRECT_DATA
     }
     tx_init();
   }
