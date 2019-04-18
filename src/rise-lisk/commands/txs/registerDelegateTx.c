@@ -8,10 +8,11 @@
 #include "../../../io.h"
 #include "../../../ui_utils.h"
 
-static char username[21];
-static uint8_t read;
-static uint16_t totalLengthAfterAsset;
+#define USERNAME_MAX_LEN 20
 
+static char username[USERNAME_MAX_LEN];
+static uint8_t usernameLength;
+static uint16_t readBytes;
 
 /**
  * Create second signature with address
@@ -40,31 +41,29 @@ static void stepProcessor_regDelegate(uint8_t step) {
       deriveAddressStringRepresentation(address, lineBuffer);
       break;
     case 3:
-      os_memmove(lineBuffer, username, read);
+      os_memmove(lineBuffer, username, usernameLength);
       break;
   }
 }
 
-
 void tx_init_regdel() {
-  os_memset(username, 0, 21);
-  read = 0;
-  totalLengthAfterAsset = 0;
+  os_memset(username, 0, USERNAME_MAX_LEN);
+  usernameLength = 0;
+  readBytes = 0;
 }
 
 void tx_chunk_regdel(uint8_t * data, uint8_t length, commPacket_t *sourcePacket, transaction_t *tx) {
-  uint8_t toReadLength = MAX(0, MIN(20 - read, length));
-  os_memmove(username + read, data, toReadLength);
-  read += toReadLength;
-  totalLengthAfterAsset += length;
+  if (readBytes < USERNAME_MAX_LEN) {
+    uint8_t appendCount = MIN(length, USERNAME_MAX_LEN - readBytes);
+    os_memmove(&username[readBytes], data, appendCount);
+  }
+
+  readBytes += length;
 }
 
 void tx_end_regdel(transaction_t *tx) {
   //Calculate the exact username length by removing signatures
-  uint8_t usernameLength = totalLengthAfterAsset - (totalLengthAfterAsset / 64) * 64;
-  os_memmove(username, username, MIN(20, usernameLength));
-  read = usernameLength;
-
+  usernameLength = readBytes - MIN(readBytes / 64, 2) * 64;
   checkUsernameValidity();
 
   // set ui stuff.
@@ -75,8 +74,11 @@ void tx_end_regdel(transaction_t *tx) {
 }
 
 void checkUsernameValidity() {
+  if (usernameLength > USERNAME_MAX_LEN) {
+    THROW(INVALID_PARAMETER);
+  }
   uint8_t i;
-  for (i=0; i<read; i++) {
+  for (i = 0; i < usernameLength; i++) {
     char c = username[i];
     if (
       !(c >= 'a' && c <= 'z') &&
