@@ -30,7 +30,12 @@ ifndef COIN
 endif
 
 APPVERSION = 1.2.0
-APP_LOAD_PARAMS =--appFlags 0x40 --targetVersion "" --curve ed25519 $(COMMON_LOAD_PARAMS)
+APP_LOAD_PARAMS = --targetVersion "" --curve ed25519 $(COMMON_LOAD_PARAMS)
+ifeq ($(TARGET_NAME),TARGET_NANOX)
+APP_LOAD_PARAMS += --appFlags 0x240 # with BLE support
+else
+APP_LOAD_PARAMS += --appFlags 0x40
+endif
 
 ADDRESS_SUFFIX_LENGTH=1
 
@@ -67,7 +72,8 @@ APP_SOURCE_PATH += src
 SDK_SOURCE_PATH += lib_u2f lib_stusb lib_stusb_impl
 
 ifeq ($(TARGET_NAME),TARGET_NANOX)
-SDK_SOURCE_PATH  += lib_ux
+SDK_SOURCE_PATH += lib_ux
+SDK_SOURCE_PATH += lib_blewbxx lib_blewbxx_impl
 endif
 
 DEFINES   += OS_IO_SEPROXYHAL IO_SEPROXYHAL_BUFFER_SIZE_B=300
@@ -106,6 +112,9 @@ DEFINES   += HAVE_BAGL_FONT_OPEN_SANS_REGULAR_11PX
 DEFINES   += HAVE_BAGL_FONT_OPEN_SANS_EXTRABOLD_11PX
 DEFINES   += HAVE_BAGL_FONT_OPEN_SANS_LIGHT_16PX
 DEFINES   += HAVE_UX_FLOW
+
+DEFINES   += HAVE_BLE BLE_COMMAND_TIMEOUT_MS=2000
+DEFINES   += HAVE_BLE_APDU # basic ledger apdu transport over BLE
 endif
 
 ifeq ($(TARGET_NAME),TARGET_NANOX)
