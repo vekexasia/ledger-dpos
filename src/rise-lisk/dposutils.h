@@ -52,4 +52,6 @@ uint8_t deriveAddressStringRepresentation(uint64_t encodedAddress, char *output)
  */
 uint64_t deriveAddressFromPublic(cx_ecfp_public_key_t *publicKey);
 
+void satoshiToString(uint64_t amount, char *out);
+
 uint32_t setSignContext(commPacket_t *packet);

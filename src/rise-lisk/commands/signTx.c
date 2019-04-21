@@ -26,11 +26,13 @@ typedef void (*tx_end_fn)(transaction_t *tx);
 tx_init_fn tx_init;
 tx_chunk_fn tx_chunk;
 tx_end_fn tx_end;
-ui_processor_fn ui_processor;
-step_processor_fn step_processor;
 
 static cx_sha256_t txHash;
 transaction_t transaction;
+
+#if defined(TARGET_NANOS)
+step_processor_fn step_processor;
+ui_processor_fn ui_processor;
 
 static unsigned int ui_sign_tx_button(unsigned int button_mask, unsigned int button_mask_counter) {
   switch (button_mask) {
@@ -52,9 +54,36 @@ static unsigned int ui_sign_tx_button(unsigned int button_mask, unsigned int but
   return 0;
 }
 
+static uint8_t default_step_processor(uint8_t cur) {
+  return cur + 1;
+}
+
+static void ui_display_sign_tx() {
+  step_processor = default_step_processor;
+  ui_processor = NULL;
+  tx_end(&transaction);
+
+  currentStep = 1;
+
+  ux.button_push_handler = ui_sign_tx_button;
+  ux.elements_preprocessor = uiprocessor;
+
+  ui_processor(1);
+  UX_WAKE_UP();
+  UX_REDISPLAY();
+}
+#endif
+
+#if defined(TARGET_NANOX)
+static void ui_display_sign_tx() {
+  // Delegate showing UI to the transaction type handlers
+  tx_end(&transaction);
+}
+#endif
+
 void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
   // if first packet with signing header
-  if ( packet->first ) {
+  if (packet->first) {
     // IMPORTANT this logic below only works if the first packet contains the needed information (Which it should)
     // Set signing context from first packet and patches the .data and .length by removing header length
     setSignContext(packet);
@@ -119,10 +148,6 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
 
   cx_hash(&txHash.header, 0, packet->data, packet->length, NULL, 0);
 }
-static uint8_t default_step_processor(uint8_t cur) {
-  return cur + 1;
-}
-
 
 void finalizeSignTx(volatile unsigned int *flags) {
   // Get the digest for the block
@@ -130,18 +155,9 @@ void finalizeSignTx(volatile unsigned int *flags) {
   cx_hash(&txHash.header, CX_LAST, NULL, 0, finalHash, sizeof(finalHash));
   os_memmove(signContext.digest, finalHash, sizeof(finalHash));
 
-  // Init user flow.
-  step_processor = default_step_processor;
-  ui_processor = NULL;
-  tx_end(&transaction);
+  ui_display_sign_tx();
 
-  currentStep = 1;
+  // We set the flag after displaying UI as there might be some validation code
+  // that throws in the final tx_end call, that should be returned synchronously
   *flags |= IO_ASYNCH_REPLY;
-
-  ux.button_push_handler = ui_sign_tx_button;
-  ux.elements_preprocessor = uiprocessor;
-
-  ui_processor(1);
-  UX_WAKE_UP();
-  UX_REDISPLAY();
 }

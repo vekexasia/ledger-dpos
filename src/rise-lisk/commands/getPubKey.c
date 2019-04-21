@@ -14,14 +14,6 @@
 
 uint8_t pubKeyResponseBuffer[32+22];
 
-static const bagl_element_t verify_address_ui[] = {
-  CLEAN_SCREEN,
-  TITLE_ITEM("Verify Address", 0x00),
-  ICON_CROSS(0x00),
-  ICON_CHECK(0x00),
-  LINEBUFFER,
-};
-
 /**
  * Creates the response for the getPublicKey command.
  * It returns both publicKey and derived Address
@@ -36,17 +28,29 @@ static void createPublicKeyResponse() {
   addToResponse(pubKeyResponseBuffer + 32, length);
 }
 
+static void sendPublicKeyResponse() {
+  createPublicKeyResponse();
+
+  unsigned int tx = flushResponseToIO(G_io_apdu_buffer);
+  G_io_apdu_buffer[tx]   = 0x90;
+  G_io_apdu_buffer[tx+1] = 0x00;
+
+  io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx+2);
+}
+
+#if defined(TARGET_NANOS)
+static const bagl_element_t verify_address_ui[] = {
+  CLEAN_SCREEN,
+  TITLE_ITEM("Verify Address", 0x00),
+  ICON_CROSS(0x00),
+  ICON_CHECK(0x00),
+  LINEBUFFER,
+};
+
 unsigned int verify_address_ui_button(unsigned int button_mask, unsigned int button_mask_counter) {
   switch (button_mask) {
     case BUTTON_EVT_RELEASED | BUTTON_RIGHT:
-      createPublicKeyResponse();
-
-      unsigned int tx = flushResponseToIO(G_io_apdu_buffer);
-      G_io_apdu_buffer[tx]   = 0x90;
-      G_io_apdu_buffer[tx+1] = 0x00;
-
-      io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx+2);
-
+      sendPublicKeyResponse();
       // Display back the original UX
       ui_idle();
       break;
@@ -57,12 +61,64 @@ unsigned int verify_address_ui_button(unsigned int button_mask, unsigned int but
   return 0;
 }
 
-static void ui_address(void) {
+static void ui_display_verify_address(void) {
   uint64_t address = deriveAddressFromPublic(&signContext.publicKey);
   uint8_t length = deriveAddressStringRepresentation(address, lineBuffer);
   lineBuffer[length] = '\0';
   UX_DISPLAY(verify_address_ui, NULL);
 }
+#endif
+
+#if defined(TARGET_NANOX)
+UX_STEP_NOCB(
+  ux_verify_address_flow_1_step, 
+  pnn, 
+  {
+    &C_nanox_icon_eye,
+    "Confirm",
+    "address",
+  });
+UX_STEP_NOCB_INIT(
+  ux_verify_address_flow_2_step,
+  bnnn_paging,
+  {
+    os_memset(lineBuffer, 0, sizeof(lineBuffer));
+    uint64_t address = deriveAddressFromPublic(&signContext.publicKey);
+    deriveAddressStringRepresentation(address, lineBuffer);
+  },
+  {
+    "Address",
+    lineBuffer,
+  });
+UX_STEP_CB(
+  ux_verify_address_flow_3_step,
+  pb,
+  {
+      sendPublicKeyResponse();
+      ui_idle();
+  },
+  {
+    &C_nanox_icon_validate_14,
+    "Confirm",
+  });
+UX_STEP_CB(
+  ux_verify_address_flow_4_step,
+  pb,
+  touch_deny(),
+  {
+    &C_nanox_icon_crossmark,
+    "Reject",
+  });
+UX_FLOW(ux_verify_address_flow,
+  &ux_verify_address_flow_1_step,
+  &ux_verify_address_flow_2_step,
+  &ux_verify_address_flow_3_step,
+  &ux_verify_address_flow_4_step);
+
+static void ui_display_verify_address(void) {
+  ux_flow_init(0, ux_verify_address_flow, NULL);
+}
+#endif
 
 void handleGetPublicKey(volatile unsigned int *flags, uint8_t *bip32Path, bool confirmationRequest) {
   // Derive pubKey
@@ -72,7 +128,7 @@ void handleGetPublicKey(volatile unsigned int *flags, uint8_t *bip32Path, bool c
   if (confirmationRequest == true) { // show address?
     // Show on ledger
     *flags |= IO_ASYNCH_REPLY;
-    ui_address();
+    ui_display_verify_address();
   } else {
     createPublicKeyResponse();
   }
