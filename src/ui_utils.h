@@ -21,7 +21,7 @@
   #define SECONDLINE(txt, userid) \
   { \
     { BAGL_LABELINE, 0x00, 23, 26, 82, 11, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000, BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26}, \
-    lineBuffer, 0, 0, 0, NULL, NULL, NULL, \
+    txt, 0, 0, 0, NULL, NULL, NULL, \
   }
   #define LINEBUFFER              SECONDLINE(lineBuffer, 0x00)
 
