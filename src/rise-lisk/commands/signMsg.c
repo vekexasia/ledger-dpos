@@ -82,15 +82,15 @@ unsigned int sign_message_ui_button(unsigned int button_mask, unsigned int butto
 
 
 void processSignMessage(volatile unsigned int *flags) {
-  uint8_t preFinalHash[32];
-  uint8_t finalHash[32];
+  uint8_t preFinalHash[sizeof(signContext.digest)];
+  uint8_t finalHash[sizeof(signContext.digest)];
 
   // Close first sha256
-  cx_hash(&messageHash.header, CX_LAST, NULL, 0, preFinalHash, 32);
+  cx_hash(&messageHash.header, CX_LAST, NULL, 0, preFinalHash, sizeof(preFinalHash));
 
   // Second sha256
-  cx_hash_sha256(preFinalHash, 32, finalHash, 32);
-  os_memmove(signContext.digest, finalHash, 32);
+  cx_hash_sha256(preFinalHash, sizeof(preFinalHash), finalHash, sizeof(finalHash));
+  os_memmove(signContext.digest, finalHash, sizeof(finalHash));
 
   // Init user flow.
   *flags |= IO_ASYNCH_REPLY;

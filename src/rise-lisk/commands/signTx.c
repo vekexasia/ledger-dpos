@@ -126,9 +126,9 @@ static uint8_t default_step_processor(uint8_t cur) {
 
 void finalizeSignTx(volatile unsigned int *flags) {
   // Get the digest for the block
-  uint8_t finalHash[32];
-  cx_hash(&txHash.header, CX_LAST, finalHash, 0, NULL, 0);
-  os_memmove(signContext.digest, txHash.acc, 32);
+  uint8_t finalHash[sizeof(signContext.digest)];
+  cx_hash(&txHash.header, CX_LAST, NULL, 0, finalHash, sizeof(finalHash));
+  os_memmove(signContext.digest, finalHash, sizeof(finalHash));
 
   // Init user flow.
   step_processor = default_step_processor;
