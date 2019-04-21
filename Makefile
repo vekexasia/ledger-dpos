@@ -95,7 +95,7 @@ DEFINES   += SIGNED_MESSAGE_PREFIX=\"$(SIGNED_MESSAGE_PREFIX)\"
 DEFINES   += NVRAM_MAX=$(NVRAM_MAX)
 
 
-ICONNAME=badge_$(COIN).gif
+ICONNAME=nanos_$(COIN).gif
 # Compiler, assembler, and linker
 
 ifneq ($(BOLOS_ENV),)
