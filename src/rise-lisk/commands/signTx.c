@@ -29,17 +29,10 @@ tx_end_fn tx_end;
 ui_processor_fn ui_processor;
 step_processor_fn step_processor;
 
-static const bagl_element_t sign_message_ui[] = {
-  CLEAN_SCREEN,
-  TITLE_ITEM("Verify text", 0x00),
-  ICON_CROSS(0x00),
-  ICON_CHECK(0x00),
-  LINEBUFFER,
-};
 static cx_sha256_t txHash;
 transaction_t transaction;
 
-static void ui_sign_tx_button(unsigned int button_mask, unsigned int button_mask_counter) {
+static unsigned int ui_sign_tx_button(unsigned int button_mask, unsigned int button_mask_counter) {
   switch (button_mask) {
     case BUTTON_EVT_RELEASED | BUTTON_RIGHT:
       if (currentStep < totalSteps) {
@@ -55,6 +48,8 @@ static void ui_sign_tx_button(unsigned int button_mask, unsigned int button_mask
       touch_deny(NULL);
       break;
   }
+
+  return 0;
 }
 
 void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
@@ -122,7 +117,7 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
                                             + 8 /*amount */;
   tx_chunk(packet->data + assetIndex, packet->length - assetIndex, packet, &transaction);
 
-  cx_hash(&txHash, NULL, packet->data, packet->length, NULL, NULL);
+  cx_hash(&txHash.header, 0, packet->data, packet->length, NULL, 0);
 }
 static uint8_t default_step_processor(uint8_t cur) {
   return cur + 1;
@@ -132,7 +127,7 @@ static uint8_t default_step_processor(uint8_t cur) {
 void finalizeSignTx(volatile unsigned int *flags) {
   // Get the digest for the block
   uint8_t finalHash[32];
-  cx_hash(&txHash, CX_LAST, finalHash, 0, NULL, NULL);
+  cx_hash(&txHash.header, CX_LAST, finalHash, 0, NULL, 0);
   os_memmove(signContext.digest, txHash.acc, 32);
 
   // Init user flow.
