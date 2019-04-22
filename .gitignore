@@ -2,4 +2,6 @@ obj/
 bin/
 debug/
 dep/
+src/glyphs.c
+src/glyphs.h
 customCA.key

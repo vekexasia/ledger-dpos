@@ -77,6 +77,10 @@ DEFINES   += MAX_ADPU_OUTPUT_SIZE=$(MAX_ADPU_OUTPUT_SIZE)
 # U2F
 DEFINES   += HAVE_IO_U2F
 DEFINES   += U2F_PROXY_MAGIC=\"vekexasia\"
+
+WEBUSB_URL = www.ledgerwallet.com
+DEFINES   += HAVE_WEBUSB WEBUSB_URL_SIZE_B=$(shell echo -n $(WEBUSB_URL) | wc -c) WEBUSB_URL=$(shell echo -n $(WEBUSB_URL) | sed -e "s/./\\\'\0\\\',/g")
+
 DEFINES   += USB_SEGMENT_SIZE=64
 DEFINES   += BLE_SEGMENT_SIZE=32 #max MTU, min 20
 DEFINES   += U2F_REQUEST_TIMEOUT=10000 # 10 seconds
@@ -91,7 +95,7 @@ DEFINES   += SIGNED_MESSAGE_PREFIX=\"$(SIGNED_MESSAGE_PREFIX)\"
 DEFINES   += NVRAM_MAX=$(NVRAM_MAX)
 
 
-ICONNAME=badge_$(COIN).gif
+ICONNAME=nanos_$(COIN).gif
 # Compiler, assembler, and linker
 
 ifneq ($(BOLOS_ENV),)

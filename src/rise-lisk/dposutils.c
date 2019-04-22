@@ -103,7 +103,7 @@ uint64_t deriveAddressFromPublic(cx_ecfp_public_key_t *publicKey) {
 uint32_t setSignContext(commPacket_t *packet) {
   // reset current result
   uint8_t tmp[256];
-  os_memset(&signContext.digest, 0, 32);
+  os_memset(signContext.digest, 0, 32);
   uint32_t bytesRead = derivePrivatePublic(packet->data, &signContext.privateKey, &signContext.publicKey);
   signContext.signableContentLength = (*(packet->data + bytesRead)) << 8;
   signContext.signableContentLength += (*(packet->data + bytesRead + 1));

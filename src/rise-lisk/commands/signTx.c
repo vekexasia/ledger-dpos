@@ -29,17 +29,10 @@ tx_end_fn tx_end;
 ui_processor_fn ui_processor;
 step_processor_fn step_processor;
 
-static const bagl_element_t sign_message_ui[] = {
-  CLEAN_SCREEN,
-  TITLE_ITEM("Verify text", 0x00),
-  ICON_CROSS(0x00),
-  ICON_CHECK(0x00),
-  LINEBUFFER,
-};
 static cx_sha256_t txHash;
 transaction_t transaction;
 
-static void ui_sign_tx_button(unsigned int button_mask, unsigned int button_mask_counter) {
+static unsigned int ui_sign_tx_button(unsigned int button_mask, unsigned int button_mask_counter) {
   switch (button_mask) {
     case BUTTON_EVT_RELEASED | BUTTON_RIGHT:
       if (currentStep < totalSteps) {
@@ -55,6 +48,8 @@ static void ui_sign_tx_button(unsigned int button_mask, unsigned int button_mask
       touch_deny(NULL);
       break;
   }
+
+  return 0;
 }
 
 void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
@@ -81,26 +76,34 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
       transaction.amountSatoshi |= ((uint64_t )packet->data[recIndex + 8 + i]) << (8*i);
     }
 
-    if (transaction.type == TXTYPE_SEND) {
+    switch (transaction.type) {
+    case TXTYPE_SEND:
       tx_init  = tx_init_send;
       tx_chunk = tx_chunk_send;
       tx_end   = tx_end_send;
-    } else if (transaction.type == TXTYPE_CREATEMULTISIG ) {
+      break;
+    case TXTYPE_CREATEMULTISIG:
       tx_init  = tx_init_multisig;
       tx_chunk = tx_chunk_multisig;
       tx_end   = tx_end_multisig;
-    } else if (transaction.type == TXTYPE_VOTE ) {
+      break;
+    case TXTYPE_VOTE:
       tx_init  = tx_init_vote;
       tx_chunk = tx_chunk_vote;
       tx_end   = tx_end_vote;
-    } else if (transaction.type == TXTYPE_REGISTERDELEGATE ) {
+      break;
+    case TXTYPE_REGISTERDELEGATE:
       tx_init  = tx_init_regdel;
       tx_chunk = tx_chunk_regdel;
       tx_end   = tx_end_regdel;
-    } else if (transaction.type == TXTYPE_CREATESIGNATURE) {
+      break;
+    case TXTYPE_CREATESIGNATURE:
       tx_init  = tx_init_2ndsig;
       tx_chunk = tx_chunk_2ndsig;
       tx_end   = tx_end_2ndsig;
+      break;
+    default:
+      THROW(0x6a80); // INCORRECT_DATA
     }
     tx_init();
   }
@@ -114,7 +117,7 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
                                             + 8 /*amount */;
   tx_chunk(packet->data + assetIndex, packet->length - assetIndex, packet, &transaction);
 
-  cx_hash(&txHash, NULL, packet->data, packet->length, NULL, NULL);
+  cx_hash(&txHash.header, 0, packet->data, packet->length, NULL, 0);
 }
 static uint8_t default_step_processor(uint8_t cur) {
   return cur + 1;
@@ -122,12 +125,10 @@ static uint8_t default_step_processor(uint8_t cur) {
 
 
 void finalizeSignTx(volatile unsigned int *flags) {
-  uint8_t finalHash[32];
-
-  // Close first sha256
-  cx_hash(&txHash, CX_LAST, finalHash, 0, NULL, NULL);
-
-  os_memmove(&signContext.digest, txHash.acc, 32);
+  // Get the digest for the block
+  uint8_t finalHash[sizeof(signContext.digest)];
+  cx_hash(&txHash.header, CX_LAST, NULL, 0, finalHash, sizeof(finalHash));
+  os_memmove(signContext.digest, finalHash, sizeof(finalHash));
 
   // Init user flow.
   step_processor = default_step_processor;

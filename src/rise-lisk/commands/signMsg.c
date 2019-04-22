@@ -33,16 +33,16 @@ void handleSignMessagePacket(commPacket_t *packet, commContext_t *context) {
     // Signing header.
     uint64_t prefixLength = strlen(SIGNED_MESSAGE_PREFIX);
     uint8_t varintLength = encodeVarInt(prefixLength, varint);
-    cx_hash(&messageHash, 0, varint, varintLength, NULL, 0);
-    cx_hash(&messageHash, 0, SIGNED_MESSAGE_PREFIX, prefixLength, NULL, 0);
+    cx_hash(&messageHash.header, 0, varint, varintLength, NULL, 0);
+    cx_hash(&messageHash.header, 0, (unsigned char *)SIGNED_MESSAGE_PREFIX, prefixLength, NULL, 0);
 
     varintLength = encodeVarInt(context->totalAmount - headersLength - 1, varint);
-    cx_hash(&messageHash, 0, varint, varintLength, NULL, 0);
+    cx_hash(&messageHash.header, 0, varint, varintLength, NULL, 0);
 
     prepareMsgLineBuffer(packet); //Enough data here for display purpose
   }
 
-  cx_hash(&messageHash, 0, packet->data, packet->length, NULL, 0);
+  cx_hash(&messageHash.header, 0, packet->data, packet->length, NULL, 0);
 
 }
 
@@ -82,15 +82,15 @@ unsigned int sign_message_ui_button(unsigned int button_mask, unsigned int butto
 
 
 void processSignMessage(volatile unsigned int *flags) {
-  uint8_t preFinalHash[32];
-  uint8_t finalHash[32];
+  uint8_t preFinalHash[sizeof(signContext.digest)];
+  uint8_t finalHash[sizeof(signContext.digest)];
 
   // Close first sha256
-  cx_hash(&messageHash, CX_LAST, NULL, 0, preFinalHash, 32);
+  cx_hash(&messageHash.header, CX_LAST, NULL, 0, preFinalHash, sizeof(preFinalHash));
 
   // Second sha256
-  cx_hash_sha256(preFinalHash, 32, finalHash, 32);
-  os_memmove(signContext.digest, finalHash, 32);
+  cx_hash_sha256(preFinalHash, sizeof(preFinalHash), finalHash, sizeof(finalHash));
+  os_memmove(signContext.digest, finalHash, sizeof(finalHash));
 
   // Init user flow.
   *flags |= IO_ASYNCH_REPLY;
