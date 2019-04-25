@@ -23,4 +23,6 @@ extern ui_processor_fn ui_processor;
 void handleSignTxPacket(commPacket_t *packet, commContext_t *context);
 void finalizeSignTx(volatile unsigned int *flags);
 
+#define ERROR_FEATURE_NOT_YET_SUPPORTED 0x6666
+
 #endif //PROJECT_SIGNTX_H

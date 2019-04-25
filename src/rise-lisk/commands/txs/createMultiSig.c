@@ -15,6 +15,9 @@ static uint8_t lifetime = 0;
 /**
  * Sign with address
  */
+
+#if defined(TARGET_NANOS)
+
 static const bagl_element_t ui_multisig_nano[] = {
   CLEAN_SCREEN,
   TITLE_ITEM("Create", 0x01),
@@ -28,6 +31,8 @@ static const bagl_element_t ui_multisig_nano[] = {
   ICON_CROSS(0x00),
   LINEBUFFER,
 };
+
+#endif
 
 static void stepProcessor_multi(uint8_t step) {
   uint64_t tmp = 0;
@@ -65,9 +70,19 @@ void tx_chunk_multisig(uint8_t * data, uint8_t length, commPacket_t *sourcePacke
   }
 }
 
+#if defined(TARGET_NANOS)
+
 void tx_end_multisig(transaction_t *tx){
   ux.elements = ui_multisig_nano;
   ux.elements_count = 11;
   totalSteps = 4;
   ui_processor = stepProcessor_multi;
 }
+
+#elif defined(TARGET_NANOX)
+
+void tx_end_multisig(transaction_t *tx){
+ THROW(ERROR_FEATURE_NOT_YET_SUPPORTED);
+}
+
+#endif

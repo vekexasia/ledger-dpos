@@ -12,6 +12,9 @@ static uint8_t read;
 /**
  * Create second signature with address
  */
+
+#if defined(TARGET_NANOS)
+
 static const bagl_element_t ui_2ndsign_nano[] = {
   CLEAN_SCREEN,
   TITLE_ITEM("Create second", 0x01),
@@ -23,6 +26,8 @@ static const bagl_element_t ui_2ndsign_nano[] = {
   ICON_CROSS(0x00),
   LINEBUFFER,
 };
+
+#endif
 
 static void stepProcessor_2nd_sign(uint8_t step) {
   os_memset(lineBuffer, 0, 50);
@@ -61,9 +66,19 @@ void tx_chunk_2ndsig(uint8_t * data, uint8_t length, commPacket_t *sourcePacket,
   read += length;
 }
 
+#if defined(TARGET_NANOS)
+
 void tx_end_2ndsig(transaction_t *tx) {
   ux.elements = ui_2ndsign_nano;
   ux.elements_count = 9;
   totalSteps = 3;
   ui_processor = stepProcessor_2nd_sign;
 }
+
+#elif defined(TARGET_NANOX)
+
+void tx_end_2ndsig(transaction_t *tx){
+ THROW(ERROR_FEATURE_NOT_YET_SUPPORTED);
+}
+
+#endif

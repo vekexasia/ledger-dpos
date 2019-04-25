@@ -29,8 +29,8 @@ ifndef COIN
 	COIN=lisk
 endif
 
-APPVERSION = 1.2.1
-APP_LOAD_PARAMS =--appFlags 0x40 --targetVersion "" --curve ed25519 $(COMMON_LOAD_PARAMS)
+APPVERSION = 1.2.2
+APP_LOAD_PARAMS =--appFlags 0x240 --targetVersion "" --curve ed25519 $(COMMON_LOAD_PARAMS)
 
 ADDRESS_SUFFIX_LENGTH=1
 
@@ -62,14 +62,8 @@ endif
 $(info APPNAME=$(APPNAME) SIGNED_MESSAGE_PREFIX=$(SIGNED_MESSAGE_PREFIX))
 
 # Build configuration
-
-APP_SOURCE_PATH += src
-SDK_SOURCE_PATH += lib_u2f lib_stusb lib_stusb_impl
-
 DEFINES   += OS_IO_SEPROXYHAL IO_SEPROXYHAL_BUFFER_SIZE_B=300
 DEFINES   += HAVE_BAGL HAVE_SPRINTF
-#DEFINES   += HAVE_PRINTF PRINTF=screen_printf
-DEFINES   += PRINTF\(...\)=
 DEFINES   += HAVE_IO_USB HAVE_L4_USBLIB IO_USB_MAX_ENDPOINTS=6 IO_HID_EP_LENGTH=64 HAVE_USB_APDU
 DEFINES   += APP_MAJOR_VERSION=$(APPVERSION_M) APP_MINOR_VERSION=$(APPVERSION_N) APP_PATCH_VERSION=$(APPVERSION_P)
 DEFINES   += MAX_ADPU_OUTPUT_SIZE=$(MAX_ADPU_OUTPUT_SIZE)
@@ -90,10 +84,49 @@ DEFINES   += ADDRESS_SUFFIX_LENGTH=$(ADDRESS_SUFFIX_LENGTH)
 DEFINES   += SIGNED_MESSAGE_PREFIX=\"$(SIGNED_MESSAGE_PREFIX)\"
 DEFINES   += NVRAM_MAX=$(NVRAM_MAX)
 
+WEBUSB_URL     = www.ledgerwallet.com
+DEFINES       += HAVE_WEBUSB WEBUSB_URL_SIZE_B=$(shell echo -n $(WEBUSB_URL) | wc -c) WEBUSB_URL=$(shell echo -n $(WEBUSB_URL) | sed -e "s/./\\\'\0\\\',/g")
 
-ICONNAME=badge_$(COIN).gif
+
+ifeq ($(TARGET_NAME),TARGET_NANOX)
+	ICONNAME=nanox_app_$(COIN).gif
+else
+	ICONNAME=nanos_app_$(COIN).gif
+endif
+
 # Compiler, assembler, and linker
 
+ifeq ($(TARGET_NAME),TARGET_NANOX)
+DEFINES       += HAVE_BLE BLE_COMMAND_TIMEOUT_MS=2000
+DEFINES       += HAVE_BLE_APDU # basic ledger apdu transport over BLE
+
+DEFINES       += HAVE_GLO096
+DEFINES       += HAVE_BAGL BAGL_WIDTH=128 BAGL_HEIGHT=64
+DEFINES       += HAVE_BAGL_ELLIPSIS # long label truncation feature
+DEFINES       += HAVE_BAGL_FONT_OPEN_SANS_REGULAR_11PX
+DEFINES       += HAVE_BAGL_FONT_OPEN_SANS_EXTRABOLD_11PX
+DEFINES       += HAVE_BAGL_FONT_OPEN_SANS_LIGHT_16PX
+DEFINES		  += HAVE_UX_FLOW
+endif
+
+# Enabling debug PRINTF
+DEBUG = 0
+ifneq ($(DEBUG),0)
+
+        ifeq ($(TARGET_NAME),TARGET_NANOX)
+                DEFINES   += HAVE_PRINTF PRINTF=mcu_usb_printf
+        else
+                DEFINES   += HAVE_PRINTF PRINTF=screen_printf
+        endif
+else
+        DEFINES   += PRINTF\(...\)=
+endif
+
+
+
+##############
+# Compiler #
+##############
 ifneq ($(BOLOS_ENV),)
 $(info BOLOS_ENV=$(BOLOS_ENV))
 CLANGPATH := $(BOLOS_ENV)/clang-arm-fropi/bin/
@@ -120,6 +153,15 @@ LDLIBS += -lm -lgcc -lc
 
 # import rules to compile glyphs(/pone)
 include $(BOLOS_SDK)/Makefile.glyphs
+
+
+APP_SOURCE_PATH += src
+SDK_SOURCE_PATH += lib_u2f lib_stusb lib_stusb_impl
+
+ifeq ($(TARGET_NAME),TARGET_NANOX)
+SDK_SOURCE_PATH  += lib_blewbxx lib_blewbxx_impl
+SDK_SOURCE_PATH  += lib_ux
+endif
 
 # Main rules
 

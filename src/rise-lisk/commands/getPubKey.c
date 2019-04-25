@@ -14,14 +14,6 @@
 
 uint8_t pubKeyResponseBuffer[32+22];
 
-static const bagl_element_t verify_address_ui[] = {
-  CLEAN_SCREEN,
-  TITLE_ITEM("Verify Address", 0x00),
-  ICON_CROSS(0x00),
-  ICON_CHECK(0x00),
-  LINEBUFFER,
-};
-
 /**
  * Creates the response for the getPublicKey command.
  * It returns both publicKey and derived Address
@@ -36,10 +28,8 @@ static void createPublicKeyResponse() {
   addToResponse(pubKeyResponseBuffer + 32, length);
 }
 
-unsigned int verify_address_ui_button(unsigned int button_mask, unsigned int button_mask_counter) {
-  switch (button_mask) {
-    case BUTTON_EVT_RELEASED | BUTTON_RIGHT:
-      createPublicKeyResponse();
+void addr_approve(){
+  createPublicKeyResponse();
 
       unsigned int tx = flushResponseToIO(G_io_apdu_buffer);
       G_io_apdu_buffer[tx]   = 0x90;
@@ -49,6 +39,22 @@ unsigned int verify_address_ui_button(unsigned int button_mask, unsigned int but
 
       // Display back the original UX
       ui_idle();
+}
+
+#if defined(TARGET_NANOS)
+
+static const bagl_element_t verify_address_ui[] = {
+  CLEAN_SCREEN,
+  TITLE_ITEM("Verify Address", 0x00),
+  ICON_CROSS(0x00),
+  ICON_CHECK(0x00),
+  LINEBUFFER,
+};
+
+unsigned int verify_address_ui_button(unsigned int button_mask, unsigned int button_mask_counter) {
+  switch (button_mask) {
+    case BUTTON_EVT_RELEASED | BUTTON_RIGHT:
+      addr_approve();
       break;
     case BUTTON_EVT_RELEASED | BUTTON_LEFT:
       touch_deny();
@@ -57,11 +63,50 @@ unsigned int verify_address_ui_button(unsigned int button_mask, unsigned int but
   return 0;
 }
 
+#elif defined(TARGET_NANOX)
+//////////////////////////////////////////////////////////////////////
+
+UX_STEP_NOCB(
+    ux_verify_addr_1_step,
+    bnnn_paging,
+    {
+      .title = "Verify Address",
+      .text = lineBuffer,
+    });
+UX_STEP_VALID(
+    ux_verify_addr_confirme_step,
+    pb,
+    addr_approve(),
+    {
+      &C_icon_validate_14,
+      "Confirm address",
+    });
+UX_STEP_VALID(
+    ux_verify_addr_reject_step, 
+    pb, 
+    touch_deny(),
+    {
+      &C_icon_crossmark,
+      "Reject",
+    });
+UX_FLOW(ux_verify_addr,
+  &ux_verify_addr_1_step,
+  &ux_verify_addr_confirme_step,
+  &ux_verify_addr_reject_step
+);
+
+//////////////////////////////////////////////////////////////////////
+#endif
+
 static void ui_address(void) {
   uint64_t address = deriveAddressFromPublic(&signContext.publicKey);
   uint8_t length = deriveAddressStringRepresentation(address, lineBuffer);
   lineBuffer[length] = '\0';
+#if defined(TARGET_NANOS)
   UX_DISPLAY(verify_address_ui, NULL);
+#elif defined(TARGET_NANOX)
+  ux_flow_init(0, ux_verify_addr, NULL);
+#endif // #if TARGET_ID
 }
 
 void handleGetPublicKey(volatile unsigned int *flags, uint8_t *bip32Path, bool confirmationRequest) {

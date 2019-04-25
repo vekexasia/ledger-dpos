@@ -167,6 +167,8 @@ static void dpos_main(void) {
               THROW(0x6982);
             }
 
+            PRINTF("New APDU received:\n%.*H\n", rx, G_io_apdu_buffer);
+
             switch (G_io_apdu_buffer[1]) {
               case INS_COM_START:
                 handleStartCommPacket();
@@ -191,6 +193,9 @@ static void dpos_main(void) {
                 break;
             }
           }
+        CATCH(EXCEPTION_IO_RESET) {
+            THROW(EXCEPTION_IO_RESET);
+        }
         CATCH_OTHER(e)
           {
             switch (e & 0xF000) {
@@ -256,7 +261,16 @@ unsigned char io_event(unsigned char channel) {
   return 1;
 }
 
-
+void app_exit(void) {
+    BEGIN_TRY_L(exit) {
+        TRY_L(exit) {
+            os_sched_exit(-1);
+        }
+        FINALLY_L(exit) {
+        }
+    }
+    END_TRY_L(exit);
+}
 
 __attribute__((section(".boot"))) int main(void) {
   // exit critical section
@@ -267,13 +281,12 @@ __attribute__((section(".boot"))) int main(void) {
   // ensure exception will work as planned
   os_boot();
 
-  commContext.started = false;
-  commContext.read = 0;
+  for (;;) {
+    commContext.started = false;
+    commContext.read = 0;
 
-  BEGIN_TRY
-    {
-      TRY
-        {
+    BEGIN_TRY {
+        TRY {
           io_seproxyhal_init();
 
           // Consider using an internal storage thingy here
@@ -284,14 +297,29 @@ __attribute__((section(".boot"))) int main(void) {
           // Set ui state to idle.
           ui_idle();
 
+  #ifdef HAVE_BLE
+                BLE_power(0, NULL);
+                BLE_power(1, "Nano X");
+  #endif // HAVE_BLE
+
           dpos_main();
+
         }
-      CATCH_OTHER(e)
-        {
+        CATCH(EXCEPTION_IO_RESET) {
+                  // reset IO and UX
+                  CLOSE_TRY;
+                  continue;
         }
-      FINALLY
-      {
+        CATCH_ALL {
+            CLOSE_TRY;
+            break;
+        }
+        FINALLY {
+        }
       }
-    }
-  END_TRY;
+    END_TRY;
+  }
+  app_exit();
+
+  return 0;
 }
