@@ -1,6 +1,7 @@
 //
 // Created by andrea on 09/12/18.
 //
+#include "bolos_target.h"
 #include "../../io.h"
 #ifndef PROJECT_SIGNTX_H
 #define PROJECT_SIGNTX_H
@@ -15,10 +16,14 @@ typedef struct transaction {
 } transaction_t;
 
 extern transaction_t transaction;
-typedef void (*ui_processor_fn)(uint8_t curStep);
+
+#if defined(TARGET_NANOS)
 typedef uint8_t (*step_processor_fn)(uint8_t curStep);
+typedef void (*ui_processor_fn)(uint8_t curStep);
+
 extern step_processor_fn step_processor;
 extern ui_processor_fn ui_processor;
+#endif
 
 void handleSignTxPacket(commPacket_t *packet, commContext_t *context);
 void finalizeSignTx(volatile unsigned int *flags);

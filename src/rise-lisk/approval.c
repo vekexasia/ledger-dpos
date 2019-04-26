@@ -14,14 +14,6 @@
 /**
  * Sign with address
  */
-static const bagl_element_t approval_nano_ui[] = {
-  CLEAN_SCREEN,
-  TITLE_ITEM("Sign with", 0x01),
-  ICON_CHECK(0x00),
-  ICON_CROSS(0x00),
-  LINEBUFFER,
-};
-
 void touch_deny() {
   G_io_apdu_buffer[0] = 0x69;
   G_io_apdu_buffer[1] = 0x85;
@@ -35,6 +27,7 @@ void touch_deny() {
 
   // Send back the response, do not restart the event loop
   io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
+
   // Display back the original UX
   ui_idle();
 }
@@ -59,6 +52,14 @@ void touch_approve() {
   ui_idle();
 }
 
+#if defined(TARGET_NANOS)
+static const bagl_element_t approval_nano_ui[] = {
+  CLEAN_SCREEN,
+  TITLE_ITEM("Sign with", 0x01),
+  ICON_CHECK(0x00),
+  ICON_CROSS(0x00),
+  LINEBUFFER,
+};
 
 unsigned int approval_nano_ui_button(unsigned int button_mask, unsigned int button_mask_counter) {
   switch (button_mask) {
@@ -78,6 +79,4 @@ void ui_approval() {
   deriveAddressStringRepresentation(address, lineBuffer);
   UX_DISPLAY(approval_nano_ui, NULL)
 }
-
-
-
+#endif

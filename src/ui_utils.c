@@ -15,6 +15,7 @@ void toHex(uint8_t what, char * whereTo) {
   whereTo[1] = hexChars[what % 16];
 }
 
+#if defined(TARGET_NANOS)
 unsigned int currentStep = 0;
 unsigned int totalSteps = 0;
 
@@ -35,6 +36,7 @@ const bagl_element_t *uiprocessor(const bagl_element_t *element) {
   }
   return NULL;
 }
+#endif
 
 uint8_t intToString(uint64_t amount, char *out) {
   uint8_t i = 0;
