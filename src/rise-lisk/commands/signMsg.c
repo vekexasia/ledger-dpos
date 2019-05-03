@@ -10,6 +10,13 @@
 #include "../dposutils.h"
 #include "../approval.h"
 
+const bagl_element_t sign_message_ui[] = {
+  CLEAN_SCREEN,
+  TITLE_ITEM("Verify text", 0x00),
+  ICON_CROSS(0x00),
+  ICON_CHECK(0x00),
+  LINEBUFFER,
+ };
 
 static cx_sha256_t messageHash;
 
@@ -60,16 +67,6 @@ void prepareMsgLineBuffer(commPacket_t *packet) {
   }
 }
 
-#if defined(TARGET_NANOS)
-
-const bagl_element_t sign_message_ui[] = {
-  CLEAN_SCREEN,
-  TITLE_ITEM("Verify text", 0x00),
-  ICON_CROSS(0x00),
-  ICON_CHECK(0x00),
-  LINEBUFFER,
- };
-
 unsigned int sign_message_ui_button(unsigned int button_mask, unsigned int button_mask_counter) {
   switch (button_mask) {
     case BUTTON_EVT_RELEASED | BUTTON_RIGHT:
@@ -83,33 +80,6 @@ unsigned int sign_message_ui_button(unsigned int button_mask, unsigned int butto
   return 0;
 }
 
-#elif defined(TARGET_NANOX)
-//////////////////////////////////////////////////////////////////////
-
-UX_STEP_VALID(
-    ux_sign_message_1_step,
-    pnn,
-    ui_approval(),
-    {
-      &C_icon_validate_14,
-      "Verify text",
-      lineBuffer,
-    });
-UX_STEP_VALID(
-    ux_sign_message_2_step, 
-    pb, 
-    touch_deny(NULL),
-    {
-      &C_icon_crossmark,
-      "Reject",
-    });
-UX_FLOW(ux_sign_message,
-  &ux_sign_message_1_step,
-  &ux_sign_message_2_step
-);
-
-//////////////////////////////////////////////////////////////////////
-#endif
 
 void processSignMessage(volatile unsigned int *flags) {
   uint8_t preFinalHash[32];
@@ -124,9 +94,5 @@ void processSignMessage(volatile unsigned int *flags) {
 
   // Init user flow.
   *flags |= IO_ASYNCH_REPLY;
-#if defined(TARGET_NANOS)
   UX_DISPLAY(sign_message_ui, NULL);
-#elif defined(TARGET_NANOX)
-  ux_flow_init(0, ux_sign_message, NULL);
-#endif // #if TARGET_ID
 }

@@ -16,9 +16,6 @@ static uint16_t totalLengthAfterAsset;
 /**
  * Sign with address
  */
-
-#if defined(TARGET_NANOS)
-
 static const bagl_element_t ui_send_nano[] = {
   CLEAN_SCREEN,
   TITLE_ITEM("Send from", 0x01),
@@ -32,156 +29,6 @@ static const bagl_element_t ui_send_nano[] = {
   ICON_CROSS(0x00),
   LINEBUFFER,
 };
-
-#elif defined(TARGET_NANOX)
-
-//////////////////////////////////////////////////////////////////////
-
-void display_next_state(bool is_upper_border);
-
-char caption[18];
-
-UX_STEP_NOCB(ux_send_title_step, 
-    pnn, 
-    {
-      &C_icon_eye,
-      "Review",
-      "transaction",
-    });
-UX_STEP_INIT(
-    ux_init_upper_border,
-    NULL,
-    NULL,
-    {
-        display_next_state(true);
-    });
-UX_STEP_NOCB(
-    ux_variable_display, 
-    bnnn_paging,
-    {
-      .title = caption,
-      .text = lineBuffer,
-    });
-UX_STEP_INIT(
-    ux_init_lower_border,
-    NULL,
-    NULL,
-    {
-        display_next_state(false);
-    });
-UX_STEP_VALID(
-    ux_send_approve_step, 
-    pbb, 
-    touch_approve(),
-    {
-      &C_icon_validate_14,
-      "Accept",
-      "and send",
-    });
-UX_STEP_VALID(
-    ux_send_reject_step, 
-    pb, 
-    touch_deny(),
-    {
-      &C_icon_crossmark,
-      "Reject",
-    });
-// confirm_full: confirm transaction / Amount: fullAmount / Address: fullAddress / Fees: feesAmount
-UX_FLOW(ux_send,
-  &ux_send_title_step,
-
-  &ux_init_upper_border,
-  &ux_variable_display,
-  &ux_init_lower_border,
-
-  &ux_send_approve_step,
-  &ux_send_reject_step
-);
-
-uint8_t num_data;
-volatile uint8_t current_data_index;
-volatile uint8_t current_state;
-
-#define INSIDE_BORDERS 0
-#define OUT_OF_BORDERS 1
-
-void set_state_data() {
-
-    switch (current_data_index)
-    {
-        case 0:
-            strncpy(caption, "Send from", sizeof(caption));
-            uiProcessor_send(1);
-            break;
-
-        case 1:
-            strncpy(caption, "Send to", sizeof(caption));
-            uiProcessor_send(2);
-            break;
-
-        case 2:
-            strncpy(caption, "Amount", sizeof(caption));
-            uiProcessor_send(4);
-            break;
-
-        case 3:
-            strncpy(caption, "Message", sizeof(caption));
-            uiProcessor_send(3);
-            break;
-    
-        default:
-            THROW(0x6666);
-            break;
-    }
-
-}
-
-void display_next_state(bool is_upper_border){
-
-    if(is_upper_border){ // walking over the first border
-        if(current_state == OUT_OF_BORDERS){
-            current_state = INSIDE_BORDERS;
-            set_state_data();
-            ux_flow_next();
-        }
-        else{
-            if(current_data_index>0){
-                current_data_index--;
-                set_state_data();
-                ux_flow_next();
-            }
-            else{
-                current_state = OUT_OF_BORDERS;
-                current_data_index = 0;
-                ux_flow_prev();
-            }
-        }
-    }
-    else // walking over the second border
-    {
-        if(current_state == OUT_OF_BORDERS){
-            current_state = INSIDE_BORDERS;
-            set_state_data();
-            ux_flow_prev();
-        }
-        else{
-            if(num_data != 0 && current_data_index<num_data-1){
-                current_data_index++;
-                set_state_data();
-                ux_flow_prev();
-            }
-            else{
-                current_state = OUT_OF_BORDERS;
-                ux_flow_next();
-            }
-        }
-    }
-    
-}
-
-//////////////////////////////////////////////////////////////////////
-#endif // TARGET_NANOX
-
 
 static uint8_t stepProcessor_send(uint8_t step) {
   if (step == 2 && curLength == 0) {
@@ -226,30 +73,12 @@ void tx_chunk_send(uint8_t * data, uint8_t length, commPacket_t *sourcePacket, t
   totalLengthAfterAsset += length;
 }
 
-#if defined(TARGET_NANOS)
-
 void tx_end_send(transaction_t *tx) {
-
-  curLength = totalLengthAfterAsset - (totalLengthAfterAsset / 64) * 64;
   // Remove signature and/or secondSignature from message.
+  curLength = totalLengthAfterAsset - (totalLengthAfterAsset / 64) * 64;
   ux.elements = ui_send_nano;
   ux.elements_count = 11;
   totalSteps = 4;
   step_processor = stepProcessor_send;
   ui_processor = uiProcessor_send;
 }
-
-#elif defined(TARGET_NANOX)
-
-void tx_end_send(transaction_t *tx) {
-
-  curLength = totalLengthAfterAsset - (totalLengthAfterAsset / 64) * 64;
-  
-  current_state = OUT_OF_BORDERS;
-  num_data = curLength == 0 ? 3 : 4;
-  current_data_index = 0;
-
-  ux_flow_init(0, ux_send, NULL);
-}
-
-#endif

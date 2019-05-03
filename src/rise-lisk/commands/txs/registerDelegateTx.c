@@ -16,9 +16,6 @@ static uint16_t totalLengthAfterAsset;
 /**
  * Create second signature with address
  */
-
-#if defined(TARGET_NANOS)
-
 static const bagl_element_t ui_regdelegate_nano[] = {
   CLEAN_SCREEN,
   TITLE_ITEM("Register", 0x01),
@@ -30,8 +27,6 @@ static const bagl_element_t ui_regdelegate_nano[] = {
   ICON_CROSS(0x00),
   LINEBUFFER,
 };
-
-#endif
 
 static void stepProcessor_regDelegate(uint8_t step) {
   os_memset(lineBuffer, 0, 50);
@@ -64,21 +59,6 @@ void tx_chunk_regdel(uint8_t * data, uint8_t length, commPacket_t *sourcePacket,
   totalLengthAfterAsset += length;
 }
 
-void checkUsernameValidity() {
-  uint8_t i;
-  for (i=0; i<read; i++) {
-    char c = username[i];
-    if (
-      !(c >= 'a' && c <= 'z') &&
-      !(c >= '0' && c <= '9') &&
-      !(c == '!' || c == '@' || c == '$' || c == '&' || c == '_' || c == '.')) {
-      THROW(INVALID_PARAMETER);
-    }
-  }
-}
-
-#if defined(TARGET_NANOS)
-
 void tx_end_regdel(transaction_t *tx) {
   //Calculate the exact username length by removing signatures
   uint8_t usernameLength = totalLengthAfterAsset - (totalLengthAfterAsset / 64) * 64;
@@ -94,13 +74,15 @@ void tx_end_regdel(transaction_t *tx) {
   ui_processor = stepProcessor_regDelegate;
 }
 
-
-
-#elif defined(TARGET_NANOX)
-
-void tx_end_regdel(transaction_t *tx){
- THROW(ERROR_FEATURE_NOT_YET_SUPPORTED);
+void checkUsernameValidity() {
+  uint8_t i;
+  for (i=0; i<read; i++) {
+    char c = username[i];
+    if (
+      !(c >= 'a' && c <= 'z') &&
+      !(c >= '0' && c <= '9') &&
+      !(c == '!' || c == '@' || c == '$' || c == '&' || c == '_' || c == '.')) {
+      THROW(INVALID_PARAMETER);
+    }
+  }
 }
-
-
-#endif

@@ -4,18 +4,9 @@
 #include "../glyphs.h"
 #include "../ui_utils.h"
 
-#ifdef TARGET_NANOX
-#include "ux.h"
-ux_state_t G_ux;
-bolos_ux_params_t G_ux_params;
-#else // TARGET_NANOX
-ux_state_t ux;
-#endif // TARGET_NANOX
-
-#if defined(TARGET_NANOS)
-
 const ux_menu_entry_t menu_main[];
 const ux_menu_entry_t menu_about[];
+ux_state_t ux;
 
 #define __NAME3(a, b, c) a##b##c
 #define NAME3(a, b, c) __NAME3(a, b, c)
@@ -33,39 +24,6 @@ const ux_menu_entry_t menu_about[] = {
   {menu_main, NULL, 2, &C_icon_back, "Back", NULL, 61, 40},
   UX_MENU_END
 };
-
-#elif defined(TARGET_NANOX)
-//////////////////////////////////////////////////////////////////////
-UX_STEP_NOCB(
-    ux_idle_flow_1_step, 
-    nn, 
-    {
-      "Application",
-      "is ready",
-    });
-UX_STEP_NOCB(
-    ux_idle_flow_3_step, 
-    bn, 
-    {
-      "Version",
-      APPVERSION,
-    });
-UX_STEP_VALID(
-    ux_idle_flow_4_step,
-    pb,
-    os_sched_exit(-1),
-    {
-      &C_icon_dashboard_x,
-      "Quit",
-    });
-UX_FLOW(ux_idle_flow,
-  &ux_idle_flow_1_step,
-  &ux_idle_flow_3_step,
-  &ux_idle_flow_4_step
-);
-
-
-#endif
 
 void satoshiToString(uint64_t amount, char *out) {
 
@@ -104,13 +62,5 @@ void satoshiToString(uint64_t amount, char *out) {
  * Sets ui to idle.
  */
 void ui_idle() {
-#if defined(TARGET_NANOS)
   UX_MENU_DISPLAY(0, menu_main, NULL);
-#elif defined(TARGET_NANOX)
-    // reserve a display stack slot if none yet
-    if(G_ux.stack_count == 0) {
-        ux_stack_push();
-    }
-    ux_flow_init(0, ux_idle_flow, NULL);
-#endif
 }

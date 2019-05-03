@@ -11,6 +11,17 @@
 #include "ed25519.h"
 
 
+/**
+ * Sign with address
+ */
+static const bagl_element_t approval_nano_ui[] = {
+  CLEAN_SCREEN,
+  TITLE_ITEM("Sign with", 0x01),
+  ICON_CHECK(0x00),
+  ICON_CROSS(0x00),
+  LINEBUFFER,
+};
+
 void touch_deny() {
   G_io_apdu_buffer[0] = 0x69;
   G_io_apdu_buffer[1] = 0x85;
@@ -48,18 +59,6 @@ void touch_approve() {
   ui_idle();
 }
 
-#if defined(TARGET_NANOS)
-
-/**
- * Sign with address
- */
-static const bagl_element_t approval_nano_ui[] = {
-  CLEAN_SCREEN,
-  TITLE_ITEM("Sign with", 0x01),
-  ICON_CHECK(0x00),
-  ICON_CROSS(0x00),
-  LINEBUFFER,
-};
 
 unsigned int approval_nano_ui_button(unsigned int button_mask, unsigned int button_mask_counter) {
   switch (button_mask) {
@@ -74,42 +73,10 @@ unsigned int approval_nano_ui_button(unsigned int button_mask, unsigned int butt
   return 0;
 }
 
-#elif defined(TARGET_NANOX)
-//////////////////////////////////////////////////////////////////////
-
-UX_STEP_VALID(
-    ux_approval_1_step,
-    pnn,
-    touch_approve(),
-    {
-      &C_icon_validate_14,
-      "Sign with",
-      lineBuffer,
-    });
-UX_STEP_VALID(
-    ux_approval_2_step, 
-    pb, 
-    touch_deny(),
-    {
-      &C_icon_crossmark,
-      "Reject",
-    });
-UX_FLOW(ux_approval,
-  &ux_approval_1_step,
-  &ux_approval_2_step
-);
-
-//////////////////////////////////////////////////////////////////////
-#endif
-
 void ui_approval() {
   uint64_t address = deriveAddressFromPublic(&signContext.publicKey);
   deriveAddressStringRepresentation(address, lineBuffer);
-#if defined(TARGET_NANOS)
   UX_DISPLAY(approval_nano_ui, NULL)
-#elif defined(TARGET_NANOX)
-  ux_flow_init(0, ux_approval, NULL);
-#endif // #if TARGET_ID
 }
 
 

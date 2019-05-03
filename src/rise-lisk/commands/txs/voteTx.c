@@ -13,9 +13,6 @@ static uint8_t votesRemoved = 0;
 /**
  * Create second signature with address
  */
-
-#if defined(TARGET_NANOS)
-
 const bagl_element_t ui_vote_nano[] = {
   CLEAN_SCREEN,
   TITLE_ITEM("Vote from", 0x01),
@@ -27,8 +24,6 @@ const bagl_element_t ui_vote_nano[] = {
   ICON_CROSS(0x00),
   LINEBUFFER,
 };
-
-#endif
 
 static void stepProcessor_vote(uint8_t step) {
   uint64_t address;
@@ -65,19 +60,9 @@ void tx_chunk_vote(uint8_t * data, uint8_t length, commPacket_t *sourcePacket, t
   }
 }
 
-#if defined(TARGET_NANOS)
-
 void tx_end_vote(transaction_t *tx) {
   ux.elements = ui_vote_nano;
   ux.elements_count = 9;
   totalSteps = 3;
   ui_processor = stepProcessor_vote;
 }
-
-#elif defined(TARGET_NANOX)
-
-void tx_end_vote(transaction_t *tx){
- THROW(ERROR_FEATURE_NOT_YET_SUPPORTED);
-}
-
-#endif

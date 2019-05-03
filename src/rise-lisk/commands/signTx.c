@@ -29,8 +29,33 @@ tx_end_fn tx_end;
 ui_processor_fn ui_processor;
 step_processor_fn step_processor;
 
+static const bagl_element_t sign_message_ui[] = {
+  CLEAN_SCREEN,
+  TITLE_ITEM("Verify text", 0x00),
+  ICON_CROSS(0x00),
+  ICON_CHECK(0x00),
+  LINEBUFFER,
+};
 static cx_sha256_t txHash;
 transaction_t transaction;
+
+static void ui_sign_tx_button(unsigned int button_mask, unsigned int button_mask_counter) {
+  switch (button_mask) {
+    case BUTTON_EVT_RELEASED | BUTTON_RIGHT:
+      if (currentStep < totalSteps) {
+        currentStep = step_processor(currentStep);
+        ui_processor(currentStep);
+        UX_REDISPLAY();
+      } else {
+        touch_approve();
+      }
+      break;
+
+    case BUTTON_EVT_RELEASED | BUTTON_LEFT:
+      touch_deny(NULL);
+      break;
+  }
+}
 
 void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
   // if first packet with signing header
@@ -91,43 +116,16 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
 
   cx_hash(&txHash, NULL, packet->data, packet->length, NULL, NULL);
 }
-
 static uint8_t default_step_processor(uint8_t cur) {
   return cur + 1;
 }
 
-#if defined(TARGET_NANOS)
-
-static const bagl_element_t sign_message_ui[] = {
-  CLEAN_SCREEN,
-  TITLE_ITEM("Verify text", 0x00),
-  ICON_CROSS(0x00),
-  ICON_CHECK(0x00),
-  LINEBUFFER,
-};
-
-static void ui_sign_tx_button(unsigned int button_mask, unsigned int button_mask_counter) {
-  switch (button_mask) {
-    case BUTTON_EVT_RELEASED | BUTTON_RIGHT:
-      if (currentStep < totalSteps) {
-        currentStep = step_processor(currentStep);
-        ui_processor(currentStep);
-        UX_REDISPLAY();
-      } else {
-        touch_approve();
-      }
-      break;
-
-    case BUTTON_EVT_RELEASED | BUTTON_LEFT:
-      touch_deny(NULL);
-      break;
-  }
-}
 
 void finalizeSignTx(volatile unsigned int *flags) {
+  uint8_t finalHash[32];
 
   // Close first sha256
-  cx_hash(&txHash, CX_LAST, NULL, 0, NULL, NULL);
+  cx_hash(&txHash, CX_LAST, finalHash, 0, NULL, NULL);
 
   os_memmove(&signContext.digest, txHash.acc, 32);
 
@@ -146,20 +144,3 @@ void finalizeSignTx(volatile unsigned int *flags) {
   UX_WAKE_UP();
   UX_REDISPLAY();
 }
-
-#elif defined(TARGET_NANOX)
-
-void finalizeSignTx(volatile unsigned int *flags) {
-
-  uint8_t finalHash[32];
-
-  // Close first sha256
-  cx_hash(&txHash, CX_LAST, NULL, 0, finalHash, 32);
-  
-  os_memmove(&signContext.digest, finalHash, 32);
-
-  tx_end(&transaction);
-  *flags |= IO_ASYNCH_REPLY;
-}
-
-#endif
