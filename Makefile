@@ -29,7 +29,7 @@ ifndef COIN
 	COIN=lisk
 endif
 
-APPVERSION = 1.2.0
+APPVERSION = 1.3.0
 APP_LOAD_PARAMS = --targetVersion "" --curve ed25519 $(COMMON_LOAD_PARAMS)
 ifeq ($(TARGET_NAME),TARGET_NANOX)
 APP_LOAD_PARAMS += --appFlags 0x240 # with BLE support
