@@ -10,15 +10,8 @@
 #include "../dposutils.h"
 #include "../approval.h"
 
-const bagl_element_t sign_message_ui[] = {
-  CLEAN_SCREEN,
-  TITLE_ITEM("Verify text", 0x00),
-  ICON_CROSS(0x00),
-  ICON_CHECK(0x00),
-  LINEBUFFER,
- };
-
 static cx_sha256_t messageHash;
+static char message[50];
 
 void handleSignMessagePacket(commPacket_t *packet, commContext_t *context) {
   // if first packet with signing header
@@ -33,39 +26,48 @@ void handleSignMessagePacket(commPacket_t *packet, commContext_t *context) {
     // Signing header.
     uint64_t prefixLength = strlen(SIGNED_MESSAGE_PREFIX);
     uint8_t varintLength = encodeVarInt(prefixLength, varint);
-    cx_hash(&messageHash, 0, varint, varintLength, NULL, 0);
-    cx_hash(&messageHash, 0, SIGNED_MESSAGE_PREFIX, prefixLength, NULL, 0);
+    cx_hash(&messageHash.header, 0, varint, varintLength, NULL, 0);
+    cx_hash(&messageHash.header, 0, (unsigned char *)SIGNED_MESSAGE_PREFIX, prefixLength, NULL, 0);
 
     varintLength = encodeVarInt(context->totalAmount - headersLength - 1, varint);
-    cx_hash(&messageHash, 0, varint, varintLength, NULL, 0);
+    cx_hash(&messageHash.header, 0, varint, varintLength, NULL, 0);
 
     prepareMsgLineBuffer(packet); //Enough data here for display purpose
   }
 
-  cx_hash(&messageHash, 0, packet->data, packet->length, NULL, 0);
+  cx_hash(&messageHash.header, 0, packet->data, packet->length, NULL, 0);
 
 }
 
 void prepareMsgLineBuffer(commPacket_t *packet) {
-  os_memset(lineBuffer, 0, 50);
-  uint8_t msgDisplayLenth = MIN(50, packet->length);
-  os_memmove(lineBuffer, packet->data, msgDisplayLenth);
-  if (msgDisplayLenth > 46) {
-    os_memmove(lineBuffer+46, "...\0", 4);
+  os_memset(message, 0, sizeof(message));
+  uint8_t msgDisplayLenth = MIN(sizeof(message), packet->length);
+  os_memmove(message, packet->data, msgDisplayLenth);
+  if (msgDisplayLenth > sizeof(message) - 4) {
+    os_memmove(message+(sizeof(message) - 4), "...\0", 4);
   }
 
   uint8_t npc = 0; //Non Printable Chars Counter
   for (uint8_t i=0; i < msgDisplayLenth; i++) {
-    npc += IS_PRINTABLE(lineBuffer[i]) ?
+    npc += IS_PRINTABLE(message[i]) ?
             0 /* Printable Char */:
             1 /* Non Printable Char */;
   }
 
   // We rewrite the line buffer to <binary data> in case >= than 40% is non printable or first char is not printable.
-  if ((npc*100) / msgDisplayLenth >= 40 || ! IS_PRINTABLE(lineBuffer[0])) {
-    os_memmove(lineBuffer, "< binary data >\0", 16);
+  if ((npc*100) / msgDisplayLenth >= 40 || ! IS_PRINTABLE(message[0])) {
+    os_memmove(message, "< binary data >\0", 16);
   }
 }
+
+#if defined(TARGET_NANOS)
+const bagl_element_t sign_message_ui[] = {
+  CLEAN_SCREEN,
+  TITLE_ITEM("Verify text", 0x00),
+  ICON_CROSS(0x00),
+  ICON_CHECK(0x00),
+  SECONDLINE(message, 0x00),
+};
 
 unsigned int sign_message_ui_button(unsigned int button_mask, unsigned int button_mask_counter) {
   switch (button_mask) {
@@ -74,25 +76,85 @@ unsigned int sign_message_ui_button(unsigned int button_mask, unsigned int butto
       break;
 
     case BUTTON_EVT_RELEASED | BUTTON_LEFT:
-      touch_deny(NULL);
+      touch_deny();
       break;
   }
   return 0;
 }
 
+static void ui_display_sign_message(void) {
+  UX_DISPLAY(sign_message_ui, NULL);
+}
+#endif
+
+#if defined(TARGET_NANOX)
+UX_STEP_NOCB(
+  ux_sign_message_flow_1_step, 
+  pnn, 
+  {
+    &C_nanox_icon_eye,
+    "Confirm",
+    "message",
+  });
+UX_STEP_NOCB(
+  ux_sign_message_flow_2_step,
+  bnnn_paging,
+  {
+    "Message",
+    message,
+  });
+UX_STEP_NOCB_INIT(
+  ux_sign_message_flow_3_step,
+  bnnn_paging,
+  {
+    os_memset(lineBuffer, 0, sizeof(lineBuffer));
+    uint64_t address = deriveAddressFromPublic(&signContext.publicKey);
+    deriveAddressStringRepresentation(address, lineBuffer);
+  },
+  {
+    "Sign with",
+    lineBuffer,
+  });
+UX_STEP_CB(
+  ux_sign_message_flow_4_step,
+  pb,
+  touch_approve(),
+  {
+    &C_nanox_icon_validate_14,
+    "Confirm",
+  });
+UX_STEP_CB(
+  ux_sign_message_flow_5_step,
+  pb,
+  touch_deny(),
+  {
+    &C_nanox_icon_crossmark,
+    "Reject",
+  });
+UX_FLOW(ux_sign_message_flow,
+  &ux_sign_message_flow_1_step,
+  &ux_sign_message_flow_2_step,
+  &ux_sign_message_flow_3_step,
+  &ux_sign_message_flow_4_step,
+  &ux_sign_message_flow_5_step);
+
+static void ui_display_sign_message(void) {
+  ux_flow_init(0, ux_sign_message_flow, NULL);
+}
+#endif
 
 void processSignMessage(volatile unsigned int *flags) {
-  uint8_t preFinalHash[32];
-  uint8_t finalHash[32];
+  uint8_t preFinalHash[sizeof(signContext.digest)];
+  uint8_t finalHash[sizeof(signContext.digest)];
 
   // Close first sha256
-  cx_hash(&messageHash, CX_LAST, NULL, 0, preFinalHash, 32);
+  cx_hash(&messageHash.header, CX_LAST, NULL, 0, preFinalHash, sizeof(preFinalHash));
 
   // Second sha256
-  cx_hash_sha256(preFinalHash, 32, finalHash, 32);
-  os_memmove(signContext.digest, finalHash, 32);
+  cx_hash_sha256(preFinalHash, sizeof(preFinalHash), finalHash, sizeof(finalHash));
+  os_memmove(signContext.digest, finalHash, sizeof(finalHash));
 
   // Init user flow.
   *flags |= IO_ASYNCH_REPLY;
-  UX_DISPLAY(sign_message_ui, NULL);
+  ui_display_sign_message();
 }

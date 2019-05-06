@@ -21,7 +21,7 @@
   #define SECONDLINE(txt, userid) \
   { \
     { BAGL_LABELINE, 0x00, 23, 26, 82, 11, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000, BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26}, \
-    lineBuffer, 0, 0, 0, NULL, NULL, NULL, \
+    txt, 0, 0, 0, NULL, NULL, NULL, \
   }
   #define LINEBUFFER              SECONDLINE(lineBuffer, 0x00)
 
@@ -32,6 +32,6 @@
   }
 
   void toHex(uint8_t what, char * whereTo);
-  int uiprocessor(const bagl_element_t *element);
+  const bagl_element_t *uiprocessor(const bagl_element_t *element);
   uint8_t intToString(uint64_t amount, char *out);
 #endif //LEDGER_NANO2_UI_UTILS_H

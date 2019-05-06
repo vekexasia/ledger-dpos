@@ -95,6 +95,39 @@ uint64_t deriveAddressFromPublic(cx_ecfp_public_key_t *publicKey) {
   );
 }
 
+void satoshiToString(uint64_t amount, char *out) {
+
+  uint64_t partInt = amount / 100000000;
+  uint64_t partDecimal = amount - (partInt*100000000l) ;
+
+  uint8_t i = 0;
+
+  // TODO: Calc the # of digits for partInt
+  while(partInt > 0) {
+    out[i++] = (uint8_t) (partInt % 10 + '0');
+    partInt /=10;
+  }
+
+  // Swap elements
+  uint8_t j = 0;
+  uint8_t tmp;
+  for (; j<i/2; j++) {
+    tmp = out[j];
+    out[j] = out[i-1-j];
+    out[i-1-j] = tmp;
+  }
+
+  if (partDecimal > 0) {
+    out[i++] = '.';
+    uint32_t satoshi = 10000000;
+    while (satoshi > 0 && partDecimal > 0) {
+      out[i++] = (uint8_t) (partDecimal / satoshi + '0');
+      partDecimal -= (partDecimal/satoshi) * satoshi;
+      satoshi /= 10;
+    }
+  }
+}
+
 /**
  * Reads the packet, sets the signContext and patches the packet data values by skipping the header.
  * @param dataBuffer the  buffer to read from.
@@ -103,7 +136,7 @@ uint64_t deriveAddressFromPublic(cx_ecfp_public_key_t *publicKey) {
 uint32_t setSignContext(commPacket_t *packet) {
   // reset current result
   uint8_t tmp[256];
-  os_memset(&signContext.digest, 0, 32);
+  os_memset(signContext.digest, 0, 32);
   uint32_t bytesRead = derivePrivatePublic(packet->data, &signContext.privateKey, &signContext.publicKey);
   signContext.signableContentLength = (*(packet->data + bytesRead)) << 8;
   signContext.signableContentLength += (*(packet->data + bytesRead + 1));

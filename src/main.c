@@ -122,6 +122,10 @@ void handleCommPacket() {
 }
 
 void processCommPacket(volatile unsigned int *flags) {
+  if (commContext.started == false) {
+    THROW(0x9802); // CODE_NOT_INITIALIZED
+  }
+
   if (commContext.command == INS_VERSION) {
     initResponse();
     addToResponse(APPVERSION, 5);
@@ -277,9 +281,14 @@ __attribute__((section(".boot"))) int main(void) {
           io_seproxyhal_init();
 
           // Consider using an internal storage thingy here
-
           USB_power(0);
           USB_power(1);
+
+          #if defined(TARGET_NANOX)
+          G_io_app.plane_mode = os_setting_get(OS_SETTING_PLANEMODE, NULL, 0);
+          BLE_power(0, NULL);
+          BLE_power(1, "Nano X");
+          #endif
 
           // Set ui state to idle.
           ui_idle();

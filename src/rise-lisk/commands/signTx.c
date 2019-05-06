@@ -26,20 +26,15 @@ typedef void (*tx_end_fn)(transaction_t *tx);
 tx_init_fn tx_init;
 tx_chunk_fn tx_chunk;
 tx_end_fn tx_end;
-ui_processor_fn ui_processor;
-step_processor_fn step_processor;
 
-static const bagl_element_t sign_message_ui[] = {
-  CLEAN_SCREEN,
-  TITLE_ITEM("Verify text", 0x00),
-  ICON_CROSS(0x00),
-  ICON_CHECK(0x00),
-  LINEBUFFER,
-};
 static cx_sha256_t txHash;
 transaction_t transaction;
 
-static void ui_sign_tx_button(unsigned int button_mask, unsigned int button_mask_counter) {
+#if defined(TARGET_NANOS)
+step_processor_fn step_processor;
+ui_processor_fn ui_processor;
+
+static unsigned int ui_sign_tx_button(unsigned int button_mask, unsigned int button_mask_counter) {
   switch (button_mask) {
     case BUTTON_EVT_RELEASED | BUTTON_RIGHT:
       if (currentStep < totalSteps) {
@@ -55,11 +50,40 @@ static void ui_sign_tx_button(unsigned int button_mask, unsigned int button_mask
       touch_deny(NULL);
       break;
   }
+
+  return 0;
 }
+
+static uint8_t default_step_processor(uint8_t cur) {
+  return cur + 1;
+}
+
+static void ui_display_sign_tx() {
+  step_processor = default_step_processor;
+  ui_processor = NULL;
+  tx_end(&transaction);
+
+  currentStep = 1;
+
+  ux.button_push_handler = ui_sign_tx_button;
+  ux.elements_preprocessor = uiprocessor;
+
+  ui_processor(1);
+  UX_WAKE_UP();
+  UX_REDISPLAY();
+}
+#endif
+
+#if defined(TARGET_NANOX)
+static void ui_display_sign_tx() {
+  // Delegate showing UI to the transaction type handlers
+  tx_end(&transaction);
+}
+#endif
 
 void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
   // if first packet with signing header
-  if ( packet->first ) {
+  if (packet->first) {
     // IMPORTANT this logic below only works if the first packet contains the needed information (Which it should)
     // Set signing context from first packet and patches the .data and .length by removing header length
     setSignContext(packet);
@@ -81,26 +105,34 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
       transaction.amountSatoshi |= ((uint64_t )packet->data[recIndex + 8 + i]) << (8*i);
     }
 
-    if (transaction.type == TXTYPE_SEND) {
+    switch (transaction.type) {
+    case TXTYPE_SEND:
       tx_init  = tx_init_send;
       tx_chunk = tx_chunk_send;
       tx_end   = tx_end_send;
-    } else if (transaction.type == TXTYPE_CREATEMULTISIG ) {
+      break;
+    case TXTYPE_CREATEMULTISIG:
       tx_init  = tx_init_multisig;
       tx_chunk = tx_chunk_multisig;
       tx_end   = tx_end_multisig;
-    } else if (transaction.type == TXTYPE_VOTE ) {
+      break;
+    case TXTYPE_VOTE:
       tx_init  = tx_init_vote;
       tx_chunk = tx_chunk_vote;
       tx_end   = tx_end_vote;
-    } else if (transaction.type == TXTYPE_REGISTERDELEGATE ) {
+      break;
+    case TXTYPE_REGISTERDELEGATE:
       tx_init  = tx_init_regdel;
       tx_chunk = tx_chunk_regdel;
       tx_end   = tx_end_regdel;
-    } else if (transaction.type == TXTYPE_CREATESIGNATURE) {
+      break;
+    case TXTYPE_CREATESIGNATURE:
       tx_init  = tx_init_2ndsig;
       tx_chunk = tx_chunk_2ndsig;
       tx_end   = tx_end_2ndsig;
+      break;
+    default:
+      THROW(0x6a80); // INCORRECT_DATA
     }
     tx_init();
   }
@@ -114,33 +146,18 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
                                             + 8 /*amount */;
   tx_chunk(packet->data + assetIndex, packet->length - assetIndex, packet, &transaction);
 
-  cx_hash(&txHash, NULL, packet->data, packet->length, NULL, NULL);
+  cx_hash(&txHash.header, 0, packet->data, packet->length, NULL, 0);
 }
-static uint8_t default_step_processor(uint8_t cur) {
-  return cur + 1;
-}
-
 
 void finalizeSignTx(volatile unsigned int *flags) {
-  uint8_t finalHash[32];
+  // Get the digest for the block
+  uint8_t finalHash[sizeof(signContext.digest)];
+  cx_hash(&txHash.header, CX_LAST, NULL, 0, finalHash, sizeof(finalHash));
+  os_memmove(signContext.digest, finalHash, sizeof(finalHash));
 
-  // Close first sha256
-  cx_hash(&txHash, CX_LAST, finalHash, 0, NULL, NULL);
+  ui_display_sign_tx();
 
-  os_memmove(&signContext.digest, txHash.acc, 32);
-
-  // Init user flow.
-  step_processor = default_step_processor;
-  ui_processor = NULL;
-  tx_end(&transaction);
-
-  currentStep = 1;
+  // We set the flag after displaying UI as there might be some validation code
+  // that throws in the final tx_end call, that should be returned synchronously
   *flags |= IO_ASYNCH_REPLY;
-
-  ux.button_push_handler = ui_sign_tx_button;
-  ux.elements_preprocessor = uiprocessor;
-
-  ui_processor(1);
-  UX_WAKE_UP();
-  UX_REDISPLAY();
 }
