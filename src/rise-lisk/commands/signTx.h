@@ -17,14 +17,6 @@ typedef struct transaction {
 
 extern transaction_t transaction;
 
-#if defined(TARGET_NANOS)
-typedef uint8_t (*step_processor_fn)(uint8_t curStep);
-typedef void (*ui_processor_fn)(uint8_t curStep);
-
-extern step_processor_fn step_processor;
-extern ui_processor_fn ui_processor;
-#endif
-
 void handleSignTxPacket(commPacket_t *packet, commContext_t *context);
 void finalizeSignTx(volatile unsigned int *flags);
 

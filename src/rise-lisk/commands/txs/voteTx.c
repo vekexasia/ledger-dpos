@@ -14,47 +14,7 @@ static uint8_t votesRemoved = 0;
 /**
  * Create second signature with address
  */
-#if defined(TARGET_NANOS)
-const bagl_element_t ui_vote_el[] = {
-  CLEAN_SCREEN,
-  TITLE_ITEM("Vote from", 0x01),
-  TITLE_ITEM("Added", 0x02),
-  TITLE_ITEM("Removed", 0x03),
-  ICON_ARROW_RIGHT(0x01),
-  ICON_ARROW_RIGHT(0x02),
-  ICON_CHECK(0x03),
-  ICON_CROSS(0x00),
-  LINEBUFFER,
-};
 
-static void ui_processor_vote(uint8_t step) {
-  uint64_t address;
-  os_memset(lineBuffer, 0, 50);
-  switch (step) {
-    case 1:
-      address = deriveAddressFromPublic(&signContext.publicKey);
-      deriveAddressStringRepresentation(address, lineBuffer);
-      break;
-    case 2:
-      // Added number
-      intToString(votesAdded, lineBuffer);
-      break;
-    case 3:
-      // Removed number
-      intToString(votesRemoved, lineBuffer);
-      break;
-  }
-}
-
-static void ui_display_vote() {
-  ux.elements = ui_vote_el;
-  ux.elements_count = 9;
-  totalSteps = 3;
-  ui_processor = ui_processor_vote;
-}
-#endif
-
-#if defined(TARGET_NANOX)
 UX_STEP_NOCB(
   ux_sign_tx_vote_flow_1_step, 
   pnn, 
@@ -124,7 +84,6 @@ UX_FLOW(ux_sign_tx_vote_flow,
 static void ui_display_vote() {
   ux_flow_init(0, ux_sign_tx_vote_flow, NULL);
 }
-#endif
 
 void tx_init_vote() {
   votesAdded = 0;

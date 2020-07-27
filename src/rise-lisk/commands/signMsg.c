@@ -60,34 +60,6 @@ void prepareMsgLineBuffer(commPacket_t *packet) {
   }
 }
 
-#if defined(TARGET_NANOS)
-const bagl_element_t sign_message_ui[] = {
-  CLEAN_SCREEN,
-  TITLE_ITEM("Verify text", 0x00),
-  ICON_CROSS(0x00),
-  ICON_CHECK(0x00),
-  SECONDLINE(message, 0x00),
-};
-
-unsigned int sign_message_ui_button(unsigned int button_mask, unsigned int button_mask_counter) {
-  switch (button_mask) {
-    case BUTTON_EVT_RELEASED | BUTTON_RIGHT:
-      ui_approval();
-      break;
-
-    case BUTTON_EVT_RELEASED | BUTTON_LEFT:
-      touch_deny();
-      break;
-  }
-  return 0;
-}
-
-static void ui_display_sign_message(void) {
-  UX_DISPLAY(sign_message_ui, NULL);
-}
-#endif
-
-#if defined(TARGET_NANOX)
 UX_STEP_NOCB(
   ux_sign_message_flow_1_step, 
   pnn, 
@@ -141,7 +113,6 @@ UX_FLOW(ux_sign_message_flow,
 static void ui_display_sign_message(void) {
   ux_flow_init(0, ux_sign_message_flow, NULL);
 }
-#endif
 
 void processSignMessage(volatile unsigned int *flags) {
   uint8_t preFinalHash[sizeof(signContext.digest)];

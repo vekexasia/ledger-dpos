@@ -51,32 +51,3 @@ void touch_approve() {
   // Display back the original UX
   ui_idle();
 }
-
-#if defined(TARGET_NANOS)
-static const bagl_element_t approval_nano_ui[] = {
-  CLEAN_SCREEN,
-  TITLE_ITEM("Sign with", 0x01),
-  ICON_CHECK(0x00),
-  ICON_CROSS(0x00),
-  LINEBUFFER,
-};
-
-unsigned int approval_nano_ui_button(unsigned int button_mask, unsigned int button_mask_counter) {
-  switch (button_mask) {
-    case BUTTON_EVT_RELEASED | BUTTON_RIGHT:
-      touch_approve();
-      break;
-
-    case BUTTON_EVT_RELEASED | BUTTON_LEFT:
-      touch_deny();
-      break;
-  }
-  return 0;
-}
-
-void ui_approval() {
-  uint64_t address = deriveAddressFromPublic(&signContext.publicKey);
-  deriveAddressStringRepresentation(address, lineBuffer);
-  UX_DISPLAY(approval_nano_ui, NULL)
-}
-#endif

@@ -17,61 +17,7 @@ static uint16_t totalLengthAfterAsset;
 /**
  * Sign with address
  */
-#if defined(TARGET_NANOS)
-static const bagl_element_t ui_send_el[] = {
-  CLEAN_SCREEN,
-  TITLE_ITEM("Send from", 0x01),
-  TITLE_ITEM("To", 0x02),
-  TITLE_ITEM("Message", 0x03),
-  TITLE_ITEM("Amount", 0x04),
-  ICON_ARROW_RIGHT(0x01),
-  ICON_ARROW_RIGHT(0x02),
-  ICON_ARROW_RIGHT(0x03),
-  ICON_CHECK(0x04),
-  ICON_CROSS(0x00),
-  LINEBUFFER,
-};
 
-static uint8_t step_processor_send(uint8_t step) {
-  if (step == 2 && curLength == 0) {
-    return 4;
-  }
-  return step + 1;
-}
-
-static void ui_processor_send(uint8_t step) {
-  uint64_t address;
-  os_memset(lineBuffer, 0, 50);
-  switch (step) {
-    case 1:
-      address = deriveAddressFromPublic(&signContext.publicKey);
-      deriveAddressStringRepresentation(address, lineBuffer);
-      break;
-    case 2:
-      deriveAddressStringRepresentation(transaction.recipientId, lineBuffer);
-      break;
-    case 3:
-      os_memmove(lineBuffer, message, MIN(50, curLength));
-      // ellipsis
-      if (curLength > 46) {
-        os_memmove(lineBuffer + 46, "...\0", 4);
-      }
-      break;
-    case 4:
-      satoshiToString(transaction.amountSatoshi, lineBuffer);
-  }
-}
-
-static void ui_display_send() {
-  ux.elements = ui_send_el;
-  ux.elements_count = 11;
-  totalSteps = 4;
-  step_processor = step_processor_send;
-  ui_processor = ui_processor_send;
-}
-#endif
-
-#if defined(TARGET_NANOX)
 UX_STEP_NOCB(
   ux_sign_tx_send_flow_1_step, 
   pnn, 
@@ -161,7 +107,6 @@ static void ui_display_send() {
 
   ux_flow_init(0, ux_sign_tx_send_flow, NULL);
 }
-#endif
 
 void tx_init_send() {
   curLength = 0;

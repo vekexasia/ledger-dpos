@@ -18,45 +18,7 @@ static uint16_t readBytes;
 /**
  * Create second signature with address
  */
-#if defined(TARGET_NANOS)
-static const bagl_element_t ui_regdelegate_el[] = {
-  CLEAN_SCREEN,
-  TITLE_ITEM("Register", 0x01),
-  TITLE_ITEM("For account", 0x02),
-  TITLE_ITEM("With name", 0x03),
-  ICON_ARROW_RIGHT(0x01),
-  ICON_ARROW_RIGHT(0x02),
-  ICON_CHECK(0x03),
-  ICON_CROSS(0x00),
-  LINEBUFFER,
-};
 
-static void ui_processor_regDelegate(uint8_t step) {
-  os_memset(lineBuffer, 0, 50);
-  uint64_t address;
-  switch (step) {
-    case 1:
-      os_memmove(lineBuffer, "delegate\0", 11);
-      break;
-    case 2:
-      address = deriveAddressFromPublic(&signContext.publicKey);
-      deriveAddressStringRepresentation(address, lineBuffer);
-      break;
-    case 3:
-      os_memmove(lineBuffer, username, usernameLength);
-      break;
-  }
-}
-
-static void ui_display_regdelegate() {
-  ux.elements = ui_regdelegate_el;
-  ux.elements_count = 9;
-  totalSteps = 3;
-  ui_processor = ui_processor_regDelegate;
-}
-#endif
-
-#if defined(TARGET_NANOX)
 UX_STEP_NOCB(
   ux_sign_tx_regdelegate_flow_1_step, 
   pnn, 
@@ -114,7 +76,6 @@ UX_FLOW(ux_sign_tx_regdelegate_flow,
 static void ui_display_regdelegate() {
   ux_flow_init(0, ux_sign_tx_regdelegate_flow, NULL);
 }
-#endif
 
 static void checkUsernameValidity() {
   if (usernameLength > USERNAME_MAX_LEN) {

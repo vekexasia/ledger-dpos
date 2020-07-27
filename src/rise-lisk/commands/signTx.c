@@ -30,56 +30,10 @@ tx_end_fn tx_end;
 static cx_sha256_t txHash;
 transaction_t transaction;
 
-#if defined(TARGET_NANOS)
-step_processor_fn step_processor;
-ui_processor_fn ui_processor;
-
-static unsigned int ui_sign_tx_button(unsigned int button_mask, unsigned int button_mask_counter) {
-  switch (button_mask) {
-    case BUTTON_EVT_RELEASED | BUTTON_RIGHT:
-      if (currentStep < totalSteps) {
-        currentStep = step_processor(currentStep);
-        ui_processor(currentStep);
-        UX_REDISPLAY();
-      } else {
-        touch_approve();
-      }
-      break;
-
-    case BUTTON_EVT_RELEASED | BUTTON_LEFT:
-      touch_deny(NULL);
-      break;
-  }
-
-  return 0;
-}
-
-static uint8_t default_step_processor(uint8_t cur) {
-  return cur + 1;
-}
-
-static void ui_display_sign_tx() {
-  step_processor = default_step_processor;
-  ui_processor = NULL;
-  tx_end(&transaction);
-
-  currentStep = 1;
-
-  ux.button_push_handler = ui_sign_tx_button;
-  ux.elements_preprocessor = uiprocessor;
-
-  ui_processor(1);
-  UX_WAKE_UP();
-  UX_REDISPLAY();
-}
-#endif
-
-#if defined(TARGET_NANOX)
 static void ui_display_sign_tx() {
   // Delegate showing UI to the transaction type handlers
   tx_end(&transaction);
 }
-#endif
 
 void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
   // if first packet with signing header

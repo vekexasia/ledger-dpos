@@ -26,45 +26,7 @@ static void truncatedHexPubKey(char *outBuf) {
 /**
  * Create second signature with address
  */
-#if defined(TARGET_NANOS)
-static const bagl_element_t ui_2ndsign_el[] = {
-  CLEAN_SCREEN,
-  TITLE_ITEM("Create second", 0x01),
-  TITLE_ITEM("For account", 0x02),
-  TITLE_ITEM("With public", 0x03),
-  ICON_ARROW_RIGHT(0x01),
-  ICON_ARROW_RIGHT(0x02),
-  ICON_CHECK(0x03),
-  ICON_CROSS(0x00),
-  LINEBUFFER,
-};
 
-static void ui_processor_2nd_sign(uint8_t step) {
-  os_memset(lineBuffer, 0, 50);
-  uint64_t address;
-  switch (step) {
-    case 1:
-      os_memmove(lineBuffer, "signature\0", 11);
-      break;
-    case 2:
-      address = deriveAddressFromPublic(&signContext.publicKey);
-      deriveAddressStringRepresentation(address, lineBuffer);
-      break;
-    case 3:
-      truncatedHexPubKey(lineBuffer);
-      break;
-  }
-}
-
-static void ui_display_2ndsig() {
-  ux.elements = ui_2ndsign_el;
-  ux.elements_count = 9;
-  totalSteps = 3;
-  ui_processor = ui_processor_2nd_sign;
-}
-#endif
-
-#if defined(TARGET_NANOX)
 UX_STEP_NOCB(
   ux_sign_tx_2ndsig_flow_1_step, 
   pnn, 
@@ -122,7 +84,6 @@ UX_FLOW(ux_sign_tx_2ndsig_flow,
 static void ui_display_2ndsig() {
   ux_flow_init(0, ux_sign_tx_2ndsig_flow, NULL);
 }
-#endif
 
 void tx_init_2ndsig() {
   os_memset(pubkey, 0, 32);
