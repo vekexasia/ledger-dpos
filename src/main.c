@@ -21,9 +21,8 @@
 #include <memory.h>
 #include "os.h"
 #include "main.h"
-//#include "coins/rise-lisk/ui_elements_s.h"
 #include "io.h"
-#include "rise-lisk/impl.h"
+#include "lisk/impl.h"
 #define INS_COM_START 89
 #define INS_COM_CONTINUE 90
 #define INS_COM_END 91

@@ -5,3 +5,4 @@ dep/
 src/glyphs.c
 src/glyphs.h
 customCA.key
+customCA.pub
