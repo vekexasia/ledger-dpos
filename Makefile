@@ -23,12 +23,6 @@ ifeq (customCA.key,$(wildcard customCA.key))
 endif
 include $(BOLOS_SDK)/Makefile.defines
 
-# Main app configuration
-
-ifndef COIN
-	COIN=lisk
-endif
-
 APPVERSION = 1.4.0
 APP_LOAD_PARAMS = --targetVersion "" --curve ed25519 $(COMMON_LOAD_PARAMS)
 ifeq ($(TARGET_NAME),TARGET_NANOX)
@@ -37,32 +31,14 @@ else
 APP_LOAD_PARAMS += --appFlags 0x40
 endif
 
+# Main app configuration
+
+APPNAME = "Lisk"
+APP_LOAD_PARAMS += --path "44'/134'"
+ADDRESS_SUFFIX = "L"
 ADDRESS_SUFFIX_LENGTH=1
-
-ifeq ($(COIN), all)
-	APPNAME = "dPoS"
-	APP_LOAD_PARAMS += --path "44'/134'" --path "44'/1120'"
-	ADDRESS_SUFFIX = "D"
-	SIGNED_MESSAGE_PREFIX = 'dPoS|Signed|Message:\n'
-	NVRAM_MAX = 0
-else ifeq ($(COIN), lisk)
-	APPNAME = "Lisk"
-	APP_LOAD_PARAMS += --path "44'/134'"
-	ADDRESS_SUFFIX = "L"
-	SIGNED_MESSAGE_PREFIX = "Lisk|Signed|Message:\n"
-	NVRAM_MAX = 0
-else ifeq ($(COIN), rise)
-	APPNAME = "Rise"
-	APP_LOAD_PARAMS += --path "44'/1120'"
-	ADDRESS_SUFFIX = "R"
-	SIGNED_MESSAGE_PREFIX = "RISE|Signed|Message:\n"
-	NVRAM_MAX = 0
-else
-ifeq ($(filter clean,$(MAKECMDGOALS)),)
-$(error Unsupported COIN - use lisk, rise, all)
-endif
-endif
-
+SIGNED_MESSAGE_PREFIX = "Lisk|Signed|Message:\n"
+NVRAM_MAX = 0
 
 $(info APPNAME=$(APPNAME) SIGNED_MESSAGE_PREFIX=$(SIGNED_MESSAGE_PREFIX))
 
@@ -97,8 +73,8 @@ DEFINES   += U2F_REQUEST_TIMEOUT=10000 # 10 seconds
 DEFINES   += UNUSED\(x\)=\(void\)x
 DEFINES   += APPVERSION=\"$(APPVERSION)\"
 DEFINES   += APPNAME=\"$(APPNAME)\"
-DEFINES   += COINID=$(COIN)
-DEFINES   += COINIDSTR=\"$(COIN)\"
+DEFINES   += COINID=lisk
+DEFINES   += COINIDSTR=\"lisk\"
 DEFINES   += ADDRESS_SUFFIX=\"$(ADDRESS_SUFFIX)\"
 DEFINES   += ADDRESS_SUFFIX_LENGTH=$(ADDRESS_SUFFIX_LENGTH)
 DEFINES   += SIGNED_MESSAGE_PREFIX=\"$(SIGNED_MESSAGE_PREFIX)\"
@@ -118,9 +94,9 @@ DEFINES   += HAVE_BLE_APDU # basic ledger apdu transport over BLE
 endif
 
 ifeq ($(TARGET_NAME),TARGET_NANOX)
-ICONNAME=nanox_$(COIN).gif
+ICONNAME=nanox_lisk.gif
 else
-ICONNAME=nanos_$(COIN).gif
+ICONNAME=nanos_lisk.gif
 endif
 
 # Compiler, assembler, and linker
@@ -128,7 +104,7 @@ endif
 ifneq ($(BOLOS_ENV),)
 $(info BOLOS_ENV=$(BOLOS_ENV))
 CLANGPATH := $(BOLOS_ENV)/clang-arm-fropi/bin/
-GCCPATH := $(BOLOS_ENV)/gcc-arm-none-eabi-5_3-2016q1/bin/
+GCCPATH := $(BOLOS_ENV)/gcc-arm-none-eabi/bin/
 else
 $(info BOLOS_ENV is not set: falling back to CLANGPATH and GCCPATH)
 endif
@@ -166,8 +142,3 @@ delete:
 
 include $(BOLOS_SDK)/Makefile.rules
 cc_cmdline = $(CC) -c $(CFLAGS) $(subst |, ,$(addprefix -D,$(2))) $(addprefix -I,$(1)) -o $(4) $(3)
-
-
-
-listvariants:
-	@echo VARIANTS COIN lisk rise
