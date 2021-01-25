@@ -20,6 +20,7 @@
 #include <bagl.h>
 #include <memory.h>
 #include "os.h"
+#include "ux.h"
 #include "main.h"
 #include "io.h"
 #include "lisk/impl.h"

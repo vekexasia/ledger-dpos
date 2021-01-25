@@ -12,6 +12,7 @@
 #include "./txs/registerDelegateTx.h"
 #include "../approval.h"
 #include "../../ui_utils.h"
+#include "cx.h"
 
 #define TXTYPE_SEND 0
 #define TXTYPE_CREATESIGNATURE 1

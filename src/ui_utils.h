@@ -2,6 +2,7 @@
 // Created by andrea on 08/12/18.
 //
 #include "os_io_seproxyhal.h"
+#include "ux.h"
 
 #ifndef LEDGER_NANO2_UI_UTILS_H
   #define LEDGER_NANO2_UI_UTILS_H
