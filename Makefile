@@ -142,3 +142,6 @@ delete:
 
 include $(BOLOS_SDK)/Makefile.rules
 cc_cmdline = $(CC) -c $(CFLAGS) $(subst |, ,$(addprefix -D,$(2))) $(addprefix -I,$(1)) -o $(4) $(3)
+
+listvariants:
+	@echo VARIANTS COIN lisk
