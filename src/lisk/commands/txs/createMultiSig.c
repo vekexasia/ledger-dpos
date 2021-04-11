@@ -5,7 +5,7 @@
 #include "createMultiSig.h"
 #include "../signTx.h"
 #include "../../approval.h"
-#include "../../dposutils.h"
+#include "../../liskutils.h"
 #include "../../../io.h"
 #include "../../../ui_utils.h"
 #include "os.h"

@@ -5,7 +5,7 @@
 #include "getPubKey.h"
 
 #include "../ed25519.h"
-#include "../dposutils.h"
+#include "../liskutils.h"
 #include "../ui_elements_s.h"
 #include "../../ui_utils.h"
 #include "../../io.h"

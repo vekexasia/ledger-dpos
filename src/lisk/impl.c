@@ -5,7 +5,7 @@
 #include "impl.h"
 #include "../io.h"
 #include "./ed25519.h"
-#include "./dposutils.h"
+#include "./liskutils.h"
 #include "./ui_elements_s.h"
 #include "./commands/getPubKey.h"
 #include "./commands/signMsg.h"

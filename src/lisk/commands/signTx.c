@@ -4,7 +4,7 @@
 
 #include "signTx.h"
 #include "../../io.h"
-#include "../dposutils.h"
+#include "../liskutils.h"
 #include "./txs/sendTx.h"
 #include "./txs/voteTx.h"
 #include "./txs/createMultiSig.h"

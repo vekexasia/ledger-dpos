@@ -4,7 +4,7 @@
 
 #include "createSignatureTx.h"
 #include "../../approval.h"
-#include "../../dposutils.h"
+#include "../../liskutils.h"
 #include "../../../ui_utils.h"
 
 static uint8_t pubkey[32];

@@ -7,7 +7,7 @@
 #include "../../ui_utils.h"
 #include "cx.h"
 #include "os.h"
-#include "../dposutils.h"
+#include "../liskutils.h"
 #include "../approval.h"
 
 static cx_sha256_t messageHash;

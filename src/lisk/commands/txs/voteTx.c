@@ -6,7 +6,7 @@
 #include "../../../ui_utils.h"
 #include "../signTx.h"
 #include "../../approval.h"
-#include "../../dposutils.h"
+#include "../../liskutils.h"
 
 static uint8_t votesAdded = 0;
 static uint8_t votesRemoved = 0;

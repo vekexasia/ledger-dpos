@@ -1,12 +1,12 @@
-#include <stdbool.h>
-#include <string.h>
-#include <inttypes.h>
-#include <stdio.h>
-#include "os.h"
-#include "cx.h"
-#include "dposutils.h"
 #include "../io.h"
+#include "cx.h"
 #include "ed25519.h"
+#include "liskutils.h"
+#include "os.h"
+#include <inttypes.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
 
 signContext_t signContext;
 

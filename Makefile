@@ -23,7 +23,7 @@ ifeq (customCA.key,$(wildcard customCA.key))
 endif
 include $(BOLOS_SDK)/Makefile.defines
 
-APPVERSION = 1.4.1
+APPVERSION = 1.4.2
 APP_LOAD_PARAMS = --targetVersion "" --curve ed25519 $(COMMON_LOAD_PARAMS)
 ifeq ($(TARGET_NAME),TARGET_NANOX)
 APP_LOAD_PARAMS += --appFlags 0x240 # with BLE support
@@ -36,7 +36,9 @@ endif
 APPNAME = "Lisk"
 APP_LOAD_PARAMS += --path "44'/134'"
 ADDRESS_SUFFIX = "L"
-ADDRESS_SUFFIX_LENGTH=1
+ADDRESS_SUFFIX_LENGTH = 1
+LISK32_ADDRESS_PREFIX = "lsk"
+LISK32_ADDRESS_PREFIX_LENGTH = 3
 SIGNED_MESSAGE_PREFIX = "Lisk|Signed|Message:\n"
 NVRAM_MAX = 0
 
@@ -61,7 +63,7 @@ DEFINES   += MAX_ADPU_OUTPUT_SIZE=$(MAX_ADPU_OUTPUT_SIZE)
 
 # U2F
 DEFINES   += HAVE_IO_U2F
-DEFINES   += U2F_PROXY_MAGIC=\"vekexasia\"
+DEFINES   += U2F_PROXY_MAGIC=\"hirish\"
 
 #WEBUSB_URL = www.ledgerwallet.com
 #DEFINES   += HAVE_WEBUSB WEBUSB_URL_SIZE_B=$(shell echo -n $(WEBUSB_URL) | wc -c) WEBUSB_URL=$(shell echo -n $(WEBUSB_URL) | sed -e "s/./\\\'\0\\\',/g")
