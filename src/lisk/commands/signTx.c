@@ -50,8 +50,7 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
     transaction.type = packet->data[0];
     uint32_t recIndex = 1 /*type*/
                         + 4 /*timestamp*/
-                        + 32 /*senderPublicKey */
-                        + (signContext.reserved == true ? 32 : 0) /*requesterPublicKey */;
+                        + 32 /*senderPublicKey */;
     transaction.recipientId = deriveAddressFromUintArray(packet->data + recIndex, false);
     uint32_t i = 0;
 
@@ -96,7 +95,6 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
   uint8_t assetIndex = ! packet->first ? 0 :  1 /*type*/
                                             + 4 /*timestamp*/
                                             + 32 /*senderPublicKey */
-                                            + (signContext.reserved == true ? 32 : 0) /*requesterPublicKey */
                                             + 8 /*recid */
                                             + 8 /*amount */;
   tx_chunk(packet->data + assetIndex, packet->length - assetIndex, packet, &transaction);

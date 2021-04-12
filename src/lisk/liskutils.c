@@ -1,12 +1,12 @@
-#include "../io.h"
-#include "cx.h"
-#include "ed25519.h"
-#include "liskutils.h"
-#include "os.h"
-#include <inttypes.h>
 #include <stdbool.h>
-#include <stdio.h>
 #include <string.h>
+#include <inttypes.h>
+#include <stdio.h>
+#include "os.h"
+#include "cx.h"
+#include "liskutils.h"
+#include "../io.h"
+#include "ed25519.h"
 
 signContext_t signContext;
 
@@ -71,9 +71,9 @@ uint8_t deriveAddressStringRepresentation(uint64_t encodedAddress, char *output)
     output[total - 1 - i] = brocca[i];
   }
 
-  os_memmove(&output[total], ADDRESS_SUFFIX, ADDRESS_SUFFIX_LENGTH);
-  output[total + ADDRESS_SUFFIX_LENGTH] = '\0'; // for strlen
-  return (uint8_t) (total + ADDRESS_SUFFIX_LENGTH /*suffix*/);
+  os_memmove(&output[total], LEGACY_ADDRESS_SUFFIX, LEGACY_ADDRESS_SUFFIX_LENGTH);
+  output[total + LEGACY_ADDRESS_SUFFIX_LENGTH] = '\0'; // for strlen
+  return (uint8_t) (total + LEGACY_ADDRESS_SUFFIX_LENGTH /*suffix*/);
 }
 
 /**
@@ -144,8 +144,10 @@ uint32_t setSignContext(commPacket_t *packet) {
     THROW(0x6700); // INCORRECT_LENGTH
   }
   bytesRead += 2;
-  signContext.reserved = *(packet->data + bytesRead);
-  bytesRead++;
+  // Old requestPublicKey
+  // signContext.reserved = *(packet->data + bytesRead);
+  // bytesRead++;
+  signContext.reserved = false;
 
   // clean up packet->data by removing the consumed content (sign context)
   os_memmove(tmp, packet->data + bytesRead, packet->length - bytesRead);

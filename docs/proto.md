@@ -84,9 +84,9 @@ The end command will close the communication channel and let ledger process the 
 
 The response will follow the Response protocol and will contain the result(s) of the payload processing.
 
-## DPoS commands
+## Lisk commands
 
-All DPos Commands must be sent through the `Encapsulation Protocol` as specified above.
+All Lisk Commands must be sent through the `Encapsulation Protocol` as specified above.
 
 All commands will accept bip32 path as input parameter. BIP32 Path is encoded using **hardened** keys encoded in BigEndian Format.
 
@@ -129,12 +129,5 @@ With the signing commands you can sign both transactions and messages.
 | First Derivation path              |       1        |                               |
 |               ...                  |       1        |                               |
 | Last Derivation path               |       1        |                               |
-| Has Requester Public Key           |       1        |  0 = false           1 = true |
 | Data Length (BigEndian)            |       2        |                               |
 | Data                               |       _        |  tx bytes or message bytes    |
-
-
-**NOTES:**
- * _HasReqPubKey_ is a boolean flag indicating if the transaction also contains the `requesterPublicKey` field.
- * For CMD `06` (Sign a message) the HasReqPubKey param is ignored (but must be passed)
-

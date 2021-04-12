@@ -1,5 +1,5 @@
 #*******************************************************************************
-#   Ledger Blue
+#   (c) 2017 - 2021 - hirish - vekexasia
 #   (c) 2016 Ledger
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,7 +23,7 @@ ifeq (customCA.key,$(wildcard customCA.key))
 endif
 include $(BOLOS_SDK)/Makefile.defines
 
-APPVERSION = 1.4.2
+APPVERSION = 1.4.3
 APP_LOAD_PARAMS = --targetVersion "" --curve ed25519 $(COMMON_LOAD_PARAMS)
 ifeq ($(TARGET_NAME),TARGET_NANOX)
 APP_LOAD_PARAMS += --appFlags 0x240 # with BLE support
@@ -35,11 +35,12 @@ endif
 
 APPNAME = "Lisk"
 APP_LOAD_PARAMS += --path "44'/134'"
-ADDRESS_SUFFIX = "L"
-ADDRESS_SUFFIX_LENGTH = 1
+LEGACY_ADDRESS_SUFFIX = "L"
+LEGACY_ADDRESS_SUFFIX_LENGTH = 1
 LISK32_ADDRESS_PREFIX = "lsk"
 LISK32_ADDRESS_PREFIX_LENGTH = 3
-SIGNED_MESSAGE_PREFIX = "Lisk|Signed|Message:\n"
+# Pipes will be translated as spaces when defining cc_cmdline
+SIGNED_MESSAGE_PREFIX := "Lisk|Signed|Message:\n"
 NVRAM_MAX = 0
 
 $(info APPNAME=$(APPNAME) SIGNED_MESSAGE_PREFIX=$(SIGNED_MESSAGE_PREFIX))
@@ -77,8 +78,10 @@ DEFINES   += APPVERSION=\"$(APPVERSION)\"
 DEFINES   += APPNAME=\"$(APPNAME)\"
 DEFINES   += COINID=lisk
 DEFINES   += COINIDSTR=\"lisk\"
-DEFINES   += ADDRESS_SUFFIX=\"$(ADDRESS_SUFFIX)\"
-DEFINES   += ADDRESS_SUFFIX_LENGTH=$(ADDRESS_SUFFIX_LENGTH)
+DEFINES   += LEGACY_ADDRESS_SUFFIX=\"$(LEGACY_ADDRESS_SUFFIX)\"
+DEFINES   += LEGACY_ADDRESS_SUFFIX_LENGTH=$(LEGACY_ADDRESS_SUFFIX_LENGTH)
+DEFINES   += LISK32_ADDRESS_PREFIX=\"$(LISK32_ADDRESS_PREFIX)\"
+DEFINES   += LISK32_ADDRESS_PREFIX_LENGTH=$(LISK32_ADDRESS_PREFIX_LENGTH)
 DEFINES   += SIGNED_MESSAGE_PREFIX=\"$(SIGNED_MESSAGE_PREFIX)\"
 DEFINES   += NVRAM_MAX=$(NVRAM_MAX)
 DEFINES   += HAVE_UX_FLOW
