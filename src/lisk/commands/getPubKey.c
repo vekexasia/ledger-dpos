@@ -4,11 +4,10 @@
 
 #include "getPubKey.h"
 
+#include "../lisk_internals.h"
 #include "../ed25519.h"
 #include "../liskutils.h"
 #include "../ui_elements_s.h"
-#include "../../ui_utils.h"
-#include "../../io.h"
 #include "../approval.h"
 #include "os.h"
 

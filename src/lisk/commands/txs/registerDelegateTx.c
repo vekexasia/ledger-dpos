@@ -3,11 +3,11 @@
 //
 
 #include "registerDelegateTx.h"
+
+#include "../lisk_internals.h"
 #include "../signTx.h"
 #include "../../approval.h"
 #include "../../liskutils.h"
-#include "../../../io.h"
-#include "../../../ui_utils.h"
 
 #define USERNAME_MAX_LEN 20
 

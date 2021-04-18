@@ -3,9 +3,10 @@
 //
 
 #include "createSignatureTx.h"
+
+#include "../lisk_internals.h"
 #include "../../approval.h"
 #include "../../liskutils.h"
-#include "../../../ui_utils.h"
 
 static uint8_t pubkey[32];
 static uint8_t read;

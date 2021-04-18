@@ -3,8 +3,8 @@
 //
 
 #include "signMsg.h"
-#include "../../io.h"
-#include "../../ui_utils.h"
+
+#include "../lisk_internals.h"
 #include "cx.h"
 #include "os.h"
 #include "../liskutils.h"

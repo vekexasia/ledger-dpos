@@ -46,13 +46,11 @@ unsigned int flushResponseToIO(void *out) {
     os_memmove(out + total, response.what[i], response.whatLength[i]);
     total += response.whatLength[i];
   }
-
-//     Reset.
+  // Reset.
   initResponse();
 
   return total;
 }
-
 
 commContext_t commContext;
 commPacket_t commPacket;

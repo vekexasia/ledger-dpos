@@ -3,11 +3,11 @@
 //
 
 #include "createMultiSig.h"
+
+#include "../lisk_internals.h"
 #include "../signTx.h"
 #include "../../approval.h"
 #include "../../liskutils.h"
-#include "../../../io.h"
-#include "../../../ui_utils.h"
 #include "os.h"
 
 static uint8_t minKeys = 0;

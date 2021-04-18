@@ -3,7 +3,8 @@
 //
 
 #include "signTx.h"
-#include "../../io.h"
+
+#include "../lisk_internals.h"
 #include "../liskutils.h"
 #include "./txs/sendTx.h"
 #include "./txs/voteTx.h"

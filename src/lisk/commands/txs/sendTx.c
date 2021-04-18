@@ -3,10 +3,10 @@
 //
 
 #include "sendTx.h"
+
+#include "../lisk_internals.h"
 #include "../../approval.h"
 #include "../../liskutils.h"
-#include "../../../io.h"
-#include "../../../ui_utils.h"
 #include "../../ui_elements_s.h"
 #include "../signTx.h"
 

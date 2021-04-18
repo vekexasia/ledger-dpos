@@ -24,6 +24,7 @@
 #include "main.h"
 #include "io.h"
 #include "lisk/impl.h"
+#include "lisk/lisk_internals.h"
 #define INS_COM_START 89
 #define INS_COM_CONTINUE 90
 #define INS_COM_END 91
@@ -72,8 +73,7 @@ void handleStartCommPacket() {
   commContext.crc16 = 0;
   commContext.totalAmount = 0;
 
-  commContext.totalAmount = G_io_apdu_buffer[5] << 8;
-  commContext.totalAmount += G_io_apdu_buffer[6];
+  commContext.totalAmount = lisk_read_u32(G_io_apdu_buffer + 5, 1, 0);
 
   prevCRC = 0;
   initResponse();
@@ -142,7 +142,7 @@ void processCommPacket(volatile unsigned int *flags) {
   commContext.read = 0;
 }
 
-static void dpos_main(void) {
+static void lisk_main(void) {
   volatile unsigned int rx = 0;
   volatile unsigned int tx = 0;
   volatile unsigned int flags = 0;
@@ -293,7 +293,7 @@ __attribute__((section(".boot"))) int main(void) {
           // Set ui state to idle.
           ui_idle();
 
-          dpos_main();
+          lisk_main();
         }
       CATCH_OTHER(e)
         {
