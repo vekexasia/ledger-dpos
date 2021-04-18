@@ -4,11 +4,11 @@
 
 #include "getPubKey.h"
 
-#include "../lisk_internals.h"
 #include "../ed25519.h"
-#include "../liskutils.h"
+#include "../lisk_approval.h"
+#include "../lisk_internals.h"
+#include "../lisk_utils.h"
 #include "../ui_elements_s.h"
-#include "../approval.h"
 #include "os.h"
 
 uint8_t pubKeyResponseBuffer[32+22];
@@ -19,9 +19,9 @@ uint8_t pubKeyResponseBuffer[32+22];
  */
 static void createPublicKeyResponse() {
   initResponse();
-  getEncodedPublicKey(&signContext.publicKey, pubKeyResponseBuffer);
+  getEncodedPublicKey(&public_key, pubKeyResponseBuffer);
   addToResponse(pubKeyResponseBuffer, 32);
-  uint64_t address = deriveAddressFromPublic(&signContext.publicKey);
+  uint64_t address = deriveAddressFromPublic(&public_key);
   uint8_t length = deriveAddressStringRepresentation(address, (char *) (pubKeyResponseBuffer + 32));
 
   addToResponse(pubKeyResponseBuffer + 32, length);
@@ -50,7 +50,7 @@ UX_STEP_NOCB_INIT(
   bnnn_paging,
   {
     os_memset(lineBuffer, 0, sizeof(lineBuffer));
-    uint64_t address = deriveAddressFromPublic(&signContext.publicKey);
+    uint64_t address = deriveAddressFromPublic(&public_key);
     deriveAddressStringRepresentation(address, lineBuffer);
   },
   {
@@ -86,12 +86,14 @@ static void ui_display_verify_address(void) {
   ux_flow_init(0, ux_verify_address_flow, NULL);
 }
 
-void handleGetPublicKey(volatile unsigned int *flags, uint8_t *bip32Path, bool confirmationRequest) {
-  // Derive pubKey
-  derivePrivatePublic(bip32Path, &signContext.privateKey, &signContext.publicKey);
-  os_memset(&signContext.privateKey, 0, sizeof(signContext.privateKey));
+void handleGetPublicKey(volatile unsigned int *flags, commPacket_t *packet) {
+  //reset contexts
+  os_memset(&reqContext, 0, sizeof(reqContext));
+  os_memset(&txContext, 0, sizeof(txContext));
 
-  if (confirmationRequest == true) { // show address?
+  setReqContextForGetPubKey(packet); //address is derived there
+
+  if (reqContext.showConfirmation == true) { // show address?
     // Show on ledger
     *flags |= IO_ASYNCH_REPLY;
     ui_display_verify_address();

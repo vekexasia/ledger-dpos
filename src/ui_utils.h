@@ -28,6 +28,4 @@ extern char lineBuffer[100];
   txt, 0, 0, 0, NULL, NULL, NULL, \
 }
 
-const bagl_element_t *uiprocessor(const bagl_element_t *element);
-
 #endif //LEDGER_NANO2_UI_UTILS_H

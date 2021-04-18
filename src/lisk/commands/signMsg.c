@@ -4,11 +4,11 @@
 
 #include "signMsg.h"
 
+#include "../lisk_approval.h"
 #include "../lisk_internals.h"
+#include "../lisk_utils.h"
 #include "cx.h"
 #include "os.h"
-#include "../liskutils.h"
-#include "../approval.h"
 
 static cx_sha256_t messageHash;
 static char message[50];
@@ -80,7 +80,7 @@ UX_STEP_NOCB_INIT(
   bnnn_paging,
   {
     os_memset(lineBuffer, 0, sizeof(lineBuffer));
-    uint64_t address = deriveAddressFromPublic(&signContext.publicKey);
+    uint64_t address = deriveAddressFromPublic(&public_key);
     deriveAddressStringRepresentation(address, lineBuffer);
   },
   {

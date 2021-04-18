@@ -4,10 +4,10 @@
 
 #include "createMultiSig.h"
 
+#include "../../lisk_approval.h"
+#include "../../lisk_utils.h"
 #include "../lisk_internals.h"
 #include "../signTx.h"
-#include "../../approval.h"
-#include "../../liskutils.h"
 #include "os.h"
 
 static uint8_t minKeys = 0;
@@ -30,7 +30,7 @@ UX_STEP_NOCB_INIT(
   bnnn_paging,
   {
     os_memset(lineBuffer, 0, sizeof(lineBuffer));
-    uint64_t address = deriveAddressFromPublic(&signContext.publicKey);
+    uint64_t address = deriveAddressFromPublic(&public_key);
     deriveAddressStringRepresentation(address, lineBuffer);
   },
   {

@@ -4,15 +4,15 @@
 
 #include "signTx.h"
 
+#include "../../ui_utils.h"
+#include "../lisk_approval.h"
 #include "../lisk_internals.h"
-#include "../liskutils.h"
-#include "./txs/sendTx.h"
-#include "./txs/voteTx.h"
+#include "../lisk_utils.h"
 #include "./txs/createMultiSig.h"
 #include "./txs/createSignatureTx.h"
 #include "./txs/registerDelegateTx.h"
-#include "../approval.h"
-#include "../../ui_utils.h"
+#include "./txs/sendTx.h"
+#include "./txs/voteTx.h"
 #include "cx.h"
 
 #define TXTYPE_SEND 0

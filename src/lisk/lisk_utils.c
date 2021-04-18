@@ -1,12 +1,13 @@
-#include <stdbool.h>
-#include <string.h>
 #include <inttypes.h>
+#include <stdbool.h>
 #include <stdio.h>
-#include "os.h"
-#include "cx.h"
-#include "liskutils.h"
-#include "../io.h"
+#include <string.h>
+
 #include "ed25519.h"
+#include "lisk_utils.h"
+#include "cx.h"
+#include "os.h"
+
 
 signContext_t signContext;
 
@@ -128,6 +129,30 @@ void satoshiToString(uint64_t amount, char *out) {
   }
 }
 
+uint32_t extractAccountInfo(uint8_t *data, local_address_t *account) {
+  uint32_t readCounter = 0;
+
+  //PathLength
+  account->pathLength = data[0];
+  readCounter++;
+
+  if(account->pathLength == 0) {
+    return readCounter;
+  }
+
+  if(account->pathLength > MAX_BIP32_PATH) {
+    THROW(INVALID_PARAMETER);
+  }
+
+  //Path
+  bip32_buffer_to_array(data + 1, account->pathLength, account->path);
+  readCounter += account->pathLength * 4;
+
+  derivePrivatePublic(account, &private_key, &public_key);
+
+  return readCounter;
+}
+
 /**
  * Reads the packet, sets the signContext and patches the packet data values by skipping the header.
  * @param dataBuffer the  buffer to read from.
@@ -137,7 +162,9 @@ uint32_t setSignContext(commPacket_t *packet) {
   // reset current result
   uint8_t tmp[256];
   os_memset(signContext.digest, 0, 32);
-  uint32_t bytesRead = derivePrivatePublic(packet->data, &signContext.privateKey, &signContext.publicKey);
+
+  uint32_t bytesRead = extractAccountInfo(packet->data, &reqContext.account);
+  derivePrivatePublic(&reqContext.account, &private_key, &public_key);
   signContext.signableContentLength = (*(packet->data + bytesRead)) << 8;
   signContext.signableContentLength += (*(packet->data + bytesRead + 1));
   if (signContext.signableContentLength >= commContext.totalAmount) {
@@ -155,4 +182,9 @@ uint32_t setSignContext(commPacket_t *packet) {
   packet->length -= bytesRead;
 
   return bytesRead;
+}
+
+uint32_t setReqContextForGetPubKey(commPacket_t *packet) {
+  reqContext.showConfirmation = packet->data[0];
+  return extractAccountInfo(packet->data + 1, &reqContext.account);
 }

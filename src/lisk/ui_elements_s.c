@@ -1,8 +1,8 @@
-#include <string.h>
-#include "os_io_seproxyhal.h"
-#include "liskutils.h"
 #include "../glyphs.h"
 #include "../ui_utils.h"
+#include "lisk_utils.h"
+#include "os_io_seproxyhal.h"
+#include <string.h>
 
 ux_state_t G_ux;
 bolos_ux_params_t G_ux_params;

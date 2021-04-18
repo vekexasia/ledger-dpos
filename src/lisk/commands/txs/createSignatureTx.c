@@ -4,9 +4,9 @@
 
 #include "createSignatureTx.h"
 
+#include "../../lisk_approval.h"
+#include "../../lisk_utils.h"
 #include "../lisk_internals.h"
-#include "../../approval.h"
-#include "../../liskutils.h"
 
 static uint8_t pubkey[32];
 static uint8_t read;
@@ -41,7 +41,7 @@ UX_STEP_NOCB_INIT(
   bnnn_paging,
   {
     os_memset(lineBuffer, 0, sizeof(lineBuffer));
-    uint64_t address = deriveAddressFromPublic(&signContext.publicKey);
+    uint64_t address = deriveAddressFromPublic(&public_key);
     deriveAddressStringRepresentation(address, lineBuffer);
   },
   {
