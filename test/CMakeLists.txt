@@ -4,6 +4,6 @@ project(test C)
 set(CMAKE_C_STANDARD 11)
 
 add_executable(test
-        ../src/lisk/lisk32_address.c
-        ../src/lisk/lisk32_address.h
+        ../src/lisk/lisk_address_lisk32.c
+        ../src/lisk/lisk_address_lisk32.h
         test.c)

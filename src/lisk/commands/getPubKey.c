@@ -21,8 +21,8 @@ static void createPublicKeyResponse() {
   initResponse();
   getEncodedPublicKey(&public_key, pubKeyResponseBuffer);
   addToResponse(pubKeyResponseBuffer, 32);
-  uint64_t address = deriveAddressFromPublic(&public_key);
-  uint8_t length = deriveAddressStringRepresentation(address, (char *) (pubKeyResponseBuffer + 32));
+  uint64_t address = deriveLegacyAddressFromPublic(&public_key);
+  uint8_t length = deriveLegacyAddressStringRepresentation(address, (char *) (pubKeyResponseBuffer + 32));
 
   addToResponse(pubKeyResponseBuffer + 32, length);
 }
@@ -50,8 +50,8 @@ UX_STEP_NOCB_INIT(
   bnnn_paging,
   {
     os_memset(lineBuffer, 0, sizeof(lineBuffer));
-    uint64_t address = deriveAddressFromPublic(&public_key);
-    deriveAddressStringRepresentation(address, lineBuffer);
+    uint64_t address = deriveLegacyAddressFromPublic(&public_key);
+    deriveLegacyAddressStringRepresentation(address, lineBuffer);
   },
   {
     "Address",

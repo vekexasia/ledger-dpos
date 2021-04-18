@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "../src/lisk/lisk32_address.h"
+#include "../src/lisk/lisk_address_lisk32.h"
 
 struct valid_address_data {
   const char* address;

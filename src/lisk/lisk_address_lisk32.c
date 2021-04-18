@@ -20,11 +20,10 @@
  * THE SOFTWARE.
  */
 #include <assert.h>
-#include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
 
-#include "lisk32_address.h"
+#include "lisk_address_lisk32.h"
 
 static uint32_t bech32_polymod_step(uint32_t pre) {
   uint8_t b = pre >> 25;

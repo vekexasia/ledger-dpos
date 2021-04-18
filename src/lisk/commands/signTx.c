@@ -52,7 +52,7 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
     uint32_t recIndex = 1 /*type*/
                         + 4 /*timestamp*/
                         + 32 /*senderPublicKey */;
-    transaction.recipientId = deriveAddressFromUintArray(packet->data + recIndex, false);
+    transaction.recipientId = deriveLegacyAddressFromUintArray(packet->data + recIndex, false);
     uint32_t i = 0;
 
     transaction.amountSatoshi = 0;

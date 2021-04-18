@@ -29,8 +29,8 @@ UX_STEP_NOCB_INIT(
   bnnn_paging,
   {
     os_memset(lineBuffer, 0, sizeof(lineBuffer));
-    uint64_t address = deriveAddressFromPublic(&public_key);
-    deriveAddressStringRepresentation(address, lineBuffer);
+    uint64_t address = deriveLegacyAddressFromPublic(&public_key);
+    deriveLegacyAddressStringRepresentation(address, lineBuffer);
   },
   {
     "Vote from",

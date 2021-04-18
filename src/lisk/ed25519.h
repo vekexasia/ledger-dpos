@@ -2,6 +2,7 @@
 #include <stdbool.h>
 
 #include "lisk_internals.h"
+#include "lisk_context.h"
 #include "os.h"
 
 /**
