@@ -15,9 +15,9 @@ typedef struct local_address {
     //uint8_t compressedPublicKey[33];
     uint32_t path[MAX_BIP32_PATH];
     uint8_t pathLength;
-    //uint8_t address[23];
-    //uint8_t addressBase58[33];
-    //uint8_t addressWithPrefix[44];
+    uint8_t encodedPublicKey[ENCODED_PUB_KEY];
+    uint8_t addressHash[ADDRESS_HASH_LENGTH];
+    char addressLisk32[ADDRESS_LISK32_LENGTH];
 } local_address_t;
 
 typedef struct request_context {

@@ -6,9 +6,7 @@
 #define MAX_BIP32_PATH 10
 #define MAX_BIP32_PATH_LENGTH (4 * MAX_BIP32_PATH) + 1
 
-#define MAX_OUTPUT_TO_CHECK 1 //10
-
-
+/*
 #define TX_TYPE_1_CONSENSUS_REWARD 1
 #define TX_TYPE_2_TRANSFER_TX 2
 #define TX_TYPE_3_SET_ALIAS 3
@@ -23,30 +21,13 @@
 #define TX_TYPE_101_CALL_CONTRACT 101
 #define TX_TYPE_102_DELETE_CONTRACT 102
 #define TX_TYPE_103_TRANSFER_CONTRACT 103
+*/
 
-#define ADDRESS_TYPE_P2PKH 1
-#define ADDRESS_TYPE_CONTRACT 2
-#define ADDRESS_TYPE_P2SH 3
+#define ENCODED_PUB_KEY 32
+#define ADDRESS_HASH_LENGTH 20 // sha256(pubkey) -> first 20 bytes
+#define ADDRESS_LISK32_LENGTH 41 // "lsk" + lisk32 encoded
 
-#define HASH_LENGTH 34 // hash (33) + index (1)
-#define ADDRESS_LENGTH 23 // chainid (2) + addressType (1) + RIPEMID160 (20)
-#define BASE58_ADDRESS_LENGTH 32
-
-#define MAX_REMARK_LENGTH 30
-#define MAX_ALIAS_LENGTH 20
 #define AMOUNT_LENGTH 32
-#define LOCKTIME_LENGTH 8
 #define DIGEST_LENGTH 32
-#define MAX_NONCE_LENGTH 30
-
-#define MAX_METHODNAME_LENGTH 150
-
-//Hash of address Nse5FeeiYk1opxdc5RqYpEWkiUDGNuLs
-extern const unsigned char BLACK_HOLE_ADDRESS[ADDRESS_LENGTH];
-extern const unsigned char BLACK_HOLE_ALIAS_AMOUNT[AMOUNT_LENGTH];
-
-extern const unsigned char MIN_DEPOSIT_REGISTER_AGENT[AMOUNT_LENGTH];
-extern const unsigned char MIN_DEPOSIT_JOIN_CONSENSUS[AMOUNT_LENGTH];
-
 
 #endif

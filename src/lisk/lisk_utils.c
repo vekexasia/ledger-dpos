@@ -11,11 +11,6 @@
 
 signContext_t signContext;
 
-/**
- * Gets a bigendian representation of the usable publicKey
- * @param publicKey the raw public key containing both coordinated for the elliptic curve
- * @param encoded result holder
- */
 void getEncodedPublicKey(cx_ecfp_public_key_t *publicKey, uint8_t *encoded) {
   uint8_t i;
   for (i = 0; i < 32; i++) {
@@ -24,6 +19,12 @@ void getEncodedPublicKey(cx_ecfp_public_key_t *publicKey, uint8_t *encoded) {
   if ((publicKey->W[32] & 1) != 0) {
     encoded[31] |= 0x80;
   }
+}
+
+void getPubKeyHash160(uint8_t *encodedPublicKey, uint8_t *encoded) {
+  unsigned char hashedPkey[32];
+  cx_hash_sha256(encodedPublicKey, 32, hashedPkey, 32);
+  os_memmove(encoded, hashedPkey, ADDRESS_HASH_LENGTH);
 }
 
 void satoshiToString(uint64_t amount, char *out) {
@@ -78,7 +79,14 @@ uint32_t extractAccountInfo(uint8_t *data, local_address_t *account) {
   bip32_buffer_to_array(data + 1, account->pathLength, account->path);
   readCounter += account->pathLength * 4;
 
+  // Derive Public Key
   derivePrivatePublic(account, &private_key, &public_key);
+  // Encode public key
+  getEncodedPublicKey(&public_key, account->encodedPublicKey);
+  // Derive 20 bytes address from SHA256(pubkey)
+  getPubKeyHash160(account->encodedPublicKey, account->addressHash);
+  // Encode address into lisk32 format
+  lisk_addr_encode(account->addressLisk32, LISK32_ADDRESS_PREFIX, account->addressHash, ADDRESS_HASH_LENGTH);
 
   return readCounter;
 }

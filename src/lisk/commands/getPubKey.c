@@ -11,20 +11,14 @@
 #include "../ui_elements_s.h"
 #include "os.h"
 
-uint8_t pubKeyResponseBuffer[32+22];
-
 /**
  * Creates the response for the getPublicKey command.
  * It returns both publicKey and derived Address
  */
 static void createPublicKeyResponse() {
   initResponse();
-  getEncodedPublicKey(&public_key, pubKeyResponseBuffer);
-  addToResponse(pubKeyResponseBuffer, 32);
-  uint64_t address = deriveLegacyAddressFromPublic(&public_key);
-  uint8_t length = deriveLegacyAddressStringRepresentation(address, (char *) (pubKeyResponseBuffer + 32));
-
-  addToResponse(pubKeyResponseBuffer + 32, length);
+  addToResponse(reqContext.account.encodedPublicKey, ENCODED_PUB_KEY);
+  addToResponse(reqContext.account.addressLisk32, ADDRESS_LISK32_LENGTH);
 }
 
 static void sendPublicKeyResponse() {
@@ -50,8 +44,8 @@ UX_STEP_NOCB_INIT(
   bnnn_paging,
   {
     os_memset(lineBuffer, 0, sizeof(lineBuffer));
-    uint64_t address = deriveLegacyAddressFromPublic(&public_key);
-    deriveLegacyAddressStringRepresentation(address, lineBuffer);
+    os_memmove(lineBuffer, &reqContext.account.addressLisk32, ADDRESS_LISK32_LENGTH);
+    lineBuffer[ADDRESS_LISK32_LENGTH] = '\0';
   },
   {
     "Address",

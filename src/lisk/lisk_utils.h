@@ -25,6 +25,13 @@ extern signContext_t signContext;
  */
 void getEncodedPublicKey(cx_ecfp_public_key_t *publicKey, uint8_t *encoded);
 
+/**
+ * Get first 160 bits of SHA256(pubkey)
+ * @param publicKey the raw public key containing both coordinated for the elliptic curve
+ * @param encoded result holder
+ */
+void getPubKeyHash160(uint8_t *encodedPublicKey, uint8_t *encoded);
+
 void satoshiToString(uint64_t amount, char *out);
 
 uint32_t setSignContext(commPacket_t *packet);
