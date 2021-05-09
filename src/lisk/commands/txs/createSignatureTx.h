@@ -2,7 +2,7 @@
 // Created by andrea on 09/12/18.
 //
 #include "../../../io.h"
-#include "../signTx.h"
+#include "../old_signTx.h"
 
 #ifndef PROJECT_CREATESIGNATURETX_H
 #define PROJECT_CREATESIGNATURETX_H

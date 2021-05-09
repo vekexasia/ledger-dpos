@@ -122,7 +122,39 @@ uint32_t setSignContext(commPacket_t *packet) {
   return bytesRead;
 }
 
+uint32_t setReqContextForSign(commPacket_t *packet) {
+  reqContext.signableContentLength = 0;
+  uint32_t headerBytesRead = 0;
+
+  // Extract Account
+  headerBytesRead += extractAccountInfo(packet->data, &(reqContext.account));
+
+  // Data Length
+  reqContext.signableContentLength = lisk_read_u16(packet->data + headerBytesRead, 1, 0);
+  headerBytesRead += 2;
+  // Check signable content length if is correct
+  if (reqContext.signableContentLength >= commContext.totalAmount) {
+    THROW(0x6700); // INCORRECT_LENGTH
+  }
+
+  return headerBytesRead;
+}
+
 uint32_t setReqContextForGetPubKey(commPacket_t *packet) {
   reqContext.showConfirmation = packet->data[0];
   return extractAccountInfo(packet->data + 1, &reqContext.account);
+}
+
+void reset_contexts() {
+  // Kill private key - shouldn't be necessary but just in case.
+  os_memset(&private_key, 0, sizeof(private_key));
+
+  os_memset(&reqContext, 0, sizeof(reqContext));
+  os_memset(&txContext, 0, sizeof(txContext));
+  os_memset(&commContext, 0, sizeof(commContext));
+  os_memset(&commPacket, 0, sizeof(commPacket));
+
+  // Allow restart of operation
+  commContext.started = false;
+  commContext.read = 0;
 }

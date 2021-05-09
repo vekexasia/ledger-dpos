@@ -29,7 +29,7 @@ static void truncatedHexPubKey(char *outBuf) {
  */
 
 UX_STEP_NOCB(
-  ux_sign_tx_2ndsig_flow_1_step, 
+  old_ux_sign_tx_2ndsig_flow_1_step, 
   pnn, 
   {
     &C_nanox_icon_eye,
@@ -37,7 +37,7 @@ UX_STEP_NOCB(
     "2nd signature",
   });
 UX_STEP_NOCB_INIT(
-  ux_sign_tx_2ndsig_flow_2_step,
+  old_ux_sign_tx_2ndsig_flow_2_step,
   bnnn_paging,
   {
     os_memset(lineBuffer, 0, sizeof(lineBuffer));
@@ -49,7 +49,7 @@ UX_STEP_NOCB_INIT(
     lineBuffer,
   });
 UX_STEP_NOCB_INIT(
-  ux_sign_tx_2ndsig_flow_3_step,
+  old_ux_sign_tx_2ndsig_flow_3_step,
   bn,
   {
     os_memset(lineBuffer, 0, sizeof(lineBuffer));
@@ -60,7 +60,7 @@ UX_STEP_NOCB_INIT(
     lineBuffer,
   });
 UX_STEP_CB(
-  ux_sign_tx_2ndsig_flow_4_step,
+  old_ux_sign_tx_2ndsig_flow_4_step,
   pb,
   touch_approve(),
   {
@@ -68,22 +68,22 @@ UX_STEP_CB(
     "Confirm",
   });
 UX_STEP_CB(
-  ux_sign_tx_2ndsig_flow_5_step,
+  old_ux_sign_tx_2ndsig_flow_5_step,
   pb,
   touch_deny(),
   {
     &C_nanox_icon_crossmark,
     "Reject",
   });
-UX_FLOW(ux_sign_tx_2ndsig_flow,
-  &ux_sign_tx_2ndsig_flow_1_step,
-  &ux_sign_tx_2ndsig_flow_2_step,
-  &ux_sign_tx_2ndsig_flow_3_step,
-  &ux_sign_tx_2ndsig_flow_4_step,
-  &ux_sign_tx_2ndsig_flow_5_step);
+UX_FLOW(old_ux_sign_tx_2ndsig_flow,
+  &old_ux_sign_tx_2ndsig_flow_1_step,
+  &old_ux_sign_tx_2ndsig_flow_2_step,
+  &old_ux_sign_tx_2ndsig_flow_3_step,
+  &old_ux_sign_tx_2ndsig_flow_4_step,
+  &old_ux_sign_tx_2ndsig_flow_5_step);
 
 static void ui_display_2ndsig() {
-  ux_flow_init(0, ux_sign_tx_2ndsig_flow, NULL);
+  ux_flow_init(0, old_ux_sign_tx_2ndsig_flow, NULL);
 }
 
 void tx_init_2ndsig() {

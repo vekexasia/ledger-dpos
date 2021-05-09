@@ -8,7 +8,6 @@
 #include "../../lisk_utils.h"
 #include "../../ui_elements_s.h"
 #include "../lisk_internals.h"
-#include "../signTx.h"
 
 static char message[64];
 static uint8_t curLength;
@@ -19,7 +18,7 @@ static uint16_t totalLengthAfterAsset;
  */
 
 UX_STEP_NOCB(
-  ux_sign_tx_send_flow_1_step, 
+  old_ux_sign_tx_send_flow_1_step, 
   pnn, 
   {
     &C_nanox_icon_eye,
@@ -27,7 +26,7 @@ UX_STEP_NOCB(
     "send",
   });
 UX_STEP_NOCB_INIT(
-  ux_sign_tx_send_flow_2_step,
+  old_ux_sign_tx_send_flow_2_step,
   bnnn_paging,
   {
     os_memset(lineBuffer, 0, sizeof(lineBuffer));
@@ -39,7 +38,7 @@ UX_STEP_NOCB_INIT(
     lineBuffer,
   });
 UX_STEP_NOCB_INIT(
-  ux_sign_tx_send_flow_3_step,
+  old_ux_sign_tx_send_flow_3_step,
   bnnn_paging,
   {
     os_memset(lineBuffer, 0, sizeof(lineBuffer));
@@ -50,7 +49,7 @@ UX_STEP_NOCB_INIT(
     lineBuffer,
   });
 UX_STEP_NOCB_INIT(
-  ux_sign_tx_send_flow_4_step,
+  old_ux_sign_tx_send_flow_4_step,
   bnnn_paging,
   {
     os_memset(lineBuffer, 0, sizeof(lineBuffer));
@@ -65,7 +64,7 @@ UX_STEP_NOCB_INIT(
     lineBuffer,
   });
 UX_STEP_NOCB_INIT(
-  ux_sign_tx_send_flow_5_step,
+  old_ux_sign_tx_send_flow_5_step,
   bn,
   {
     os_memset(lineBuffer, 0, sizeof(lineBuffer));
@@ -76,7 +75,7 @@ UX_STEP_NOCB_INIT(
     lineBuffer,
   });
 UX_STEP_CB(
-  ux_sign_tx_send_flow_6_step,
+  old_ux_sign_tx_send_flow_6_step,
   pb,
   touch_approve(),
   {
@@ -84,7 +83,7 @@ UX_STEP_CB(
     "Confirm",
   });
 UX_STEP_CB(
-  ux_sign_tx_send_flow_7_step,
+  old_ux_sign_tx_send_flow_7_step,
   pb,
   touch_deny(),
   {
@@ -92,20 +91,20 @@ UX_STEP_CB(
     "Reject",
   });
 
-const ux_flow_step_t * ux_sign_tx_send_flow[8];
+const ux_flow_step_t * old_ux_sign_tx_send_flow[8];
 
 static void ui_display_send() {
   int step = 0;
-  ux_sign_tx_send_flow[step++] = &ux_sign_tx_send_flow_1_step;
-  ux_sign_tx_send_flow[step++] = &ux_sign_tx_send_flow_2_step;
-  ux_sign_tx_send_flow[step++] = &ux_sign_tx_send_flow_3_step;
-  if (curLength > 0) ux_sign_tx_send_flow[step++] = &ux_sign_tx_send_flow_4_step;
-  ux_sign_tx_send_flow[step++] = &ux_sign_tx_send_flow_5_step;
-  ux_sign_tx_send_flow[step++] = &ux_sign_tx_send_flow_6_step;
-  ux_sign_tx_send_flow[step++] = &ux_sign_tx_send_flow_7_step;
-  ux_sign_tx_send_flow[step++] = FLOW_END_STEP;
+  old_ux_sign_tx_send_flow[step++] = &old_ux_sign_tx_send_flow_1_step;
+  old_ux_sign_tx_send_flow[step++] = &old_ux_sign_tx_send_flow_2_step;
+  old_ux_sign_tx_send_flow[step++] = &old_ux_sign_tx_send_flow_3_step;
+  if (curLength > 0) old_ux_sign_tx_send_flow[step++] = &old_ux_sign_tx_send_flow_4_step;
+  old_ux_sign_tx_send_flow[step++] = &old_ux_sign_tx_send_flow_5_step;
+  old_ux_sign_tx_send_flow[step++] = &old_ux_sign_tx_send_flow_6_step;
+  old_ux_sign_tx_send_flow[step++] = &old_ux_sign_tx_send_flow_7_step;
+  old_ux_sign_tx_send_flow[step++] = FLOW_END_STEP;
 
-  ux_flow_init(0, ux_sign_tx_send_flow, NULL);
+  ux_flow_init(0, old_ux_sign_tx_send_flow, NULL);
 }
 
 void tx_init_send() {

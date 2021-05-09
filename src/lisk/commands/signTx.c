@@ -29,17 +29,23 @@ tx_init_fn tx_init;
 tx_chunk_fn tx_chunk;
 tx_end_fn tx_end;
 
-static cx_sha256_t txHash;
-transaction_t transaction;
-
 static void ui_display_sign_tx() {
   // Delegate showing UI to the transaction type handlers
   tx_end(&transaction);
 }
 
 void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
+
+  uint32_t headerBytesRead = 0;
+
   // if first packet with signing header
   if (packet->first) {
+
+    // TODO
+
+  }
+
+    /*
     // IMPORTANT this logic below only works if the first packet contains the needed information (Which it should)
     // Set signing context from first packet and patches the .data and .length by removing header length
     setSignContext(packet);
@@ -49,9 +55,10 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
 
     // fetch transaction type
     transaction.type = packet->data[0];
-    uint32_t recIndex = 1 /*type*/
-                        + 4 /*timestamp*/
-                        + 32 /*senderPublicKey */;
+    uint32_t recIndex = 1  // type
+                        + 4 // timestamp
+                        + 32 // senderPublicKey
+                        ;
     transaction.recipientId = deriveLegacyAddressFromUintArray(packet->data + recIndex, false);
     uint32_t i = 0;
 
@@ -93,21 +100,25 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
   }
 
   // Lets skip first bytes pass data starting from asset
-  uint8_t assetIndex = ! packet->first ? 0 :  1 /*type*/
-                                            + 4 /*timestamp*/
-                                            + 32 /*senderPublicKey */
-                                            + 8 /*recid */
-                                            + 8 /*amount */;
+  uint8_t assetIndex = ! packet->first ? 0 :  1 // type
+                                            + 4 // timestamp
+                                            + 32 // senderPublicKey
+                                            + 8 // recid
+                                            + 8 // amount
+                                            ;
   tx_chunk(packet->data + assetIndex, packet->length - assetIndex, packet, &transaction);
 
   cx_hash(&txHash.header, 0, packet->data, packet->length, NULL, 0);
+
+  */
 }
 
 void finalizeSignTx(volatile unsigned int *flags) {
-  // Get the digest for the block
-  uint8_t finalHash[sizeof(signContext.digest)];
-  cx_hash(&txHash.header, CX_LAST, NULL, 0, finalHash, sizeof(finalHash));
-  os_memmove(signContext.digest, finalHash, sizeof(finalHash));
+  if(txContext.tx_parsing_group != TX_PARSED || txContext.tx_parsing_state != READY_TO_SIGN)
+    THROW(INVALID_STATE);
+
+  // Close sha256 and hash again
+  cx_hash_finalize(txContext.digest, DIGEST_LENGTH);
 
   ui_display_sign_tx();
 

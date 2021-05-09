@@ -24,7 +24,7 @@ typedef struct request_context {
     uint8_t showConfirmation;
     local_address_t account;
     //For signature
-    uint32_t signableContentLength;
+    uint16_t signableContentLength;
 } request_context_t;
 
 
@@ -46,6 +46,9 @@ enum transaction_parsing_state_e {
     /** No transaction in progress. Used also as group start*/
     BEGINNING = 0x00,
     /** Commmon Fields */
+    NETWORK_ID = 0x01,
+    MODULE_ID = 0x02,
+    ASSET_ID = 0x03,
 
     /** Data Fields - TX Specifics */
     PLACEHOLDER = 0x10,
@@ -55,7 +58,15 @@ enum transaction_parsing_state_e {
 };
 typedef enum transaction_parsing_state_e transaction_parsing_state_t;
 
+
+typedef struct tx_type_specific_2_0_transfer {
+  uint64_t amount;
+  unsigned char recipientAddress[ADDRESS_HASH_LENGTH];
+  unsigned char data[MAX_DATA_LENGTH];
+} tx_type_specific_2_0_transfer_t;
+
 typedef union tx_fields {
+  tx_type_specific_2_0_transfer_t tx_2_0_transfer;
   // TODO
 } tx_fields_t;
 
@@ -67,8 +78,8 @@ typedef struct transaction_context {
     /** Holds digest to sign */
     uint8_t digest[DIGEST_LENGTH];
 
-    /** Type of the transaction */
-    uint16_t type;
+    uint32_t module_id;
+    uint32_t asset_id;
 
     /** Group of the transaction parsing, type transaction_parsing_group_t */
     uint8_t tx_parsing_group;
@@ -93,13 +104,8 @@ typedef struct transaction_context {
     uint16_t totalTxBytes;
 
     /** Fields to Display  */
-
-    /** TX Specific fields **/
+    uint64_t fees;
     tx_fields_t tx_fields;
-
-    unsigned char fees[AMOUNT_LENGTH];
-    unsigned char amountSpent[AMOUNT_LENGTH];
-
 } transaction_context_t;
 
 #endif

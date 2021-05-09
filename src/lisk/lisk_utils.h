@@ -37,10 +37,22 @@ void satoshiToString(uint64_t amount, char *out);
 uint32_t setSignContext(commPacket_t *packet);
 
 /**
+ * Reads the packet for Sign requests (tx and msg), sets the reqContext.
+ * @param packet the  buffer of communication packet.
+ * @return number of bytes read
+ */
+uint32_t setReqContextForSign(commPacket_t *packet);
+
+/**
  * Reads the packet for getPubKey requests, sets the reqContext.
  * @param packet the  buffer of communication packet.
  * @return number of bytes read
  */
 uint32_t setReqContextForGetPubKey(commPacket_t *packet);
+
+/**
+ * Kill Private key and reset all the contexts (reqContext, txContext, commContext, commPacket)
+ */
+void reset_contexts();
 
 #endif

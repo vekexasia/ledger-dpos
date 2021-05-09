@@ -6,6 +6,18 @@
 #define MAX_BIP32_PATH 10
 #define MAX_BIP32_PATH_LENGTH (4 * MAX_BIP32_PATH) + 1
 
+#define TX_MODULE_ID_TOKEN 2
+#define TX_MODULE_ID_DPOS 5
+#define TX_MODULE_ID_MULTISIG 4
+#define TX_MODULE_ID_LEGACY 1000
+
+#define TX_ASSET_ID_TRANSFER 0
+#define TX_ASSET_ID_REGISTER_DELEGATE 0
+#define TX_ASSET_ID_VOTE_DELEGATE 1
+#define TX_ASSET_ID_UNLOCK_TOKEN 2
+#define TX_ASSET_ID_REGISTER_MULTISIG_GROUP 0
+#define TX_ASSET_ID_RECLAIM 0
+
 /*
 #define TX_TYPE_1_CONSENSUS_REWARD 1
 #define TX_TYPE_2_TRANSFER_TX 2
@@ -27,7 +39,9 @@
 #define ADDRESS_HASH_LENGTH 20 // sha256(pubkey) -> first 20 bytes
 #define ADDRESS_LISK32_LENGTH 41 // "lsk" + lisk32 encoded
 
-#define AMOUNT_LENGTH 32
+#define MAX_DATA_LENGTH 64 // data field max 64 bytes
+
 #define DIGEST_LENGTH 32
+#define SIGNATURE_LENGTH 64
 
 #endif

@@ -6,7 +6,7 @@
 #include "../io.h"
 #include "./commands/getPubKey.h"
 #include "./commands/signMsg.h"
-#include "./commands/signTx.h"
+#include "./commands/old_signTx.h"
 #include "./ed25519.h"
 #include "./lisk_utils.h"
 #include "./ui_elements_s.h"

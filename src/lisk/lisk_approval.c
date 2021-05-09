@@ -25,7 +25,7 @@ void touch_deny() {
   ui_idle();
 }
 
-void touch_approve() {
+void old_touch_approve() {
   uint8_t signature[64];
   sign(&private_key, signContext.digest, 32, signature);
   initResponse();
@@ -40,6 +40,24 @@ void touch_approve() {
   G_io_apdu_buffer[tx+1] = 0x00;
 
   io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx+2);
+
+  // Display back the original UX
+  ui_idle();
+}
+
+void touch_approve() {
+  uint8_t signature[SIGNATURE_LENGTH];
+  sign(&private_key, txContext.digest, DIGEST_LENGTH, signature);
+  initResponse();
+  addToResponse(signature, SIGNATURE_LENGTH);
+
+  unsigned int tx = flushResponseToIO(G_io_apdu_buffer);
+  G_io_apdu_buffer[tx]   = 0x90;
+  G_io_apdu_buffer[tx+1] = 0x00;
+
+  io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx+2);
+
+  reset_contexts();
 
   // Display back the original UX
   ui_idle();
