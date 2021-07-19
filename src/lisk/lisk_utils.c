@@ -27,6 +27,21 @@ void getPubKeyHash160(uint8_t *encodedPublicKey, uint8_t *encoded) {
   os_memmove(encoded, hashedPkey, ADDRESS_HASH_LENGTH);
 }
 
+void uint64_to_string(uint64_t input, char *out)
+{
+  uint8_t i = 0;
+  uint64_t n = input;
+  do
+    i++;
+  while ( n /= 10 );
+
+  out[i] = '\0';
+  n = input;
+  do
+    out[--i] = ( n % 10 ) + '0';
+  while ( n /= 10 );
+}
+
 void satoshiToString(uint64_t amount, char *out) {
 
   uint64_t partInt = amount / 100000000;
@@ -92,6 +107,7 @@ uint32_t extractAccountInfo(uint8_t *data, local_address_t *account) {
 }
 
 /**
+ * DEPRECATED
  * Reads the packet, sets the signContext and patches the packet data values by skipping the header.
  * @param dataBuffer the  buffer to read from.
  * @return the amount of bytesRead

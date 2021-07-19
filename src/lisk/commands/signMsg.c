@@ -11,9 +11,6 @@
 #include "os.h"
 #include "txs/common_parser.h"
 
-static cx_sha256_t messageHash;
-static char message[50];
-
 void handleSignMessagePacket(commPacket_t *packet, commContext_t *context) {
 
   uint32_t headerBytesRead = 0;

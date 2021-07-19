@@ -32,6 +32,7 @@ void getEncodedPublicKey(cx_ecfp_public_key_t *publicKey, uint8_t *encoded);
  */
 void getPubKeyHash160(uint8_t *encodedPublicKey, uint8_t *encoded);
 
+void uint64_to_string(uint64_t amount, char *out);
 void satoshiToString(uint64_t amount, char *out);
 
 uint32_t setSignContext(commPacket_t *packet);

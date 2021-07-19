@@ -49,9 +49,17 @@ enum transaction_parsing_state_e {
     NETWORK_ID = 0x01,
     MODULE_ID = 0x02,
     ASSET_ID = 0x03,
+    NONCE = 0x04,
+    FEE = 0x05,
+    SENDER_PUBKEY = 0x06,
 
     /** Data Fields - TX Specifics */
     PLACEHOLDER = 0x10,
+
+    // send moduleID:2, assetID:0
+    _2_0_SENDTX_AMOUNT = 0x11,
+    _2_0_SENDTX_RECIPIENT_ADDR = 0x12,
+    _2_0_SENDTX_DATA = 0x13,
 
     /** Ready to be signed */
     READY_TO_SIGN = 0xff
@@ -78,8 +86,16 @@ typedef struct transaction_context {
     /** Holds digest to sign */
     uint8_t digest[DIGEST_LENGTH];
 
+    // Common fields
+    uint8_t network_id[NETWORK_ID_LENGTH];
+
     uint32_t module_id;
     uint32_t asset_id;
+    uint64_t nonce;
+    uint64_t fee;
+    unsigned char senderPublicKey[ADDRESS_HASH_LENGTH];
+
+    tx_fields_t tx_fields;
 
     /** Group of the transaction parsing, type transaction_parsing_group_t */
     uint8_t tx_parsing_group;
@@ -104,8 +120,8 @@ typedef struct transaction_context {
     uint16_t totalTxBytes;
 
     /** Fields to Display  */
-    uint64_t fees;
-    tx_fields_t tx_fields;
+
+
 } transaction_context_t;
 
 #endif

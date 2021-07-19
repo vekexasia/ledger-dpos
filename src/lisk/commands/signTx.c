@@ -8,30 +8,23 @@
 #include "../lisk_approval.h"
 #include "../lisk_internals.h"
 #include "../lisk_utils.h"
+// #include "./txs/2_0_transfer.h"
+#include "./txs/common_parser.h"
 #include "./txs/createMultiSig.h"
 #include "./txs/createSignatureTx.h"
 #include "./txs/registerDelegateTx.h"
-#include "./txs/sendTx.h"
 #include "./txs/voteTx.h"
 #include "cx.h"
 
-#define TXTYPE_SEND 0
-#define TXTYPE_CREATESIGNATURE 1
-#define TXTYPE_REGISTERDELEGATE 2
-#define TXTYPE_VOTE 3
-#define TXTYPE_CREATEMULTISIG 4
+typedef void (*tx_parse_fn)();
+typedef void (*tx_end_fn)();
 
-typedef void (*tx_init_fn)();
-typedef void (*tx_chunk_fn)(uint8_t * data, uint8_t length, commPacket_t *sourcePacket, transaction_t *tx);
-typedef void (*tx_end_fn)(transaction_t *tx);
-
-tx_init_fn tx_init;
-tx_chunk_fn tx_chunk;
+tx_parse_fn tx_parse;
 tx_end_fn tx_end;
 
 static void ui_display_sign_tx() {
   // Delegate showing UI to the transaction type handlers
-  tx_end(&transaction);
+  tx_end();
 }
 
 void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
@@ -41,9 +34,90 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
   // if first packet with signing header
   if (packet->first) {
 
-    // TODO
+    PRINTF("PACKET FIRST\n");
+
+    cx_sha256_init(&txContext.txHash);
+    txContext.tx_parsing_state = BEGINNING;
+    txContext.tx_parsing_group = COMMON;
+    txContext.bufferPointer = NULL;
+
+    // IMPORTANT this logic below only works if the first packet contains the needed information (Which it should)
+    // Set signing context by parsing bip32paths and other info. function returns number of bytes read (not part of TX)
+    headerBytesRead = setReqContextForSign(packet);
+
+    /*
+    PRINTF("after setReqContextForSign\n");
+
+    //Read networkIdentifier
+    os_memmove(txContext.network_id, packet->data + headerBytesRead, NETWORK_ID_LENGTH);
+    PRINTF("after networkIdentifier\n");
+    //Read moduleId
+    txContext.module_id = lisk_read_u32(packet->data + headerBytesRead + NETWORK_ID_LENGTH, 0, 0);
+    PRINTF("after module_id\n");
+    //Read assetId
+    txContext.asset_id = lisk_read_u32(packet->data + headerBytesRead + NETWORK_ID_LENGTH + 4, 0, 0);
+    PRINTF("after asset_id\n");
+
+    PRINTF("txContext.network_id:\n %.*H \n\n", NETWORK_ID_LENGTH, txContext.network_id);
+    PRINTF("txContext.module_id:\n %u \n\n", txContext.module_id);
+    PRINTF("txContext.asset_id:\n %u \n\n", txContext.asset_id);
+    */
 
   }
+
+    //insert at beginning saveBufferForNextChunk if present
+    if(txContext.saveBufferLength > 0) {
+      //Shift TX payload (without header) of saveBufferLength bytes on the right
+      os_memmove(
+          packet->data + headerBytesRead + txContext.saveBufferLength,
+          packet->data + headerBytesRead,
+          packet->length - headerBytesRead
+      );
+      //Copy saved buffer in the correct position (beginning of new tx data)
+      os_memmove(
+          packet->data + headerBytesRead,
+          txContext.saveBufferForNextChunk,
+          txContext.saveBufferLength
+      );
+      packet->length += txContext.saveBufferLength;
+      txContext.saveBufferLength = 0;
+      os_memset(txContext.saveBufferForNextChunk, 0, sizeof(txContext.saveBufferForNextChunk));
+    }
+
+    txContext.bufferPointer = packet->data + headerBytesRead;
+    txContext.bytesChunkRemaining = packet->length - headerBytesRead;
+
+    BEGIN_TRY {
+      TRY {
+        switch(txContext.tx_parsing_group) {
+        case COMMON:
+          parse_group_common();
+        case TX_SPECIFIC:
+          PRINTF("case TX_SPECIFIC \n\n");
+          THROW(INVALID_STATE);
+          if(txContext.tx_parsing_group != TX_SPECIFIC) {
+            THROW(INVALID_STATE);
+          }
+          // tx_parse();
+        case CHECK_SANITY_BEFORE_SIGN:
+          check_sanity_before_sign();
+          break;
+        default:
+          THROW(INVALID_STATE);
+        }
+      }
+      CATCH_OTHER(e) {
+        if(e == NEED_NEXT_CHUNK) {
+          os_memmove(txContext.saveBufferForNextChunk, txContext.bufferPointer, txContext.bytesChunkRemaining);
+          txContext.saveBufferLength = txContext.bytesChunkRemaining;
+        } else {
+          //Unexpected Error during parsing. Let the client know
+          THROW(e);
+        }
+      }
+      FINALLY {}
+    }
+    END_TRY;
 
     /*
     // IMPORTANT this logic below only works if the first packet contains the needed information (Which it should)

@@ -21,6 +21,8 @@ void touch_deny() {
   // Send back the response, do not restart the event loop
   io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
 
+  reset_contexts();
+
   // Display back the original UX
   ui_idle();
 }

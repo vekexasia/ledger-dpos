@@ -41,6 +41,8 @@
 
 #define MAX_DATA_LENGTH 64 // data field max 64 bytes
 
+#define NETWORK_ID_LENGTH 32
+
 #define DIGEST_LENGTH 32
 #define SIGNATURE_LENGTH 64
 

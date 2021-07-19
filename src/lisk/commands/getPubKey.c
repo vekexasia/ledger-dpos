@@ -18,6 +18,7 @@
 static void createPublicKeyResponse() {
   initResponse();
   addToResponse(reqContext.account.encodedPublicKey, ENCODED_PUB_KEY);
+  addToResponse(reqContext.account.addressHash, ADDRESS_HASH_LENGTH);
   addToResponse(reqContext.account.addressLisk32, ADDRESS_LISK32_LENGTH);
 }
 

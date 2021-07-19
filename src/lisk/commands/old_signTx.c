@@ -8,10 +8,10 @@
 #include "../lisk_approval.h"
 #include "../lisk_internals.h"
 #include "../lisk_utils.h"
+#include "./txs/old_sendTx.h"
 #include "./txs/createMultiSig.h"
 #include "./txs/createSignatureTx.h"
 #include "./txs/registerDelegateTx.h"
-#include "./txs/sendTx.h"
 #include "./txs/voteTx.h"
 #include "cx.h"
 
