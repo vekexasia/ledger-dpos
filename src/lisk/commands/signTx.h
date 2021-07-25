@@ -8,4 +8,6 @@
 void handleSignTxPacket(commPacket_t *packet, commContext_t *context);
 void finalizeSignTx(volatile unsigned int *flags);
 
+void setupTxSpecificHandlers();
+
 #endif //PROJECT_SIGNTX_H

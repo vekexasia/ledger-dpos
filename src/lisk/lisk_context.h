@@ -36,7 +36,7 @@ typedef struct request_context {
 enum transaction_parsing_group_e {
     /** No transaction in progress */
     COMMON = 0x00,
-    TX_SPECIFIC = 0x01,
+    TX_ASSET = 0x01,
     CHECK_SANITY_BEFORE_SIGN = 0x04,
     TX_PARSED = 0x05
 };
@@ -53,7 +53,7 @@ enum transaction_parsing_state_e {
     FEE = 0x05,
     SENDER_PUBKEY = 0x06,
 
-    /** Data Fields - TX Specifics */
+    /** Asset Fields - TX Specifics */
     PLACEHOLDER = 0x10,
 
     // send moduleID:2, assetID:0
@@ -67,16 +67,17 @@ enum transaction_parsing_state_e {
 typedef enum transaction_parsing_state_e transaction_parsing_state_t;
 
 
-typedef struct tx_type_specific_2_0_transfer {
+typedef struct tx_asset_2_0_transfer {
   uint64_t amount;
   unsigned char recipientAddress[ADDRESS_HASH_LENGTH];
   unsigned char data[MAX_DATA_LENGTH];
-} tx_type_specific_2_0_transfer_t;
+  uint32_t dataLength;
+} tx_asset_2_0_transfer_t;
 
-typedef union tx_fields {
-  tx_type_specific_2_0_transfer_t tx_2_0_transfer;
+typedef union tx_asset {
+  tx_asset_2_0_transfer_t _2_0_transfer;
   // TODO
-} tx_fields_t;
+} tx_asset_t;
 
 typedef struct transaction_context {
 
@@ -95,7 +96,7 @@ typedef struct transaction_context {
     uint64_t fee;
     unsigned char senderPublicKey[ADDRESS_HASH_LENGTH];
 
-    tx_fields_t tx_fields;
+    tx_asset_t tx_asset;
 
     /** Group of the transaction parsing, type transaction_parsing_group_t */
     uint8_t tx_parsing_group;
@@ -105,6 +106,7 @@ typedef struct transaction_context {
 
     /** Bytes parsed */
     uint16_t bytesRead;
+    uint16_t bytesRemaining;
 
     /** Bytes to be parsed (in the chunk) */
     uint16_t bytesChunkRemaining;
@@ -118,10 +120,6 @@ typedef struct transaction_context {
 
     /** Total Tx Bytes */
     uint16_t totalTxBytes;
-
-    /** Fields to Display  */
-
-
 } transaction_context_t;
 
 #endif

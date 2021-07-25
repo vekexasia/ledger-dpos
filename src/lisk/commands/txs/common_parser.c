@@ -81,8 +81,12 @@ void parse_group_common() {
       }
       transaction_memmove(txContext.senderPublicKey, txContext.bufferPointer, ADDRESS_HASH_LENGTH);
       PRINTF("txContext.senderPublicKey:\n %.*H \n\n", ADDRESS_HASH_LENGTH, txContext.senderPublicKey);
+      // Check that is equal to what we have in the request
+      if(lisk_secure_memcmp(reqContext.account.addressHash, txContext.senderPublicKey, ADDRESS_HASH_LENGTH) != 0) {
+        THROW(INVALID_PARAMETER);
+      }
+      txContext.tx_parsing_group = TX_ASSET;
       txContext.tx_parsing_state = BEGINNING;
-      txContext.tx_parsing_group = TX_SPECIFIC;
 
       break;
     default:
@@ -92,28 +96,31 @@ void parse_group_common() {
 
 
 void check_sanity_before_sign() {
-  if(txContext.tx_parsing_group != CHECK_SANITY_BEFORE_SIGN) {
-    THROW(INVALID_STATE);
-  }
+  PRINTF("\n check_sanity_before_sign() \n bytesChunkRemaining: %u\n bytesRead: %u\n totalTxBytes: %u\n",
+         txContext.bytesChunkRemaining, txContext.bytesRead, txContext.totalTxBytes);
   //Sanity checks about final parsing state
   if(txContext.bytesChunkRemaining != 0 || txContext.bytesRead != txContext.totalTxBytes) {
     THROW(INVALID_STATE);
   }
+  PRINTF("\n check_sanity_before_sign() after if() \n");
   txContext.tx_parsing_group = TX_PARSED;
   txContext.tx_parsing_state = READY_TO_SIGN;
 }
 
 
 // Parser Utils
-void cx_hash_finalize(unsigned char *dest, unsigned char size) {
-  unsigned char fake[1];
+void cx_hash_finalize_msg() {
   unsigned char tmpHash[DIGEST_LENGTH];
   cx_sha256_t localHash;
 
-  cx_hash(&txContext.txHash.header, CX_LAST, fake, 0, tmpHash, DIGEST_LENGTH);
+  cx_hash(&txContext.txHash.header, CX_LAST, NULL, 0, tmpHash, DIGEST_LENGTH);
   // Rehash
   cx_sha256_init(&localHash);
-  cx_hash(&localHash.header, CX_LAST, tmpHash, DIGEST_LENGTH, dest, size);
+  cx_hash(&localHash.header, CX_LAST, tmpHash, DIGEST_LENGTH, txContext.digest, DIGEST_LENGTH);
+}
+
+void cx_hash_finalize_tx() {
+  cx_hash(&txContext.txHash.header, CX_LAST, NULL, 0, txContext.digest, DIGEST_LENGTH);
 }
 
 void cx_hash_increase(unsigned char value) {
@@ -124,6 +131,7 @@ void transaction_offset_increase(unsigned char value) {
   cx_hash_increase(value);
   txContext.bytesRead += value;
   txContext.bufferPointer += value;
+  txContext.bytesRemaining -= value;
   txContext.bytesChunkRemaining -= value;
 }
 
@@ -131,39 +139,6 @@ void is_available_to_parse(unsigned char x) {
   if(txContext.bytesChunkRemaining < x)
     THROW(NEED_NEXT_CHUNK);
 }
-
-/*
-unsigned long int transaction_get_varint(void) {
-  unsigned char firstByte;
-  is_available_to_parse(1);
-  firstByte = *txContext.bufferPointer;
-  if (firstByte < 0xFD) {
-    transaction_offset_increase(1);
-    return firstByte;
-  } else if (firstByte == 0xFD) {
-    unsigned long int result;
-    transaction_offset_increase(1);
-    is_available_to_parse(2);
-    result = (unsigned long int)(*txContext.bufferPointer) |
-             ((unsigned long int)(*(txContext.bufferPointer + 1)) << 8);
-    transaction_offset_increase(2);
-    return result;
-  } else if (firstByte == 0xFE) {
-    unsigned long int result;
-    transaction_offset_increase(1);
-    is_available_to_parse(4);
-    result = lisk_read_u32(txContext.bufferPointer, 0, 0);
-    transaction_offset_increase(4);
-    return result;
-  } else {
-    transaction_offset_increase(1);
-    // uint64?
-    // L_DEBUG_APP(("Varint parsing failed\n"))
-    // PRINTF("Varint parsing failed \n\n");
-    // THROW(INVALID_PARAMETER);
-  }
-}
- */
 
 uint64_t transaction_get_varint(void) {
   unsigned char bytesRead;

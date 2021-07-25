@@ -7,4 +7,4 @@
 void tx_parse_specific_2_0_trasfer();
 void tx_finalize_2_0_trasfer();
 
-#endif //PROJECT_2_0_SENDTX_H
+#endif

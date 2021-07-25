@@ -6,7 +6,7 @@
 #include "../io.h"
 #include "./commands/getPubKey.h"
 #include "./commands/signMsg.h"
-#include "./commands/old_signTx.h"
+#include "./commands/signTx.h"
 #include "./ed25519.h"
 #include "./lisk_utils.h"
 #include "./ui_elements_s.h"
@@ -45,6 +45,7 @@ bool innerProcessCommPacket(volatile unsigned int *flags, commPacket_t *lastPack
       processSignMessage(flags);
       break;
     case INS_SIGN:
+      PRINTF("\n INS_SIGN before finalizeSignTx \n");
       finalizeSignTx(flags);
       break;
     default:
