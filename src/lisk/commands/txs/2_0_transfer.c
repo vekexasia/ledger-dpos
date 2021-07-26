@@ -6,10 +6,6 @@
 #include "../../lisk_internals.h"
 #include "common_parser.h"
 
-/**
- * Sign with address
- */
-
 UX_STEP_NOCB(
   ux_sign_tx_send_flow_1_step,
   pnn, 
@@ -115,11 +111,12 @@ static void ui_display_send() {
 }
 
 void tx_parse_specific_2_0_trasfer() {
-  /* TX Structure:
-   *
+  /**
    * TX_ASSET
-   * - reuse PLACEHOLDER for txData, only /w 1 byte for len = 0
-   * */
+   * - Amount -> uint64
+   * - RecipientAddress -> 20 bytes
+   * - Data -> String 0-64 chars
+   */
 
   unsigned char binaryKey = 0;
   uint32_t tmpSize = 0;
@@ -129,8 +126,10 @@ void tx_parse_specific_2_0_trasfer() {
     case BEGINNING:
     case PLACEHOLDER:
       txContext.tx_parsing_state = PLACEHOLDER;
-      // Lets be conservative
-      is_available_to_parse(20);
+      // Lets be conservative, check if we have the last chunk
+      if(txContext.bytesChunkRemaining != txContext.bytesRemaining) {
+        THROW(NEED_NEXT_CHUNK);
+      }
       binaryKey = (unsigned char) transaction_get_varint();
       PRINTF("binaryKey _2_0_SENDTX asset:\n %X \n\n", binaryKey);
       // Assets is serialized as bytes, varint first for the size
@@ -138,12 +137,9 @@ void tx_parse_specific_2_0_trasfer() {
       PRINTF("asset size _2_0_SENDTX:\n %u \n\n", tmpSize);
     case _2_0_SENDTX_AMOUNT:
       txContext.tx_parsing_state = _2_0_SENDTX_AMOUNT;
-      // Lets be conservative
-      is_available_to_parse(10);
       binaryKey = (unsigned char) transaction_get_varint();
       PRINTF("binaryKey _2_0_SENDTX_AMOUNT:\n %X \n\n", binaryKey);
       txContext.tx_asset._2_0_transfer.amount = transaction_get_varint();
-      PRINTF("\n after txContext.tx_asset._2_0_transfer.amount \n");
       {
         os_memset(lineBuffer, 0, sizeof(lineBuffer));
         uint64_to_string(txContext.tx_asset._2_0_transfer.amount, lineBuffer);
@@ -151,7 +147,6 @@ void tx_parse_specific_2_0_trasfer() {
       }
     case _2_0_SENDTX_RECIPIENT_ADDR:
       txContext.tx_parsing_state = _2_0_SENDTX_RECIPIENT_ADDR;
-      is_available_to_parse(ADDRESS_HASH_LENGTH + 2); // +2 -> binaryKey + byteLength
       binaryKey = (unsigned char) transaction_get_varint();
       PRINTF("binaryKey _2_0_SENDTX_RECIPIENT_ADDR:\n %X \n\n", binaryKey);
       tmpSize = (uint32_t) transaction_get_varint();
@@ -163,18 +158,15 @@ void tx_parse_specific_2_0_trasfer() {
       PRINTF("txContext.asset.recipient:\n %.*H \n\n", ADDRESS_HASH_LENGTH, txContext.tx_asset._2_0_transfer.recipientAddress);
     case _2_0_SENDTX_DATA:
       txContext.tx_parsing_state = _2_0_SENDTX_DATA;
-      // This is the last field, check if we have the last chunk
-      if(txContext.bytesChunkRemaining != txContext.bytesRemaining) {
-        THROW(NEED_NEXT_CHUNK);
-      }
+
       binaryKey = (unsigned char) transaction_get_varint();
       PRINTF("binaryKey _2_0_SENDTX_DATA:\n %X \n\n", binaryKey);
       txContext.tx_asset._2_0_transfer.dataLength = (uint32_t) transaction_get_varint();
       PRINTF("txContext.asset.dataLength:\n %u \n\n", txContext.tx_asset._2_0_transfer.dataLength);
-      if(tmpSize > 64) {
+      if(txContext.tx_asset._2_0_transfer.dataLength > 64) {
         THROW(INVALID_STATE);
       }
-      if(tmpSize > 0) {
+      if(txContext.tx_asset._2_0_transfer.dataLength > 0) {
         transaction_memmove(txContext.tx_asset._2_0_transfer.data,
                             txContext.bufferPointer,
                             txContext.tx_asset._2_0_transfer.dataLength);

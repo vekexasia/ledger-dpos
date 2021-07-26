@@ -61,6 +61,12 @@ enum transaction_parsing_state_e {
     _2_0_SENDTX_RECIPIENT_ADDR = 0x12,
     _2_0_SENDTX_DATA = 0x13,
 
+    // reg delegate moduleID:5, assetID:0
+    _5_0_REG_DELEGATE_USERNAME = 0x21,
+
+    // reclaim moduleID:1000, assetID:0
+    _1000_0_RECLAIM_AMOUNT = 0x61,
+
     /** Ready to be signed */
     READY_TO_SIGN = 0xff
 };
@@ -74,8 +80,19 @@ typedef struct tx_asset_2_0_transfer {
   uint32_t dataLength;
 } tx_asset_2_0_transfer_t;
 
+typedef struct tx_asset_5_0_register_delegate {
+  unsigned char delegate[DELEGATE_MAX_LENGTH];
+  uint32_t delegateLength;
+} tx_asset_5_0_register_delegate_t;
+
+typedef struct tx_asset_1000_0_reclaim {
+  uint64_t amount;
+} tx_asset_1000_0_reclaim_t;
+
 typedef union tx_asset {
   tx_asset_2_0_transfer_t _2_0_transfer;
+  tx_asset_5_0_register_delegate_t _5_0_reg_delegate;
+  tx_asset_1000_0_reclaim_t _1000_0_reclaim;
   // TODO
 } tx_asset_t;
 

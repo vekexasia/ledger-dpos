@@ -243,18 +243,19 @@ void setupTxSpecificHandlers() {
     }
     break;
   }
+  */
   case TX_MODULE_ID_DPOS:
   {
     if(txContext.asset_id == TX_ASSET_ID_REGISTER_DELEGATE) {
       tx_parse = tx_parse_specific_5_0_register_delegate;
       tx_end = tx_finalize_5_0_register_delegate;
-    } else if(txContext.asset_id == TX_ASSET_ID_VOTE_DELEGATE) {
+    } /* else if(txContext.asset_id == TX_ASSET_ID_VOTE_DELEGATE) {
       tx_parse = tx_parse_specific_5_1_vote_delegate;
       tx_end = tx_finalize_5_1_vote_delegate;
     } else if(txContext.asset_id == TX_ASSET_ID_UNLOCK_TOKEN) {
       tx_parse = tx_parse_specific_5_2_unlock_token;
       tx_end = tx_finalize_5_2_unlock_token;
-    } else {
+    } */ else {
       THROW(NOT_SUPPORTED);
     }
     break;
@@ -269,7 +270,6 @@ void setupTxSpecificHandlers() {
     }
     break;
   }
-  */
   default:
     THROW(NOT_SUPPORTED);
   }
