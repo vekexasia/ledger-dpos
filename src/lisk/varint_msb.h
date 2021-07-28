@@ -1,4 +1,5 @@
-// Copyright 2020 Joshua J Baker. All rights reserved.
+// Copyright 2014 Eduardo Sorribas http://sorribas.org
+// https://github.com/sorribas/varint.c
 
 #ifndef VARINT_MSB_H
 #define VARINT_MSB_H
