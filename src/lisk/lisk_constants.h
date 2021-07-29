@@ -22,14 +22,12 @@
 #define ADDRESS_HASH_LENGTH 20 // sha256(pubkey) -> first 20 bytes
 #define ADDRESS_LISK32_LENGTH 41 // "lsk" + lisk32 encoded
 
-#define MAX_DATA_LENGTH 64 // data field max 64 bytes
+#define DATA_MAX_LENGTH 200 // data field max 64 utf8 char. let's be conservative
+#define DELEGATE_MAX_LENGTH 80 // max 20 utf8 chars. let's be conservative
 
 #define NETWORK_ID_LENGTH 32
 
 #define DIGEST_LENGTH 32
 #define SIGNATURE_LENGTH 64
-
-#define DELEGATE_MIN_LENGTH 1
-#define DELEGATE_MAX_LENGTH 20
 
 #endif

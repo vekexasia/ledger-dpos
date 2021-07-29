@@ -1,4 +1,4 @@
-#include "5_0_register_delegate.h"
+#include "5_1_vote_delegate.h"
 
 #include "../../lisk_approval.h"
 #include "../../lisk_utils.h"
@@ -7,15 +7,15 @@
 #include "common_parser.h"
 
 UX_STEP_NOCB(
-  ux_sign_tx_regdelegate_flow_1_step, 
+  ux_sign_tx_vote_delegate_flow_1_step, 
   pnn, 
   {
     &C_nanox_icon_eye,
-    "Register",
-    "delegate",
+    "Vote",
+    "delegates",
   });
 UX_STEP_NOCB_INIT(
-  ux_sign_tx_regdelegate_flow_2_step,
+  ux_sign_tx_vote_delegate_flow_2_step,
   bnnn_paging,
   {
     os_memset(lineBuffer, 0, sizeof(lineBuffer));
@@ -23,24 +23,55 @@ UX_STEP_NOCB_INIT(
     lineBuffer[ADDRESS_LISK32_LENGTH] = '\0';
   },
   {
-    "For account",
+    "From account",
     lineBuffer,
   });
 UX_STEP_NOCB_INIT(
-  ux_sign_tx_regdelegate_flow_3_step,
+  ux_sign_tx_vote_delegate_flow_3_step,
   bnnn_paging,
   {
     os_memset(lineBuffer, 0, sizeof(lineBuffer));
-    os_memmove(lineBuffer,
-               txContext.tx_asset._5_0_reg_delegate.delegate,
-               txContext.tx_asset._5_0_reg_delegate.delegateLength);
+    lisk_int_to_string(txContext.tx_asset._5_1_vote_delegate.n_vote, lineBuffer);
   },
   {
-    "With name",
+    "Num. Added Votes",
     lineBuffer,
   });
 UX_STEP_NOCB_INIT(
-  ux_sign_tx_regdelegate_flow_4_step,
+  ux_sign_tx_vote_delegate_flow_4_step,
+  bn,
+  {
+    os_memset(lineBuffer, 0, sizeof(lineBuffer));
+    satoshiToString(txContext.tx_asset._5_1_vote_delegate.totAmountVote, lineBuffer);
+  },
+  {
+    "Total Amount Added",
+    lineBuffer,
+});
+UX_STEP_NOCB_INIT(
+  ux_sign_tx_vote_delegate_flow_5_step,
+  bnnn_paging,
+  {
+    os_memset(lineBuffer, 0, sizeof(lineBuffer));
+    lisk_int_to_string(txContext.tx_asset._5_1_vote_delegate.n_unvote, lineBuffer);
+  },
+  {
+    "Num. Removed Votes",
+    lineBuffer,
+  });
+UX_STEP_NOCB_INIT(
+  ux_sign_tx_vote_delegate_flow_6_step,
+  bn,
+  {
+    os_memset(lineBuffer, 0, sizeof(lineBuffer));
+    satoshiToString(txContext.tx_asset._5_1_vote_delegate.totAmountUnVote, lineBuffer);
+  },
+  {
+    "Total Amount Removed",
+    lineBuffer,
+  });
+UX_STEP_NOCB_INIT(
+  ux_sign_tx_vote_delegate_flow_7_step,
   bn,
   {
     os_memset(lineBuffer, 0, sizeof(lineBuffer));
@@ -51,7 +82,7 @@ UX_STEP_NOCB_INIT(
     lineBuffer,
   });
 UX_STEP_CB(
-  ux_sign_tx_regdelegate_flow_5_step,
+  ux_sign_tx_vote_delegate_flow_8_step,
   pb,
   touch_approve(),
   {
@@ -59,44 +90,43 @@ UX_STEP_CB(
     "Confirm",
   });
 UX_STEP_CB(
-  ux_sign_tx_regdelegate_flow_6_step,
+  ux_sign_tx_vote_delegate_flow_9_step,
   pb,
   touch_deny(),
   {
     &C_nanox_icon_crossmark,
     "Reject",
   });
-UX_FLOW(ux_sign_tx_regdelegate_flow,
-  &ux_sign_tx_regdelegate_flow_1_step,
-  &ux_sign_tx_regdelegate_flow_2_step,
-  &ux_sign_tx_regdelegate_flow_3_step,
-  &ux_sign_tx_regdelegate_flow_4_step,
-  &ux_sign_tx_regdelegate_flow_5_step,
-  &ux_sign_tx_regdelegate_flow_6_step);
 
-static void ui_display_regdelegate() {
-  ux_flow_init(0, ux_sign_tx_regdelegate_flow, NULL);
-}
+const ux_flow_step_t * ux_sign_tx_vote_delegate_flow[9];
 
-static void checkUsernameValidity() {
-  PRINTF("\n checkUsernameValidity() \n");
-  uint8_t i;
-  for (i = 0; i < txContext.tx_asset._5_0_reg_delegate.delegateLength; i++) {
-    char c = txContext.tx_asset._5_0_reg_delegate.delegate[i];
-    if (
-      !(c >= 'a' && c <= 'z') &&
-      !(c >= '0' && c <= '9') &&
-      !(c == '!' || c == '@' || c == '$' || c == '&' || c == '_' || c == '.')) {
-      PRINTF("\n checkUsernameValidity() throw invalid \n");
-      THROW(INVALID_PARAMETER);
-    }
+static void ui_display_vote_delegate() {
+  int step = 0;
+  ux_sign_tx_vote_delegate_flow[step++] = &ux_sign_tx_vote_delegate_flow_1_step;
+  ux_sign_tx_vote_delegate_flow[step++] = &ux_sign_tx_vote_delegate_flow_2_step;
+  if(txContext.tx_asset._5_1_vote_delegate.n_vote > 0) {
+    ux_sign_tx_vote_delegate_flow[step++] = &ux_sign_tx_vote_delegate_flow_3_step;
+    ux_sign_tx_vote_delegate_flow[step++] = &ux_sign_tx_vote_delegate_flow_4_step;
   }
+  if(txContext.tx_asset._5_1_vote_delegate.n_unvote > 0) {
+    ux_sign_tx_vote_delegate_flow[step++] = &ux_sign_tx_vote_delegate_flow_5_step;
+    ux_sign_tx_vote_delegate_flow[step++] = &ux_sign_tx_vote_delegate_flow_6_step;
+  }
+  ux_sign_tx_vote_delegate_flow[step++] = &ux_sign_tx_vote_delegate_flow_7_step;
+  ux_sign_tx_vote_delegate_flow[step++] = &ux_sign_tx_vote_delegate_flow_8_step;
+  ux_sign_tx_vote_delegate_flow[step++] = &ux_sign_tx_vote_delegate_flow_9_step;
+  ux_sign_tx_vote_delegate_flow[step++] = FLOW_END_STEP;
+
+  ux_flow_init(0, ux_sign_tx_vote_delegate_flow, NULL);
 }
 
-void tx_parse_specific_5_0_register_delegate() {
+void tx_parse_specific_5_1_vote_delegate() {
   /**
    * TX_ASSET
-   * username - String 1-20 chars
+   * votes[]:
+   *    - delegateAddr - 20 bytes
+   *    - amount -> signed!! int64
+   *
    */
   unsigned char binaryKey = 0;
   uint32_t tmpSize = 0;
@@ -139,6 +169,6 @@ void tx_parse_specific_5_0_register_delegate() {
 
 }
 
-void tx_finalize_5_0_register_delegate() {
-  ui_display_regdelegate();
+void tx_finalize_5_1_vote_delegate() {
+  ui_display_vote_delegate();
 }

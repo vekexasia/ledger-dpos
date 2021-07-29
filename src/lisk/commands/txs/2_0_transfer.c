@@ -127,6 +127,7 @@ void tx_parse_specific_2_0_trasfer() {
     case PLACEHOLDER:
       txContext.tx_parsing_state = PLACEHOLDER;
       // Lets be conservative, check if we have the last chunk
+      // It's enough for the whole asset object
       if(txContext.bytesChunkRemaining != txContext.bytesRemaining) {
         THROW(NEED_NEXT_CHUNK);
       }
@@ -158,14 +159,10 @@ void tx_parse_specific_2_0_trasfer() {
       PRINTF("txContext.asset.recipient:\n %.*H \n\n", ADDRESS_HASH_LENGTH, txContext.tx_asset._2_0_transfer.recipientAddress);
     case _2_0_SENDTX_DATA:
       txContext.tx_parsing_state = _2_0_SENDTX_DATA;
-
       binaryKey = (unsigned char) transaction_get_varint();
       PRINTF("binaryKey _2_0_SENDTX_DATA:\n %X \n\n", binaryKey);
       txContext.tx_asset._2_0_transfer.dataLength = (uint32_t) transaction_get_varint();
       PRINTF("txContext.asset.dataLength:\n %u \n\n", txContext.tx_asset._2_0_transfer.dataLength);
-      if(txContext.tx_asset._2_0_transfer.dataLength > 64) {
-        THROW(INVALID_STATE);
-      }
       if(txContext.tx_asset._2_0_transfer.dataLength > 0) {
         transaction_memmove(txContext.tx_asset._2_0_transfer.data,
                             txContext.bufferPointer,
