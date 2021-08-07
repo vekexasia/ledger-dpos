@@ -93,8 +93,6 @@ static void ui_display_unlock_token() {
   ux_sign_tx_unlock_token_flow[step++] = &ux_sign_tx_unlock_token_flow_7_step;
   ux_sign_tx_unlock_token_flow[step++] = FLOW_END_STEP;
 
-  PRINTF("\n before ux_flow_init \n ");
-
   ux_flow_init(0, ux_sign_tx_unlock_token_flow, NULL);
 }
 
@@ -121,52 +119,37 @@ void tx_parse_specific_5_2_unlock_token() {
       // Only first time parse binaryKey and complete assetSize 
       is_available_to_parse(10);
       binaryKey = (unsigned char) transaction_get_varint();
-      PRINTF("binaryKey _5_2_UNLOCK_TX asset:\n %X \n\n", binaryKey);
       assetSize = (uint32_t) transaction_get_varint();
-      PRINTF("assetSize _5_2_UNLOCK_TX:\n %u \n\n", assetSize);
     case PLACEHOLDER:
       txContext.tx_parsing_state = PLACEHOLDER;
       is_available_to_parse(10);
       // Parse binaryKey and vote object syze
       binaryKey = (unsigned char) transaction_get_varint();
-      PRINTF("binaryKey _5_2_UNLOCK_TX vote object :\n %X \n\n", binaryKey);
       // Assets is serialized as bytes, varint first for the size
       txContext.tx_asset._5_2_unlock_token.lastObjectSize = (uint32_t) transaction_get_varint();
-      PRINTF("vote object size _5_2_UNLOCK_TX:\n %u \n\n", txContext.tx_asset._5_1_vote_delegate.lastObjectSize);
 
     case _5_2_UNLOCK_ADDRESS:
       txContext.tx_parsing_state = _5_2_UNLOCK_ADDRESS;
       objectSizeToBeParsed = MIN(txContext.tx_asset._5_2_unlock_token.lastObjectSize, txContext.bytesRemaining);
       is_available_to_parse(objectSizeToBeParsed);
       binaryKey = (unsigned char) transaction_get_varint();
-      PRINTF("binaryKey _5_2_UNLOCK_ADDRESS:\n %X \n\n", binaryKey);
       tmpSize = (uint32_t) transaction_get_varint();
-      PRINTF("_5_2_UNLOCK_ADDRESS tmpSize:\n %u \n\n", tmpSize);
       if(tmpSize != ADDRESS_HASH_LENGTH) {
         THROW(INVALID_PARAMETER);
       }
       transaction_memmove(tmpAddress, txContext.bufferPointer, ADDRESS_HASH_LENGTH);
-      PRINTF("tmpAddress _5_2_UNLOCK_ADDRESS:\n %.*H \n\n", ADDRESS_HASH_LENGTH, tmpAddress);
 
     case _5_2_UNLOCK_AMOUNT:
       txContext.tx_parsing_state = _5_2_UNLOCK_AMOUNT;
       binaryKey = (unsigned char) transaction_get_varint();
-      PRINTF("binaryKey _5_2_UNLOCK_AMOUNT:\n %X \n\n", binaryKey);
       tmpAmount = transaction_get_varint();
-      os_memset(lineBuffer, 0, sizeof(lineBuffer));
-      itoa(tmpAmount, lineBuffer, 10);
-      PRINTF("_5_2_UNLOCK_AMOUNT tmpAmount:\n %s \n\n", lineBuffer);
       txContext.tx_asset._5_2_unlock_token.n_unlock++;
       txContext.tx_asset._5_2_unlock_token.totAmountUnlock += tmpAmount;
 
     case _5_2_UNLCOK_BLOCK_HEIGHT:
       txContext.tx_parsing_state = _5_2_UNLCOK_BLOCK_HEIGHT;
       binaryKey = (unsigned char) transaction_get_varint();
-      PRINTF("binaryKey _5_2_UNLCOK_BLOCK_HEIGHT:\n %X \n\n", binaryKey);
       tmpAmount = transaction_get_varint();
-      os_memset(lineBuffer, 0, sizeof(lineBuffer));
-      itoa(tmpAmount, lineBuffer, 10);
-      PRINTF("_5_2_UNLCOK_BLOCK_HEIGHT tmpAmount:\n %s \n\n", lineBuffer);
 
       //Check if we have parsed all
       if(txContext.bytesRemaining == 0) {
@@ -185,6 +168,5 @@ void tx_parse_specific_5_2_unlock_token() {
 }
 
 void tx_finalize_5_2_unlock_token() {
-  PRINTF("\n tx_finalize_5_2_unlock_token before ui_display_vote_delegate \n ");
   ui_display_unlock_token();
 }

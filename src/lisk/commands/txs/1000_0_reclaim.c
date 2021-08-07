@@ -93,22 +93,14 @@ void tx_parse_specific_1000_0_reclaim() {
       THROW(NEED_NEXT_CHUNK);
     }
     binaryKey = (unsigned char) transaction_get_varint();
-    PRINTF("binaryKey _1000_0_RECLAIM_TX asset:\n %X \n\n", binaryKey);
     // Assets is serialized as bytes, varint first for the size
     tmpSize = (uint32_t) transaction_get_varint();
-    PRINTF("asset size _1000_0_RECLAIM_TX:\n %u \n\n", tmpSize);
   case _1000_0_RECLAIM_AMOUNT:
     txContext.tx_parsing_state = _1000_0_RECLAIM_AMOUNT;
     // This is the last field, check if we have the last chunk
     binaryKey = (unsigned char) transaction_get_varint();
-    PRINTF("binaryKey _1000_0_RECLAIM_AMOUNT:\n %X \n\n", binaryKey);
     txContext.tx_asset._1000_0_reclaim.amount = transaction_get_varint();
-    PRINTF("txContext.asset.amount:\n %u \n\n", txContext.tx_asset._1000_0_reclaim.amount);
-    {
-      os_memset(lineBuffer, 0, sizeof(lineBuffer));
-      uint64_to_string(txContext.tx_asset._1000_0_reclaim.amount, lineBuffer);
-      PRINTF("txContext.asset.amount:\n %s \n\n", lineBuffer);
-    }
+
     txContext.tx_parsing_group = CHECK_SANITY_BEFORE_SIGN;
     txContext.tx_parsing_state = BEGINNING;
     break;

@@ -89,7 +89,6 @@ static void ui_display_regmultisig() {
 }
 
 static void checkKeysValidity() {
-  PRINTF("\n checkKeysValidity() \n");
   uint32_t totKeys = txContext.tx_asset._4_0_reg_multisig.n_mandatoryKeys + txContext.tx_asset._4_0_reg_multisig.n_optionalKeys;
   if(txContext.tx_asset._4_0_reg_multisig.n_keys != totKeys)
     THROW(INVALID_PARAMETER);
@@ -115,25 +114,19 @@ void tx_parse_specific_4_0_register_multisignature_group() {
       is_available_to_parse(10);
       // Parse binaryKey and asset object size
       binaryKey = (unsigned char) transaction_get_varint();
-      PRINTF("binaryKey _4_0_REG_MULTISIG_TX asset :\n %X \n\n", binaryKey);
       // Assets is serialized as bytes, varint first for the size
       tmpSize = (uint32_t) transaction_get_varint();
-      PRINTF("asset object size _4_0_REG_MULTISIG_TX:\n %u \n\n", tmpSize);
 
     case _4_0_REG_MULTISIG_NUMKEYS:
       txContext.tx_parsing_state = _4_0_REG_MULTISIG_NUMKEYS;
       binaryKey = (unsigned char) transaction_get_varint();
-      PRINTF("binaryKey _4_0_REG_MULTISIG_NUMKEYS:\n %X \n\n", binaryKey);
       txContext.tx_asset._4_0_reg_multisig.n_keys = (uint32_t) transaction_get_varint();
-      PRINTF("txContext.asset.n_keys:\n %u \n\n", txContext.tx_asset._4_0_reg_multisig.n_keys);
 
     case _4_0_REG_MULTISIG_KEYS:
       txContext.tx_parsing_state = _4_0_REG_MULTISIG_KEYS;
       is_available_to_parse(ENCODED_PUB_KEY + 2); // pubkey + binarykey + size
       binaryKey = (unsigned char) transaction_get_varint();
-      PRINTF("binaryKey _4_0_REG_MULTISIG_KEYS:\n %X \n\n", binaryKey);
       tmpSize = (uint32_t) transaction_get_varint();
-      PRINTF("size _4_0_REG_MULTISIG_KEYS:\n %u \n\n", tmpSize);
       // just increase the pubkey, no need to save it
       transaction_offset_increase(ENCODED_PUB_KEY);
 

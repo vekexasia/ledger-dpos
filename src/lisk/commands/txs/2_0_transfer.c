@@ -132,46 +132,28 @@ void tx_parse_specific_2_0_trasfer() {
         THROW(NEED_NEXT_CHUNK);
       }
       binaryKey = (unsigned char) transaction_get_varint();
-      PRINTF("binaryKey _2_0_SENDTX asset:\n %X \n\n", binaryKey);
       // Assets is serialized as bytes, varint first for the size
       tmpSize = (uint32_t) transaction_get_varint();
-      PRINTF("asset size _2_0_SENDTX:\n %u \n\n", tmpSize);
     case _2_0_SENDTX_AMOUNT:
       txContext.tx_parsing_state = _2_0_SENDTX_AMOUNT;
       binaryKey = (unsigned char) transaction_get_varint();
-      PRINTF("binaryKey _2_0_SENDTX_AMOUNT:\n %X \n\n", binaryKey);
       txContext.tx_asset._2_0_transfer.amount = transaction_get_varint();
-      {
-        os_memset(lineBuffer, 0, sizeof(lineBuffer));
-        uint64_to_string(txContext.tx_asset._2_0_transfer.amount, lineBuffer);
-        PRINTF("txContext.asset.amount:\n %s \n\n", lineBuffer);
-      }
     case _2_0_SENDTX_RECIPIENT_ADDR:
       txContext.tx_parsing_state = _2_0_SENDTX_RECIPIENT_ADDR;
       binaryKey = (unsigned char) transaction_get_varint();
-      PRINTF("binaryKey _2_0_SENDTX_RECIPIENT_ADDR:\n %X \n\n", binaryKey);
       tmpSize = (uint32_t) transaction_get_varint();
-      PRINTF("txContext.asset.recipient tmpSize:\n %u \n\n", tmpSize);
       if(tmpSize != ADDRESS_HASH_LENGTH) {
         THROW(INVALID_PARAMETER);
       }
       transaction_memmove(txContext.tx_asset._2_0_transfer.recipientAddress, txContext.bufferPointer, ADDRESS_HASH_LENGTH);
-      PRINTF("txContext.asset.recipient:\n %.*H \n\n", ADDRESS_HASH_LENGTH, txContext.tx_asset._2_0_transfer.recipientAddress);
     case _2_0_SENDTX_DATA:
       txContext.tx_parsing_state = _2_0_SENDTX_DATA;
       binaryKey = (unsigned char) transaction_get_varint();
-      PRINTF("binaryKey _2_0_SENDTX_DATA:\n %X \n\n", binaryKey);
       txContext.tx_asset._2_0_transfer.dataLength = (uint32_t) transaction_get_varint();
-      PRINTF("txContext.asset.dataLength:\n %u \n\n", txContext.tx_asset._2_0_transfer.dataLength);
       if(txContext.tx_asset._2_0_transfer.dataLength > 0) {
         transaction_memmove(txContext.tx_asset._2_0_transfer.data,
                             txContext.bufferPointer,
                             txContext.tx_asset._2_0_transfer.dataLength);
-        {
-          os_memset(lineBuffer, 0, sizeof(lineBuffer));
-          os_memmove(lineBuffer, txContext.tx_asset._2_0_transfer.data, txContext.tx_asset._2_0_transfer.dataLength);
-          PRINTF("txContext.asset.data:\n %s \n\n", lineBuffer);
-        }
       }
       txContext.tx_parsing_group = CHECK_SANITY_BEFORE_SIGN;
       txContext.tx_parsing_state = BEGINNING;

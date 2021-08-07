@@ -79,7 +79,6 @@ static void ui_display_regdelegate() {
 }
 
 static void checkUsernameValidity() {
-  PRINTF("\n checkUsernameValidity() \n");
   uint8_t i;
   for (i = 0; i < txContext.tx_asset._5_0_reg_delegate.delegateLength; i++) {
     char c = txContext.tx_asset._5_0_reg_delegate.delegate[i];
@@ -87,7 +86,6 @@ static void checkUsernameValidity() {
       !(c >= 'a' && c <= 'z') &&
       !(c >= '0' && c <= '9') &&
       !(c == '!' || c == '@' || c == '$' || c == '&' || c == '_' || c == '.')) {
-      PRINTF("\n checkUsernameValidity() throw invalid \n");
       THROW(INVALID_PARAMETER);
     }
   }
@@ -110,26 +108,17 @@ void tx_parse_specific_5_0_register_delegate() {
       THROW(NEED_NEXT_CHUNK);
     }
     binaryKey = (unsigned char) transaction_get_varint();
-    PRINTF("binaryKey _5_0_REG_DELEGATE_TX asset:\n %X \n\n", binaryKey);
     // Assets is serialized as bytes, varint first for the size
     tmpSize = (uint32_t) transaction_get_varint();
-    PRINTF("asset size _5_0_REG_DELEGATE_TX:\n %u \n\n", tmpSize);
   case _5_0_REG_DELEGATE_USERNAME:
     txContext.tx_parsing_state = _5_0_REG_DELEGATE_USERNAME;
     // This is the last field, check if we have the last chunk
     binaryKey = (unsigned char) transaction_get_varint();
-    PRINTF("binaryKey _5_0_REG_DELEGATE_USERNAME:\n %X \n\n", binaryKey);
     txContext.tx_asset._5_0_reg_delegate.delegateLength = (uint32_t) transaction_get_varint();
-    PRINTF("txContext.asset.delegateLength:\n %u \n\n", txContext.tx_asset._5_0_reg_delegate.delegateLength);
     transaction_memmove(txContext.tx_asset._5_0_reg_delegate.delegate,
                         txContext.bufferPointer,
                         txContext.tx_asset._5_0_reg_delegate.delegateLength);
     checkUsernameValidity();
-    {
-      os_memset(lineBuffer, 0, sizeof(lineBuffer));
-      os_memmove(lineBuffer, txContext.tx_asset._5_0_reg_delegate.delegate, txContext.tx_asset._5_0_reg_delegate.delegateLength);
-      PRINTF("txContext.asset.delegate:\n %s \n\n", lineBuffer);
-    }
     txContext.tx_parsing_group = CHECK_SANITY_BEFORE_SIGN;
     txContext.tx_parsing_state = BEGINNING;
     break;

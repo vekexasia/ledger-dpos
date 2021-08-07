@@ -24,63 +24,42 @@ void parse_group_common() {
     case NETWORK_ID:
       txContext.tx_parsing_state = NETWORK_ID;
       transaction_memmove(txContext.network_id, txContext.bufferPointer, NETWORK_ID_LENGTH);
-      PRINTF("txContext.network_id:\n %.*H \n\n", NETWORK_ID_LENGTH, txContext.network_id);
       //no break is intentional
     case MODULE_ID:
       txContext.tx_parsing_state = MODULE_ID;
       // Lets be conservative
       is_available_to_parse(10);
       binaryKey = (unsigned char) transaction_get_varint();
-      PRINTF("binaryKey MODULE_ID:\n %X \n\n", binaryKey);
       txContext.module_id = (uint32_t) transaction_get_varint();
-      PRINTF("txContext.module_id:\n %u \n\n", txContext.module_id);
       //no break is intentional
     case ASSET_ID:
       txContext.tx_parsing_state = ASSET_ID;
       // Lets be conservative
       is_available_to_parse(10);
       binaryKey = (unsigned char) transaction_get_varint();
-      PRINTF("binaryKey ASSET_ID:\n %X \n\n", binaryKey);
       txContext.asset_id = (uint32_t) transaction_get_varint();
-      PRINTF("txContext.asset_id:\n %u \n\n", txContext.asset_id);
-      // TODO Check if moduleID and assetId provided are supported
       //no break is intentional
     case NONCE:
       txContext.tx_parsing_state = NONCE;
       // Lets be conservative
       is_available_to_parse(10);
       binaryKey = (unsigned char) transaction_get_varint();
-      PRINTF("binaryKey NONCE:\n %X \n\n", binaryKey);
       txContext.nonce = transaction_get_varint();
-      {
-        os_memset(lineBuffer, 0, sizeof(lineBuffer));
-        uint64_to_string(txContext.nonce, lineBuffer);
-        PRINTF("txContext.nonce:\n %s \n\n", lineBuffer);
-      }
     case FEE:
       txContext.tx_parsing_state = FEE;
       // Lets be conservative
       is_available_to_parse(10);
       binaryKey = (unsigned char) transaction_get_varint();
-      PRINTF("binaryKey FEE:\n %X \n\n", binaryKey);
       txContext.fee = transaction_get_varint();
-      {
-        os_memset(lineBuffer, 0, sizeof(lineBuffer));
-        uint64_to_string(txContext.fee, lineBuffer);
-        PRINTF("txContext.fee:\n %s \n\n", lineBuffer);
-      }
     case SENDER_PUBKEY:
       txContext.tx_parsing_state = SENDER_PUBKEY;
       is_available_to_parse(ADDRESS_HASH_LENGTH + 2); // + binaryKey + byteLength
       binaryKey = (unsigned char) transaction_get_varint();
-      PRINTF("binaryKey SENDER_PUBKEY:\n %X \n\n", binaryKey);
       tmpSize = (uint32_t) transaction_get_varint();
-      PRINTF("txContext.senderPublicKey tmpSize:\n %u \n\n", tmpSize);
       if(tmpSize != ADDRESS_HASH_LENGTH) {
         THROW(INVALID_PARAMETER);
       }
       transaction_memmove(txContext.senderPublicKey, txContext.bufferPointer, ADDRESS_HASH_LENGTH);
-      PRINTF("txContext.senderPublicKey:\n %.*H \n\n", ADDRESS_HASH_LENGTH, txContext.senderPublicKey);
       // Check that is equal to what we have in the request
       if(lisk_secure_memcmp(reqContext.account.addressHash, txContext.senderPublicKey, ADDRESS_HASH_LENGTH) != 0) {
         THROW(INVALID_PARAMETER);
@@ -96,13 +75,10 @@ void parse_group_common() {
 
 
 void check_sanity_before_sign() {
-  PRINTF("\n check_sanity_before_sign() \n bytesChunkRemaining: %u\n bytesRead: %u\n totalTxBytes: %u\n",
-         txContext.bytesChunkRemaining, txContext.bytesRead, txContext.totalTxBytes);
   //Sanity checks about final parsing state
   if(txContext.bytesChunkRemaining != 0 || txContext.bytesRead != txContext.totalTxBytes) {
     THROW(INVALID_STATE);
   }
-  PRINTF("\n check_sanity_before_sign() after if() \n");
   txContext.tx_parsing_group = TX_PARSED;
   txContext.tx_parsing_state = READY_TO_SIGN;
 }

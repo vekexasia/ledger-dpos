@@ -45,7 +45,6 @@ bool innerProcessCommPacket(volatile unsigned int *flags, commPacket_t *lastPack
       processSignMessage(flags);
       break;
     case INS_SIGN:
-      PRINTF("\n INS_SIGN before finalizeSignTx \n");
       finalizeSignTx(flags);
       break;
     default:
