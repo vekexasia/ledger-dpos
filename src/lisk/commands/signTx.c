@@ -15,10 +15,6 @@
 #include "./txs/5_2_unlock_token.h"
 #include "./txs/1000_0_reclaim.h"
 #include "./txs/common_parser.h"
-#include "./txs/createMultiSig.h"
-#include "./txs/createSignatureTx.h"
-#include "./txs/registerDelegateTx.h"
-#include "./txs/voteTx.h"
 #include "cx.h"
 
 typedef void (*tx_parse_fn)();
@@ -232,7 +228,6 @@ void setupTxSpecificHandlers() {
     }
     break;
   }
-  /*
   case TX_MODULE_ID_MULTISIG:
   {
     if(txContext.asset_id == TX_ASSET_ID_REGISTER_MULTISIG_GROUP) {
@@ -243,7 +238,6 @@ void setupTxSpecificHandlers() {
     }
     break;
   }
-  */
   case TX_MODULE_ID_DPOS:
   {
     if(txContext.asset_id == TX_ASSET_ID_REGISTER_DELEGATE) {
