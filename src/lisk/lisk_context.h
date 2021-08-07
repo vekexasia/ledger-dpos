@@ -1,5 +1,5 @@
-#ifndef NULS_CONTEXT_H
-#define NULS_CONTEXT_H
+#ifndef LISK_CONTEXT_H
+#define LISK_CONTEXT_H
 
 
 #include "lisk_constants.h"
@@ -64,6 +64,10 @@ enum transaction_parsing_state_e {
     // reg delegate moduleID:5, assetID:0
     _5_0_REG_DELEGATE_USERNAME = 0x21,
 
+    // vote delegate moduleID:5, assetID:1
+    _5_1_VOTE_DELEGATE_ADDRESS = 0x31,
+    _5_1_VOTE_DELEGATE_AMOUNT = 0x32,
+
     // reclaim moduleID:1000, assetID:0
     _1000_0_RECLAIM_AMOUNT = 0x61,
 
@@ -90,6 +94,7 @@ typedef struct tx_asset_5_1_vote_delegate {
   uint32_t n_unvote;
   uint64_t totAmountVote;
   uint64_t totAmountUnVote;
+  uint32_t lastObjectSize;
 } tx_asset_5_1_vote_delegate_t;
 
 typedef struct tx_asset_1000_0_reclaim {

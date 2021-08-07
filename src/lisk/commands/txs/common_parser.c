@@ -142,10 +142,21 @@ void is_available_to_parse(unsigned char x) {
 
 uint64_t transaction_get_varint(void) {
   unsigned char bytesRead;
-  PRINTF("buffer before decode_varint: %.*H \n", 8, txContext.bufferPointer);
   uint64_t result = decode_varint(txContext.bufferPointer, &bytesRead);
-  PRINTF("transaction_get_varint bytesRead: %u \n", bytesRead);
-  PRINTF("transaction_get_varint result: %.*H  \n", 8, &result);
+  transaction_offset_increase(bytesRead);
+  return result;
+}
+
+int64_t transaction_get_varint_signed(void) {
+  unsigned char bytesRead;
+  uint64_t tmpRes = decode_varint(txContext.bufferPointer, &bytesRead);
+  int64_t result = (int64_t) tmpRes;
+  if(result % 2 == 0) {
+    result = result / 2;
+  }
+  else {
+    result = -(result + 1) / 2;
+  }
   transaction_offset_increase(bytesRead);
   return result;
 }

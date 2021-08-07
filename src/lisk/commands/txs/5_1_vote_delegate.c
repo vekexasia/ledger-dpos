@@ -6,6 +6,8 @@
 #include "../../lisk_internals.h"
 #include "common_parser.h"
 
+#include <stdlib.h>
+
 UX_STEP_NOCB(
   ux_sign_tx_vote_delegate_flow_1_step, 
   pnn, 
@@ -98,7 +100,7 @@ UX_STEP_CB(
     "Reject",
   });
 
-const ux_flow_step_t * ux_sign_tx_vote_delegate_flow[9];
+const ux_flow_step_t * ux_sign_tx_vote_delegate_flow[10];
 
 static void ui_display_vote_delegate() {
   int step = 0;
@@ -117,6 +119,8 @@ static void ui_display_vote_delegate() {
   ux_sign_tx_vote_delegate_flow[step++] = &ux_sign_tx_vote_delegate_flow_9_step;
   ux_sign_tx_vote_delegate_flow[step++] = FLOW_END_STEP;
 
+  PRINTF("\n before ux_flow_init \n ");
+
   ux_flow_init(0, ux_sign_tx_vote_delegate_flow, NULL);
 }
 
@@ -130,45 +134,79 @@ void tx_parse_specific_5_1_vote_delegate() {
    */
   unsigned char binaryKey = 0;
   uint32_t tmpSize = 0;
+  uint32_t assetSize = 0;
+  uint32_t objectSizeToBeParsed;
+  unsigned char tmpAddress[ADDRESS_HASH_LENGTH];
+  int64_t tmpAmount = 0;
 
-  switch(txContext.tx_parsing_state) {
-  case BEGINNING:
-  case PLACEHOLDER:
-    txContext.tx_parsing_state = PLACEHOLDER;
-    // Lets be conservative, check if we have the last chunk
-    if(txContext.bytesChunkRemaining != txContext.bytesRemaining) {
-      THROW(NEED_NEXT_CHUNK);
-    }
-    binaryKey = (unsigned char) transaction_get_varint();
-    PRINTF("binaryKey _5_0_REG_DELEGATE_TX asset:\n %X \n\n", binaryKey);
-    // Assets is serialized as bytes, varint first for the size
-    tmpSize = (uint32_t) transaction_get_varint();
-    PRINTF("asset size _5_0_REG_DELEGATE_TX:\n %u \n\n", tmpSize);
-  case _5_0_REG_DELEGATE_USERNAME:
-    txContext.tx_parsing_state = _5_0_REG_DELEGATE_USERNAME;
-    // This is the last field, check if we have the last chunk
-    binaryKey = (unsigned char) transaction_get_varint();
-    PRINTF("binaryKey _5_0_REG_DELEGATE_USERNAME:\n %X \n\n", binaryKey);
-    txContext.tx_asset._5_0_reg_delegate.delegateLength = (uint32_t) transaction_get_varint();
-    PRINTF("txContext.asset.delegateLength:\n %u \n\n", txContext.tx_asset._5_0_reg_delegate.delegateLength);
-    transaction_memmove(txContext.tx_asset._5_0_reg_delegate.delegate,
-                        txContext.bufferPointer,
-                        txContext.tx_asset._5_0_reg_delegate.delegateLength);
-    checkUsernameValidity();
-    {
+  while (txContext.tx_parsing_group == TX_ASSET)
+  {
+    switch(txContext.tx_parsing_state) {
+    case BEGINNING:
+      // Only first time parse binaryKey and complete assetSize 
+      is_available_to_parse(10);
+      binaryKey = (unsigned char) transaction_get_varint();
+      PRINTF("binaryKey _5_1_VOTE_TX asset:\n %X \n\n", binaryKey);
+      assetSize = (uint32_t) transaction_get_varint();
+      PRINTF("assetSize _5_1_VOTE_TX:\n %u \n\n", assetSize);
+    case PLACEHOLDER:
+      txContext.tx_parsing_state = PLACEHOLDER;
+      is_available_to_parse(10);
+      // Parse binaryKey and vote object syze
+      binaryKey = (unsigned char) transaction_get_varint();
+      PRINTF("binaryKey _5_1_VOTE_TX vote object :\n %X \n\n", binaryKey);
+      // Assets is serialized as bytes, varint first for the size
+      txContext.tx_asset._5_1_vote_delegate.lastObjectSize = (uint32_t) transaction_get_varint();
+      PRINTF("vote object size _5_1_VOTE_TX:\n %u \n\n", txContext.tx_asset._5_1_vote_delegate.lastObjectSize);
+
+    case _5_1_VOTE_DELEGATE_ADDRESS:
+      txContext.tx_parsing_state = _5_1_VOTE_DELEGATE_ADDRESS;
+      objectSizeToBeParsed = MIN(txContext.tx_asset._5_1_vote_delegate.lastObjectSize, txContext.bytesRemaining);
+      is_available_to_parse(objectSizeToBeParsed);
+      binaryKey = (unsigned char) transaction_get_varint();
+      PRINTF("binaryKey _5_1_VOTE_DELEGATE_ADDRESS:\n %X \n\n", binaryKey);
+      tmpSize = (uint32_t) transaction_get_varint();
+      PRINTF("_5_1_VOTE_DELEGATE_ADDRESS tmpSize:\n %u \n\n", tmpSize);
+      if(tmpSize != ADDRESS_HASH_LENGTH) {
+        THROW(INVALID_PARAMETER);
+      }
+      transaction_memmove(tmpAddress, txContext.bufferPointer, ADDRESS_HASH_LENGTH);
+      //transaction_offset_increase(ADDRESS_HASH_LENGTH);
+      PRINTF("tmpAddress _5_1_VOTE_DELEGATE_ADDRESS:\n %.*H \n\n", ADDRESS_HASH_LENGTH, tmpAddress);
+
+    case _5_1_VOTE_DELEGATE_AMOUNT:
+      txContext.tx_parsing_state = _5_1_VOTE_DELEGATE_AMOUNT;
+      binaryKey = (unsigned char) transaction_get_varint();
+      PRINTF("binaryKey _5_1_VOTE_DELEGATE_AMOUNT:\n %X \n\n", binaryKey);
+      tmpAmount = transaction_get_varint_signed();
       os_memset(lineBuffer, 0, sizeof(lineBuffer));
-      os_memmove(lineBuffer, txContext.tx_asset._5_0_reg_delegate.delegate, txContext.tx_asset._5_0_reg_delegate.delegateLength);
-      PRINTF("txContext.asset.delegate:\n %s \n\n", lineBuffer);
+      itoa(tmpAmount, lineBuffer, 10);
+      PRINTF("_5_1_VOTE_DELEGATE_AMOUNT tmpAmount:\n %s \n\n", lineBuffer);
+      if(tmpAmount >= 0) {
+        txContext.tx_asset._5_1_vote_delegate.n_vote++;
+        txContext.tx_asset._5_1_vote_delegate.totAmountVote += llabs(tmpAmount);
+      } else {
+        txContext.tx_asset._5_1_vote_delegate.n_unvote++;
+        txContext.tx_asset._5_1_vote_delegate.totAmountUnVote += llabs(tmpAmount);
+      }
+
+      //Check if we have parsed all
+      if(txContext.bytesRemaining == 0) {
+        txContext.tx_parsing_group = CHECK_SANITY_BEFORE_SIGN;
+        txContext.tx_parsing_state = BEGINNING;
+      } else {
+        txContext.tx_parsing_group = TX_ASSET;
+        txContext.tx_parsing_state = PLACEHOLDER;
+      }
+      break;
+    default:
+      THROW(INVALID_STATE);
     }
-    txContext.tx_parsing_group = CHECK_SANITY_BEFORE_SIGN;
-    txContext.tx_parsing_state = BEGINNING;
-    break;
-  default:
-    THROW(INVALID_STATE);
   }
 
 }
 
 void tx_finalize_5_1_vote_delegate() {
+  PRINTF("\n tx_finalize_5_1_vote_delegate before ui_display_vote_delegate \n ");
   ui_display_vote_delegate();
 }

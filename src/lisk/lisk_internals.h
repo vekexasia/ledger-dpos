@@ -1,5 +1,5 @@
-#ifndef NULS_INTERNALS_H
-#define NULS_INTERNALS_H
+#ifndef LISK_INTERNALS_H
+#define LISK_INTERNALS_H
 
 #include <inttypes.h>
 #include <stdint.h>
