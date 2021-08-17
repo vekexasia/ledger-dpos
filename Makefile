@@ -33,7 +33,7 @@ endif
 
 # Main app configuration
 
-APPNAME = "Lisk"
+APPNAME = "Lisk 2.0 Dev"
 APP_LOAD_PARAMS += --path "44'/134'"
 LEGACY_ADDRESS_SUFFIX = "L"
 LEGACY_ADDRESS_SUFFIX_LENGTH = 1
@@ -103,6 +103,10 @@ ICONNAME=nanox_lisk.gif
 else
 ICONNAME=nanos_lisk.gif
 endif
+
+# Pending security review
+APP_LOAD_PARAMS += --tlvraw 9F:01
+DEFINES += HAVE_PENDING_REVIEW_SCREEN
 
 # Compiler, assembler, and linker
 
