@@ -35,7 +35,6 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
   // if first packet with signing header
   if (packet->first) {
 
-    cx_sha256_init(&txContext.txHash);
     txContext.tx_parsing_state = BEGINNING;
     txContext.tx_parsing_group = COMMON;
     txContext.bufferPointer = NULL;
@@ -108,9 +107,7 @@ void finalizeSignTx(volatile unsigned int *flags) {
   if(txContext.tx_parsing_group != TX_PARSED || txContext.tx_parsing_state != READY_TO_SIGN)
     THROW(INVALID_STATE);
 
-  // Close sha256
-  cx_hash_finalize_tx(txContext.digest, DIGEST_LENGTH);
-
+  txContext.signableDataLength = txContext.bytesRead;
   ui_display_sign_tx();
 
   // We set the flag after displaying UI as there might be some validation code

@@ -49,7 +49,7 @@ void old_touch_approve() {
 
 void touch_approve() {
   uint8_t signature[SIGNATURE_LENGTH];
-  sign(&private_key, txContext.digest, DIGEST_LENGTH, signature);
+  sign(&private_key, txContext.signableData, txContext.signableDataLength, signature);
   initResponse();
   addToResponse(signature, SIGNATURE_LENGTH);
 

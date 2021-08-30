@@ -11,8 +11,6 @@ void check_sanity_before_sign();
 
 // Parser Utils
 void cx_hash_finalize_msg();
-void cx_hash_finalize_tx();
-void cx_hash_increase(unsigned char value);
 void transaction_offset_increase(unsigned char value);
 void is_available_to_parse(unsigned char x);
 

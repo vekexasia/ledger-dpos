@@ -1,6 +1,7 @@
 #ifndef LISK_CONTEXT_H
 #define LISK_CONTEXT_H
 
+#define MAX_PAYLOAD_SIZE 448
 
 #include "lisk_constants.h"
 #include "stdbool.h"
@@ -134,11 +135,11 @@ typedef union tx_asset {
 
 typedef struct transaction_context {
 
-    /** Full transaction hash context */
-    cx_sha256_t txHash;
+    cx_sha256_t sha256;
 
     /** Holds digest to sign */
-    uint8_t digest[DIGEST_LENGTH];
+    uint8_t signableData[MAX_PAYLOAD_SIZE];
+    uint16_t signableDataLength;
 
     // Common fields
     uint8_t network_id[NETWORK_ID_LENGTH];
@@ -147,7 +148,7 @@ typedef struct transaction_context {
     uint32_t asset_id;
     uint64_t nonce;
     uint64_t fee;
-    unsigned char senderPublicKey[ADDRESS_HASH_LENGTH];
+    unsigned char senderPublicKey[ENCODED_PUB_KEY];
 
     tx_asset_t tx_asset;
 

@@ -23,7 +23,7 @@ void handleSignMessagePacket(commPacket_t *packet, commContext_t *context) {
     // Reset sha256 and context
     os_memset(&reqContext, 0, sizeof(reqContext));
     os_memset(&txContext, 0, sizeof(txContext));
-    cx_sha256_init(&txContext.txHash);
+    cx_sha256_init(&txContext.sha256);
     txContext.bufferPointer = NULL;
 
     // IMPORTANT this logic below only works if the first packet contains the needed information (Which it should)
@@ -38,20 +38,20 @@ void handleSignMessagePacket(commPacket_t *packet, commContext_t *context) {
     uint64_t prefixLength = strlen(SIGNED_MESSAGE_PREFIX);
     uint8_t varintLength = lisk_encode_varint(prefixLength, varint);
 
-    cx_hash(&txContext.txHash.header, 0, varint, varintLength, NULL, 0);
-    cx_hash(&txContext.txHash.header, 0, SIGNED_MESSAGE_PREFIX, prefixLength, NULL, 0);
+    cx_hash(&txContext.sha256.header, 0, varint, varintLength, NULL, 0);
+    cx_hash(&txContext.sha256.header, 0, SIGNED_MESSAGE_PREFIX, prefixLength, NULL, 0);
 
     // Signing msg
     os_memset(varint, 0, sizeof(varint));
     varintLength = lisk_encode_varint(reqContext.signableContentLength, varint);
-    cx_hash(&txContext.txHash.header, 0, varint, varintLength, NULL, 0);
+    cx_hash(&txContext.sha256.header, 0, varint, varintLength, NULL, 0);
 
     //Prepare LineBuffer to show
     prepareMsgLineBuffer(packet, headerBytesRead); //Enough data here for display purpose
   }
   txContext.bufferPointer = packet->data + headerBytesRead;
   txContext.bytesChunkRemaining = packet->length - headerBytesRead;
-  cx_hash(&txContext.txHash.header, 0, txContext.bufferPointer , txContext.bytesChunkRemaining, NULL, 0);
+  cx_hash(&txContext.sha256.header, 0, txContext.bufferPointer , txContext.bytesChunkRemaining, NULL, 0);
 }
 
 void prepareMsgLineBuffer(commPacket_t *packet, uint32_t headerBytesRead) {
