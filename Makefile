@@ -23,7 +23,7 @@ ifeq (customCA.key,$(wildcard customCA.key))
 endif
 include $(BOLOS_SDK)/Makefile.defines
 
-APPVERSION = 2.0.0
+APPVERSION = 2.0.1
 APP_LOAD_PARAMS = --targetVersion "" --curve ed25519 $(COMMON_LOAD_PARAMS)
 ifeq ($(TARGET_NAME),TARGET_NANOX)
 APP_LOAD_PARAMS += --appFlags 0x240 # with BLE support
