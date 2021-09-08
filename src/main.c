@@ -74,13 +74,8 @@ void handleStartCommPacket() {
   commContext.totalAmount = 0;
 
   // Compute payload length
-  uint8_t * lengthBuf = G_io_apdu_buffer + 5;
-  commContext.totalAmount = lengthBuf[0] << 8;
-  commContext.totalAmount += lengthBuf[1];
-  if (commContext.totalAmount > MAX_PAYLOAD_SIZE) {
-      THROW(0x03 /* INVALID LENGTH */); // this app supports up to MAX_PAYLOAD_SIZE at most
-  }
-
+  commContext.totalAmount = lisk_read_u16(G_io_apdu_buffer + 5, 1, 0);
+  
   prevCRC = 0;
   initResponse();
   addToResponse(&commContext.totalAmount, 2);

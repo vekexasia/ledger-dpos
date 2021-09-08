@@ -35,6 +35,10 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
   // if first packet with signing header
   if (packet->first) {
 
+    if (commContext.totalAmount > MAX_PAYLOAD_SIZE) {
+      THROW(PAYLOAD_TOO_BIG); // this app supports up to MAX_PAYLOAD_SIZE at most
+    }
+
     txContext.tx_parsing_state = BEGINNING;
     txContext.tx_parsing_group = COMMON;
     txContext.bufferPointer = NULL;
