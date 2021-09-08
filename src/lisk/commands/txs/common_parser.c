@@ -53,15 +53,15 @@ void parse_group_common() {
       txContext.fee = transaction_get_varint();
     case SENDER_PUBKEY:
       txContext.tx_parsing_state = SENDER_PUBKEY;
-      is_available_to_parse(ADDRESS_HASH_LENGTH + 2); // + binaryKey + byteLength
+      is_available_to_parse(ENCODED_PUB_KEY + 2); // + binaryKey + byteLength
       binaryKey = (unsigned char) transaction_get_varint();
       tmpSize = (uint32_t) transaction_get_varint();
-      if(tmpSize != ADDRESS_HASH_LENGTH) {
+      if(tmpSize != ENCODED_PUB_KEY) {
         THROW(INVALID_PARAMETER);
       }
-      transaction_memmove(txContext.senderPublicKey, txContext.bufferPointer, ADDRESS_HASH_LENGTH);
+      transaction_memmove(txContext.senderPublicKey, txContext.bufferPointer, ENCODED_PUB_KEY);
       // Check that is equal to what we have in the request
-      if(lisk_secure_memcmp(reqContext.account.addressHash, txContext.senderPublicKey, ADDRESS_HASH_LENGTH) != 0) {
+      if(lisk_secure_memcmp(reqContext.account.encodedPublicKey, txContext.senderPublicKey, ENCODED_PUB_KEY) != 0) {
         THROW(INVALID_PARAMETER);
       }
       txContext.tx_parsing_group = TX_ASSET;
@@ -89,22 +89,15 @@ void cx_hash_finalize_msg() {
   unsigned char tmpHash[DIGEST_LENGTH];
   cx_sha256_t localHash;
 
-  cx_hash(&txContext.txHash.header, CX_LAST, NULL, 0, tmpHash, DIGEST_LENGTH);
+  cx_hash(&txContext.sha256.header, CX_LAST, NULL, 0, tmpHash, DIGEST_LENGTH);
   // Rehash
   cx_sha256_init(&localHash);
-  cx_hash(&localHash.header, CX_LAST, tmpHash, DIGEST_LENGTH, txContext.digest, DIGEST_LENGTH);
-}
-
-void cx_hash_finalize_tx() {
-  cx_hash(&txContext.txHash.header, CX_LAST, NULL, 0, txContext.digest, DIGEST_LENGTH);
-}
-
-void cx_hash_increase(unsigned char value) {
-  cx_hash(&txContext.txHash.header, 0, txContext.bufferPointer, value, NULL, 0);
+  cx_hash(&localHash.header, CX_LAST, tmpHash, DIGEST_LENGTH, txContext.signableData, DIGEST_LENGTH);
+  txContext.signableDataLength = DIGEST_LENGTH;
 }
 
 void transaction_offset_increase(unsigned char value) {
-  cx_hash_increase(value);
+  os_memmove(txContext.signableData + txContext.bytesRead, txContext.bufferPointer, value);
   txContext.bytesRead += value;
   txContext.bufferPointer += value;
   txContext.bytesRemaining -= value;

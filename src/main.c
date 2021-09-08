@@ -73,8 +73,9 @@ void handleStartCommPacket() {
   commContext.crc16 = 0;
   commContext.totalAmount = 0;
 
-  commContext.totalAmount = lisk_read_u32(G_io_apdu_buffer + 5, 1, 0);
-
+  // Compute payload length
+  commContext.totalAmount = lisk_read_u16(G_io_apdu_buffer + 5, 1, 0);
+  
   prevCRC = 0;
   initResponse();
   addToResponse(&commContext.totalAmount, 2);
