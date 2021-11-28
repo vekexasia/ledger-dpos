@@ -97,7 +97,7 @@ void cx_hash_finalize_msg() {
 }
 
 void transaction_offset_increase(unsigned char value) {
-  os_memmove(txContext.signableData + txContext.bytesRead, txContext.bufferPointer, value);
+  memmove(txContext.signableData + txContext.bytesRead, txContext.bufferPointer, value);
   txContext.bytesRead += value;
   txContext.bufferPointer += value;
   txContext.bytesRemaining -= value;
@@ -133,6 +133,6 @@ int64_t transaction_get_varint_signed(void) {
 void transaction_memmove(unsigned char *dest, unsigned char *src, size_t nBytes)
 {
   is_available_to_parse(nBytes);
-  os_memmove(dest, src, nBytes);
+  memmove(dest, src, nBytes);
   transaction_offset_increase(nBytes);
 }

@@ -249,22 +249,22 @@ unsigned char lisk_hex_amount_to_displayable(unsigned char *amount, char *dest) 
 unsigned char lisk_encode_varint(unsigned long int value, unsigned char *dest) {
   uint8_t tmp;
   if (value <= 0xfc) {
-    os_memmove(dest, &value, 1);
+    memmove(dest, &value, 1);
     return 1;
   } else if (value <= 0xffff) {
     tmp = 0xfd;
-    os_memmove(dest, &tmp, 1);
-    os_memmove(dest + 1, &value, 2);
+    memmove(dest, &tmp, 1);
+    memmove(dest + 1, &value, 2);
     return 3;
   } else if (value <= 0xffffffff) {
     tmp = 0xfe;
-    os_memmove(dest, &tmp, 1);
-    os_memmove(dest + 1, &value, 4);
+    memmove(dest, &tmp, 1);
+    memmove(dest + 1, &value, 4);
     return 5;
   } else if (value <= 0xffffffffffffffff) {
     tmp = 0xff;
-    os_memmove(dest, &tmp, 1);
-    os_memmove(dest + 1, &value, 8);
+    memmove(dest, &tmp, 1);
+    memmove(dest + 1, &value, 8);
     return 9;
   }
   // Error

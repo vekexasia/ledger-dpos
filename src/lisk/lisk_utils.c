@@ -24,7 +24,7 @@ void getEncodedPublicKey(cx_ecfp_public_key_t *publicKey, uint8_t *encoded) {
 void getPubKeyHash160(uint8_t *encodedPublicKey, uint8_t *encoded) {
   unsigned char hashedPkey[32];
   cx_hash_sha256(encodedPublicKey, 32, hashedPkey, 32);
-  os_memmove(encoded, hashedPkey, ADDRESS_HASH_LENGTH);
+  memmove(encoded, hashedPkey, ADDRESS_HASH_LENGTH);
 }
 
 void uint64_to_string(uint64_t input, char *out)
@@ -131,8 +131,8 @@ uint32_t setSignContext(commPacket_t *packet) {
   signContext.reserved = false;
 
   // clean up packet->data by removing the consumed content (sign context)
-  os_memmove(tmp, packet->data + bytesRead, packet->length - bytesRead);
-  os_memmove(packet->data, tmp, packet->length - bytesRead);
+  memmove(tmp, packet->data + bytesRead, packet->length - bytesRead);
+  memmove(packet->data, tmp, packet->length - bytesRead);
   packet->length -= bytesRead;
 
   return bytesRead;

@@ -45,7 +45,7 @@ UX_STEP_NOCB_INIT(
   bnnn_paging,
   {
     memset(lineBuffer, 0, sizeof(lineBuffer));
-    os_memmove(lineBuffer, &reqContext.account.addressLisk32, ADDRESS_LISK32_LENGTH);
+    memmove(lineBuffer, &reqContext.account.addressLisk32, ADDRESS_LISK32_LENGTH);
     lineBuffer[ADDRESS_LISK32_LENGTH] = '\0';
   },
   {

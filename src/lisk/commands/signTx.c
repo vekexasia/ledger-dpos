@@ -53,13 +53,13 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
     //insert at beginning saveBufferForNextChunk if present
     if(txContext.saveBufferLength > 0) {
       //Shift TX payload (without header) of saveBufferLength bytes on the right
-      os_memmove(
+      memmove(
           packet->data + headerBytesRead + txContext.saveBufferLength,
           packet->data + headerBytesRead,
           packet->length - headerBytesRead
       );
       //Copy saved buffer in the correct position (beginning of new tx data)
-      os_memmove(
+      memmove(
           packet->data + headerBytesRead,
           txContext.saveBufferForNextChunk,
           txContext.saveBufferLength
@@ -95,7 +95,7 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
       }
       CATCH_OTHER(e) {
         if(e == NEED_NEXT_CHUNK) {
-          os_memmove(txContext.saveBufferForNextChunk, txContext.bufferPointer, txContext.bytesChunkRemaining);
+          memmove(txContext.saveBufferForNextChunk, txContext.bufferPointer, txContext.bytesChunkRemaining);
           txContext.saveBufferLength = txContext.bytesChunkRemaining;
         } else {
           //Unexpected Error during parsing. Let the client know

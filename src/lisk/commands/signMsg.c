@@ -57,10 +57,10 @@ void handleSignMessagePacket(commPacket_t *packet, commContext_t *context) {
 void prepareMsgLineBuffer(commPacket_t *packet, uint32_t headerBytesRead) {
   memset(message, 0, sizeof(message));
   uint8_t msgDisplayLenth = MIN(sizeof(message), txContext.totalTxBytes);
-  os_memmove(message, txContext.bufferPointer, msgDisplayLenth);
+  memmove(message, txContext.bufferPointer, msgDisplayLenth);
 
   if (msgDisplayLenth > 96) {
-    os_memmove(message + 96, "...\0", 4);
+    memmove(message + 96, "...\0", 4);
   }
 
   uint8_t npc = 0; //Non Printable Chars Counter
@@ -73,7 +73,7 @@ void prepareMsgLineBuffer(commPacket_t *packet, uint32_t headerBytesRead) {
   // We rewrite the line buffer to <binary data> in case >= than 40% is non printable
   // or first char is not printable.
   if ((npc*100) / msgDisplayLenth >= 40 || ! IS_PRINTABLE(message[0])) {
-    os_memmove(message, "< binary data >\0", 16);
+    memmove(message, "< binary data >\0", 16);
   }
 }
 
@@ -90,7 +90,7 @@ UX_STEP_NOCB_INIT(
   bnnn_paging,
   {
     memset(lineBuffer, 0, sizeof(lineBuffer));
-    os_memmove(lineBuffer, message, 100);
+    memmove(lineBuffer, message, 100);
   },
   {
     "Message",
@@ -101,7 +101,7 @@ UX_STEP_NOCB_INIT(
   bnnn_paging,
   {
     memset(lineBuffer, 0, sizeof(lineBuffer));
-    os_memmove(lineBuffer, &reqContext.account.addressLisk32, ADDRESS_LISK32_LENGTH);
+    memmove(lineBuffer, &reqContext.account.addressLisk32, ADDRESS_LISK32_LENGTH);
     lineBuffer[ADDRESS_LISK32_LENGTH] = '\0';
   },
   {
