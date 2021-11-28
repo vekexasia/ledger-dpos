@@ -5,7 +5,7 @@
 #ifndef PROJECT_SIGNTX_H
 #define PROJECT_SIGNTX_H
 
-void handleSignTxPacket(commPacket_t *packet, commContext_t *context);
+void handleSignTxPacket(commPacket_t *packet);
 void finalizeSignTx(volatile unsigned int *flags);
 
 void setupTxSpecificHandlers();

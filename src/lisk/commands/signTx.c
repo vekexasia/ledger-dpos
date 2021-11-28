@@ -28,7 +28,7 @@ static void ui_display_sign_tx() {
   tx_end();
 }
 
-void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
+void handleSignTxPacket(commPacket_t *packet) {
 
   uint32_t headerBytesRead = 0;
 

@@ -22,10 +22,10 @@ void innerHandleCommPacket(commPacket_t *packet, commContext_t *context) {
     case INS_GET_PUBLIC_KEY:
       break;
     case INS_SIGN_MSG:
-      handleSignMessagePacket(packet, context);
+      handleSignMessagePacket(packet);
       break;
     case INS_SIGN:
-      handleSignTxPacket(packet, context);
+      handleSignTxPacket(packet);
       break;
     case INS_PING:
     case INS_VERSION:

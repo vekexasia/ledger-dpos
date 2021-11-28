@@ -13,7 +13,7 @@
 
 char message[100];
 
-void handleSignMessagePacket(commPacket_t *packet, commContext_t *context) {
+void handleSignMessagePacket(commPacket_t *packet) {
 
   uint32_t headerBytesRead = 0;
 
@@ -35,7 +35,7 @@ void handleSignMessagePacket(commPacket_t *packet, commContext_t *context) {
 
     // Signing header.
     uint8_t varint[9] = {0};
-    uint64_t prefixLength = strlen(SIGNED_MESSAGE_PREFIX);
+    uint16_t prefixLength = strlen(SIGNED_MESSAGE_PREFIX);
     uint8_t varintLength = lisk_encode_varint(prefixLength, varint);
 
     cx_hash(&txContext.sha256.header, 0, varint, varintLength, NULL, 0);
@@ -47,14 +47,14 @@ void handleSignMessagePacket(commPacket_t *packet, commContext_t *context) {
     cx_hash(&txContext.sha256.header, 0, varint, varintLength, NULL, 0);
 
     //Prepare LineBuffer to show
-    prepareMsgLineBuffer(packet, headerBytesRead); //Enough data here for display purpose
+    prepareMsgLineBuffer(); //Enough data here for display purpose
   }
   txContext.bufferPointer = packet->data + headerBytesRead;
   txContext.bytesChunkRemaining = packet->length - headerBytesRead;
   cx_hash(&txContext.sha256.header, 0, txContext.bufferPointer , txContext.bytesChunkRemaining, NULL, 0);
 }
 
-void prepareMsgLineBuffer(commPacket_t *packet, uint32_t headerBytesRead) {
+void prepareMsgLineBuffer() {
   memset(message, 0, sizeof(message));
   uint8_t msgDisplayLenth = MIN(sizeof(message), txContext.totalTxBytes);
   memmove(message, txContext.bufferPointer, msgDisplayLenth);
