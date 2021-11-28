@@ -115,7 +115,7 @@ uint32_t extractAccountInfo(uint8_t *data, local_address_t *account) {
 uint32_t setSignContext(commPacket_t *packet) {
   // reset current result
   uint8_t tmp[256];
-  os_memset(signContext.digest, 0, 32);
+  memset(signContext.digest, 0, 32);
 
   uint32_t bytesRead = extractAccountInfo(packet->data, &reqContext.account);
   derivePrivatePublic(&reqContext.account, &private_key, &public_key);
@@ -163,12 +163,12 @@ uint32_t setReqContextForGetPubKey(commPacket_t *packet) {
 
 void reset_contexts() {
   // Kill private key - shouldn't be necessary but just in case.
-  os_memset(&private_key, 0, sizeof(private_key));
+  memset(&private_key, 0, sizeof(private_key));
 
-  os_memset(&reqContext, 0, sizeof(reqContext));
-  os_memset(&txContext, 0, sizeof(txContext));
-  os_memset(&commContext, 0, sizeof(commContext));
-  os_memset(&commPacket, 0, sizeof(commPacket));
+  memset(&reqContext, 0, sizeof(reqContext));
+  memset(&txContext, 0, sizeof(txContext));
+  memset(&commContext, 0, sizeof(commContext));
+  memset(&commPacket, 0, sizeof(commPacket));
 
   // Allow restart of operation
   commContext.started = false;

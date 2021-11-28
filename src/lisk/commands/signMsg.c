@@ -21,8 +21,8 @@ void handleSignMessagePacket(commPacket_t *packet, commContext_t *context) {
   if ( packet->first ) {
 
     // Reset sha256 and context
-    os_memset(&reqContext, 0, sizeof(reqContext));
-    os_memset(&txContext, 0, sizeof(txContext));
+    memset(&reqContext, 0, sizeof(reqContext));
+    memset(&txContext, 0, sizeof(txContext));
     cx_sha256_init(&txContext.sha256);
     txContext.bufferPointer = NULL;
 
@@ -42,7 +42,7 @@ void handleSignMessagePacket(commPacket_t *packet, commContext_t *context) {
     cx_hash(&txContext.sha256.header, 0, SIGNED_MESSAGE_PREFIX, prefixLength, NULL, 0);
 
     // Signing msg
-    os_memset(varint, 0, sizeof(varint));
+    memset(varint, 0, sizeof(varint));
     varintLength = lisk_encode_varint(reqContext.signableContentLength, varint);
     cx_hash(&txContext.sha256.header, 0, varint, varintLength, NULL, 0);
 
@@ -55,7 +55,7 @@ void handleSignMessagePacket(commPacket_t *packet, commContext_t *context) {
 }
 
 void prepareMsgLineBuffer(commPacket_t *packet, uint32_t headerBytesRead) {
-  os_memset(message, 0, sizeof(message));
+  memset(message, 0, sizeof(message));
   uint8_t msgDisplayLenth = MIN(sizeof(message), txContext.totalTxBytes);
   os_memmove(message, txContext.bufferPointer, msgDisplayLenth);
 
@@ -89,7 +89,7 @@ UX_STEP_NOCB_INIT(
   ux_sign_message_flow_2_step,
   bnnn_paging,
   {
-    os_memset(lineBuffer, 0, sizeof(lineBuffer));
+    memset(lineBuffer, 0, sizeof(lineBuffer));
     os_memmove(lineBuffer, message, 100);
   },
   {
@@ -100,7 +100,7 @@ UX_STEP_NOCB_INIT(
   ux_sign_message_flow_3_step,
   bnnn_paging,
   {
-    os_memset(lineBuffer, 0, sizeof(lineBuffer));
+    memset(lineBuffer, 0, sizeof(lineBuffer));
     os_memmove(lineBuffer, &reqContext.account.addressLisk32, ADDRESS_LISK32_LENGTH);
     lineBuffer[ADDRESS_LISK32_LENGTH] = '\0';
   },

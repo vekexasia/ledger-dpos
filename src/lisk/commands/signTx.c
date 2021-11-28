@@ -66,7 +66,7 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
       );
       packet->length += txContext.saveBufferLength;
       txContext.saveBufferLength = 0;
-      os_memset(txContext.saveBufferForNextChunk, 0, sizeof(txContext.saveBufferForNextChunk));
+      memset(txContext.saveBufferForNextChunk, 0, sizeof(txContext.saveBufferForNextChunk));
     }
 
     txContext.bufferPointer = packet->data + headerBytesRead;

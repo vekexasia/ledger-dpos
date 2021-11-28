@@ -18,7 +18,7 @@ UX_STEP_NOCB_INIT(
   ux_sign_tx_regmultisig_flow_2_step,
   bnnn_paging,
   {
-    os_memset(lineBuffer, 0, sizeof(lineBuffer));
+    memset(lineBuffer, 0, sizeof(lineBuffer));
     os_memmove(lineBuffer, &reqContext.account.addressLisk32, ADDRESS_LISK32_LENGTH);
     lineBuffer[ADDRESS_LISK32_LENGTH] = '\0';
   },
@@ -30,7 +30,7 @@ UX_STEP_NOCB_INIT(
   ux_sign_tx_regmultisig_flow_3_step,
   bnnn_paging,
   {
-    os_memset(lineBuffer, 0, sizeof(lineBuffer));
+    memset(lineBuffer, 0, sizeof(lineBuffer));
     itoa(txContext.tx_asset._4_0_reg_multisig.n_keys, lineBuffer, 10);
   },
   {
@@ -41,7 +41,7 @@ UX_STEP_NOCB_INIT(
   ux_sign_tx_regmultisig_flow_4_step,
   bnnn_paging,
   {
-    os_memset(lineBuffer, 0, sizeof(lineBuffer));
+    memset(lineBuffer, 0, sizeof(lineBuffer));
     itoa(txContext.tx_asset._4_0_reg_multisig.n_mandatoryKeys, lineBuffer, 10);
   },
   {
@@ -52,7 +52,7 @@ UX_STEP_NOCB_INIT(
   ux_sign_tx_regmultisig_flow_5_step,
   bnnn_paging,
   {
-    os_memset(lineBuffer, 0, sizeof(lineBuffer));
+    memset(lineBuffer, 0, sizeof(lineBuffer));
     itoa(txContext.tx_asset._4_0_reg_multisig.n_optionalKeys, lineBuffer, 10);
   },
   {
@@ -63,7 +63,7 @@ UX_STEP_NOCB_INIT(
   ux_sign_tx_regmultisig_flow_6_step,
   bn,
   {
-    os_memset(lineBuffer, 0, sizeof(lineBuffer));
+    memset(lineBuffer, 0, sizeof(lineBuffer));
     satoshiToString(txContext.fee, lineBuffer);
   },
   {

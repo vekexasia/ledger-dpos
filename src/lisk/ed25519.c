@@ -20,7 +20,7 @@ void derivePrivatePublic(local_address_t *account, cx_ecfp_private_key_t *privat
   cx_ecfp_generate_pair(CX_CURVE_Ed25519, publicKey, privateKey, 1);
 
   // Clean up!
-  os_memset(privateKeyData, 0, sizeof(privateKeyData));
+  memset(privateKeyData, 0, sizeof(privateKeyData));
 }
 
 void bip32_buffer_to_array(uint8_t *bip32DataBuffer, uint8_t bip32PathLength, uint32_t *out_bip32Path) {

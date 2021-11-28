@@ -18,7 +18,7 @@ UX_STEP_NOCB_INIT(
   ux_sign_tx_regdelegate_flow_2_step,
   bnnn_paging,
   {
-    os_memset(lineBuffer, 0, sizeof(lineBuffer));
+    memset(lineBuffer, 0, sizeof(lineBuffer));
     os_memmove(lineBuffer, &reqContext.account.addressLisk32, ADDRESS_LISK32_LENGTH);
     lineBuffer[ADDRESS_LISK32_LENGTH] = '\0';
   },
@@ -30,7 +30,7 @@ UX_STEP_NOCB_INIT(
   ux_sign_tx_regdelegate_flow_3_step,
   bnnn_paging,
   {
-    os_memset(lineBuffer, 0, sizeof(lineBuffer));
+    memset(lineBuffer, 0, sizeof(lineBuffer));
     os_memmove(lineBuffer,
                txContext.tx_asset._5_0_reg_delegate.delegate,
                txContext.tx_asset._5_0_reg_delegate.delegateLength);
@@ -43,7 +43,7 @@ UX_STEP_NOCB_INIT(
   ux_sign_tx_regdelegate_flow_4_step,
   bn,
   {
-    os_memset(lineBuffer, 0, sizeof(lineBuffer));
+    memset(lineBuffer, 0, sizeof(lineBuffer));
     satoshiToString(txContext.fee, lineBuffer);
   },
   {

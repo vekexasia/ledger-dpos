@@ -20,7 +20,7 @@ UX_STEP_NOCB_INIT(
   ux_sign_tx_vote_delegate_flow_2_step,
   bnnn_paging,
   {
-    os_memset(lineBuffer, 0, sizeof(lineBuffer));
+    memset(lineBuffer, 0, sizeof(lineBuffer));
     os_memmove(lineBuffer, &reqContext.account.addressLisk32, ADDRESS_LISK32_LENGTH);
     lineBuffer[ADDRESS_LISK32_LENGTH] = '\0';
   },
@@ -32,7 +32,7 @@ UX_STEP_NOCB_INIT(
   ux_sign_tx_vote_delegate_flow_3_step,
   bnnn_paging,
   {
-    os_memset(lineBuffer, 0, sizeof(lineBuffer));
+    memset(lineBuffer, 0, sizeof(lineBuffer));
     lisk_int_to_string(txContext.tx_asset._5_1_vote_delegate.n_vote, lineBuffer);
   },
   {
@@ -43,7 +43,7 @@ UX_STEP_NOCB_INIT(
   ux_sign_tx_vote_delegate_flow_4_step,
   bn,
   {
-    os_memset(lineBuffer, 0, sizeof(lineBuffer));
+    memset(lineBuffer, 0, sizeof(lineBuffer));
     satoshiToString(txContext.tx_asset._5_1_vote_delegate.totAmountVote, lineBuffer);
   },
   {
@@ -54,7 +54,7 @@ UX_STEP_NOCB_INIT(
   ux_sign_tx_vote_delegate_flow_5_step,
   bnnn_paging,
   {
-    os_memset(lineBuffer, 0, sizeof(lineBuffer));
+    memset(lineBuffer, 0, sizeof(lineBuffer));
     lisk_int_to_string(txContext.tx_asset._5_1_vote_delegate.n_unvote, lineBuffer);
   },
   {
@@ -65,7 +65,7 @@ UX_STEP_NOCB_INIT(
   ux_sign_tx_vote_delegate_flow_6_step,
   bn,
   {
-    os_memset(lineBuffer, 0, sizeof(lineBuffer));
+    memset(lineBuffer, 0, sizeof(lineBuffer));
     satoshiToString(txContext.tx_asset._5_1_vote_delegate.totAmountUnVote, lineBuffer);
   },
   {
@@ -76,7 +76,7 @@ UX_STEP_NOCB_INIT(
   ux_sign_tx_vote_delegate_flow_7_step,
   bn,
   {
-    os_memset(lineBuffer, 0, sizeof(lineBuffer));
+    memset(lineBuffer, 0, sizeof(lineBuffer));
     satoshiToString(txContext.fee, lineBuffer);
   },
   {

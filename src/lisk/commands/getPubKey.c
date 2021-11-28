@@ -44,7 +44,7 @@ UX_STEP_NOCB_INIT(
   ux_verify_address_flow_2_step,
   bnnn_paging,
   {
-    os_memset(lineBuffer, 0, sizeof(lineBuffer));
+    memset(lineBuffer, 0, sizeof(lineBuffer));
     os_memmove(lineBuffer, &reqContext.account.addressLisk32, ADDRESS_LISK32_LENGTH);
     lineBuffer[ADDRESS_LISK32_LENGTH] = '\0';
   },
@@ -83,8 +83,8 @@ static void ui_display_verify_address(void) {
 
 void handleGetPublicKey(volatile unsigned int *flags, commPacket_t *packet) {
   //reset contexts
-  os_memset(&reqContext, 0, sizeof(reqContext));
-  os_memset(&txContext, 0, sizeof(txContext));
+  memset(&reqContext, 0, sizeof(reqContext));
+  memset(&txContext, 0, sizeof(txContext));
 
   setReqContextForGetPubKey(packet); //address is derived there
 

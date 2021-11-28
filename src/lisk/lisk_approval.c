@@ -16,7 +16,7 @@ void touch_deny() {
   commContext.read = 0;
 
   // Kill private key - shouldn't be necessary but just in case.
-  os_memset(&private_key, 0, sizeof(private_key));
+  memset(&private_key, 0, sizeof(private_key));
 
   // Send back the response, do not restart the event loop
   io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
