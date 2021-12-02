@@ -4,7 +4,6 @@
 #include "varint_msb.h"
 
 static const char MSB = 0x80;
-static const char MSBALL = ~0x7F;
 
 uint64_t decode_varint(uint8_t* buf, unsigned char* inputSize) {
   uint64_t result = 0;

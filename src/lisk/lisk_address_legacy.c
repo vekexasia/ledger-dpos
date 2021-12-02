@@ -53,7 +53,7 @@ uint8_t deriveLegacyAddressStringRepresentation(uint64_t encodedAddress, char *o
     output[total - 1 - i] = brocca[i];
   }
 
-  os_memmove(&output[total], LEGACY_ADDRESS_SUFFIX, LEGACY_ADDRESS_SUFFIX_LENGTH);
+  memmove(&output[total], LEGACY_ADDRESS_SUFFIX, LEGACY_ADDRESS_SUFFIX_LENGTH);
   output[total + LEGACY_ADDRESS_SUFFIX_LENGTH] = '\0'; // for strlen
   return (uint8_t) (total + LEGACY_ADDRESS_SUFFIX_LENGTH /*suffix*/);
 }

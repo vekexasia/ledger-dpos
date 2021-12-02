@@ -18,8 +18,8 @@ UX_STEP_NOCB_INIT(
   ux_sign_tx_regmultisig_flow_2_step,
   bnnn_paging,
   {
-    os_memset(lineBuffer, 0, sizeof(lineBuffer));
-    os_memmove(lineBuffer, &reqContext.account.addressLisk32, ADDRESS_LISK32_LENGTH);
+    memset(lineBuffer, 0, sizeof(lineBuffer));
+    memmove(lineBuffer, &reqContext.account.addressLisk32, ADDRESS_LISK32_LENGTH);
     lineBuffer[ADDRESS_LISK32_LENGTH] = '\0';
   },
   {
@@ -30,7 +30,7 @@ UX_STEP_NOCB_INIT(
   ux_sign_tx_regmultisig_flow_3_step,
   bnnn_paging,
   {
-    os_memset(lineBuffer, 0, sizeof(lineBuffer));
+    memset(lineBuffer, 0, sizeof(lineBuffer));
     itoa(txContext.tx_asset._4_0_reg_multisig.n_keys, lineBuffer, 10);
   },
   {
@@ -41,7 +41,7 @@ UX_STEP_NOCB_INIT(
   ux_sign_tx_regmultisig_flow_4_step,
   bnnn_paging,
   {
-    os_memset(lineBuffer, 0, sizeof(lineBuffer));
+    memset(lineBuffer, 0, sizeof(lineBuffer));
     itoa(txContext.tx_asset._4_0_reg_multisig.n_mandatoryKeys, lineBuffer, 10);
   },
   {
@@ -50,9 +50,20 @@ UX_STEP_NOCB_INIT(
   });
 UX_STEP_NOCB_INIT(
   ux_sign_tx_regmultisig_flow_5_step,
+  bnnn_paging,
+  {
+    memset(lineBuffer, 0, sizeof(lineBuffer));
+    itoa(txContext.tx_asset._4_0_reg_multisig.n_optionalKeys, lineBuffer, 10);
+  },
+  {
+    "Optional keys",
+    lineBuffer,
+  });
+UX_STEP_NOCB_INIT(
+  ux_sign_tx_regmultisig_flow_6_step,
   bn,
   {
-    os_memset(lineBuffer, 0, sizeof(lineBuffer));
+    memset(lineBuffer, 0, sizeof(lineBuffer));
     satoshiToString(txContext.fee, lineBuffer);
   },
   {
@@ -60,7 +71,7 @@ UX_STEP_NOCB_INIT(
     lineBuffer,
   });
 UX_STEP_CB(
-  ux_sign_tx_regmultisig_flow_6_step,
+  ux_sign_tx_regmultisig_flow_7_step,
   pb,
   touch_approve(),
   {
@@ -68,7 +79,7 @@ UX_STEP_CB(
     "Confirm",
   });
 UX_STEP_CB(
-  ux_sign_tx_regmultisig_flow_7_step,
+  ux_sign_tx_regmultisig_flow_8_step,
   pb,
   touch_deny(),
   {
@@ -82,16 +93,11 @@ UX_FLOW(ux_sign_tx_regmultisig_flow,
   &ux_sign_tx_regmultisig_flow_4_step,
   &ux_sign_tx_regmultisig_flow_5_step,
   &ux_sign_tx_regmultisig_flow_6_step,
-  &ux_sign_tx_regmultisig_flow_7_step);
+  &ux_sign_tx_regmultisig_flow_7_step,
+  &ux_sign_tx_regmultisig_flow_8_step);
 
 static void ui_display_regmultisig() {
   ux_flow_init(0, ux_sign_tx_regmultisig_flow, NULL);
-}
-
-static void checkKeysValidity() {
-  uint32_t totKeys = txContext.tx_asset._4_0_reg_multisig.n_mandatoryKeys + txContext.tx_asset._4_0_reg_multisig.n_optionalKeys;
-  if(txContext.tx_asset._4_0_reg_multisig.n_keys != totKeys)
-    THROW(INVALID_PARAMETER);
 }
 
 void tx_parse_specific_4_0_register_multisignature_group() {
@@ -137,7 +143,6 @@ void tx_parse_specific_4_0_register_multisignature_group() {
 
       // Exit the loop if there are no bytes to parse
       if(txContext.bytesRemaining == 0) {
-        checkKeysValidity();
         txContext.tx_parsing_group = CHECK_SANITY_BEFORE_SIGN;
         txContext.tx_parsing_state = BEGINNING;
       }

@@ -13,7 +13,7 @@
 
 char message[100];
 
-void handleSignMessagePacket(commPacket_t *packet, commContext_t *context) {
+void handleSignMessagePacket(commPacket_t *packet) {
 
   uint32_t headerBytesRead = 0;
 
@@ -21,8 +21,8 @@ void handleSignMessagePacket(commPacket_t *packet, commContext_t *context) {
   if ( packet->first ) {
 
     // Reset sha256 and context
-    os_memset(&reqContext, 0, sizeof(reqContext));
-    os_memset(&txContext, 0, sizeof(txContext));
+    memset(&reqContext, 0, sizeof(reqContext));
+    memset(&txContext, 0, sizeof(txContext));
     cx_sha256_init(&txContext.sha256);
     txContext.bufferPointer = NULL;
 
@@ -35,32 +35,32 @@ void handleSignMessagePacket(commPacket_t *packet, commContext_t *context) {
 
     // Signing header.
     uint8_t varint[9] = {0};
-    uint64_t prefixLength = strlen(SIGNED_MESSAGE_PREFIX);
+    uint16_t prefixLength = strlen(SIGNED_MESSAGE_PREFIX);
     uint8_t varintLength = lisk_encode_varint(prefixLength, varint);
 
     cx_hash(&txContext.sha256.header, 0, varint, varintLength, NULL, 0);
     cx_hash(&txContext.sha256.header, 0, SIGNED_MESSAGE_PREFIX, prefixLength, NULL, 0);
 
     // Signing msg
-    os_memset(varint, 0, sizeof(varint));
+    memset(varint, 0, sizeof(varint));
     varintLength = lisk_encode_varint(reqContext.signableContentLength, varint);
     cx_hash(&txContext.sha256.header, 0, varint, varintLength, NULL, 0);
 
     //Prepare LineBuffer to show
-    prepareMsgLineBuffer(packet, headerBytesRead); //Enough data here for display purpose
+    prepareMsgLineBuffer(); //Enough data here for display purpose
   }
   txContext.bufferPointer = packet->data + headerBytesRead;
   txContext.bytesChunkRemaining = packet->length - headerBytesRead;
   cx_hash(&txContext.sha256.header, 0, txContext.bufferPointer , txContext.bytesChunkRemaining, NULL, 0);
 }
 
-void prepareMsgLineBuffer(commPacket_t *packet, uint32_t headerBytesRead) {
-  os_memset(message, 0, sizeof(message));
+void prepareMsgLineBuffer() {
+  memset(message, 0, sizeof(message));
   uint8_t msgDisplayLenth = MIN(sizeof(message), txContext.totalTxBytes);
-  os_memmove(message, txContext.bufferPointer, msgDisplayLenth);
+  memmove(message, txContext.bufferPointer, msgDisplayLenth);
 
   if (msgDisplayLenth > 96) {
-    os_memmove(message + 96, "...\0", 4);
+    memmove(message + 96, "...\0", 4);
   }
 
   uint8_t npc = 0; //Non Printable Chars Counter
@@ -73,7 +73,7 @@ void prepareMsgLineBuffer(commPacket_t *packet, uint32_t headerBytesRead) {
   // We rewrite the line buffer to <binary data> in case >= than 40% is non printable
   // or first char is not printable.
   if ((npc*100) / msgDisplayLenth >= 40 || ! IS_PRINTABLE(message[0])) {
-    os_memmove(message, "< binary data >\0", 16);
+    memmove(message, "< binary data >\0", 16);
   }
 }
 
@@ -89,8 +89,8 @@ UX_STEP_NOCB_INIT(
   ux_sign_message_flow_2_step,
   bnnn_paging,
   {
-    os_memset(lineBuffer, 0, sizeof(lineBuffer));
-    os_memmove(lineBuffer, message, 100);
+    memset(lineBuffer, 0, sizeof(lineBuffer));
+    memmove(lineBuffer, message, 100);
   },
   {
     "Message",
@@ -100,8 +100,8 @@ UX_STEP_NOCB_INIT(
   ux_sign_message_flow_3_step,
   bnnn_paging,
   {
-    os_memset(lineBuffer, 0, sizeof(lineBuffer));
-    os_memmove(lineBuffer, &reqContext.account.addressLisk32, ADDRESS_LISK32_LENGTH);
+    memset(lineBuffer, 0, sizeof(lineBuffer));
+    memmove(lineBuffer, &reqContext.account.addressLisk32, ADDRESS_LISK32_LENGTH);
     lineBuffer[ADDRESS_LISK32_LENGTH] = '\0';
   },
   {

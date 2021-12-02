@@ -92,11 +92,11 @@ void handleCommPacket() {
   if (commContext.read == 0) {
     // IF first packet we read command and strip it away from the data packet
     commContext.command = G_io_apdu_buffer[5];
-    os_memmove(commPacket.data, G_io_apdu_buffer + 6, G_io_apdu_buffer[4] - 1);
+    memmove(commPacket.data, G_io_apdu_buffer + 6, G_io_apdu_buffer[4] - 1);
     commPacket.length = G_io_apdu_buffer[4] - 1;
     commPacket.first = true;
   } else {
-    os_memmove(commPacket.data, G_io_apdu_buffer + 5, G_io_apdu_buffer[4]);
+    memmove(commPacket.data, G_io_apdu_buffer + 5, G_io_apdu_buffer[4]);
     commPacket.length = G_io_apdu_buffer[4];
     commPacket.first = false;
   }

@@ -18,8 +18,8 @@ UX_STEP_NOCB_INIT(
   ux_sign_tx_send_flow_2_step,
   bnnn_paging,
   {
-    os_memset(lineBuffer, 0, sizeof(lineBuffer));
-    os_memmove(lineBuffer, &reqContext.account.addressLisk32, ADDRESS_LISK32_LENGTH);
+    memset(lineBuffer, 0, sizeof(lineBuffer));
+    memmove(lineBuffer, &reqContext.account.addressLisk32, ADDRESS_LISK32_LENGTH);
     lineBuffer[ADDRESS_LISK32_LENGTH] = '\0';
   },
   {
@@ -30,7 +30,7 @@ UX_STEP_NOCB_INIT(
   ux_sign_tx_send_flow_3_step,
   bnnn_paging,
   {
-    os_memset(lineBuffer, 0, sizeof(lineBuffer));
+    memset(lineBuffer, 0, sizeof(lineBuffer));
     lisk_addr_encode(lineBuffer, LISK32_ADDRESS_PREFIX,
                      txContext.tx_asset._2_0_transfer.recipientAddress, ADDRESS_HASH_LENGTH);
     lineBuffer[ADDRESS_LISK32_LENGTH] = '\0';
@@ -43,10 +43,10 @@ UX_STEP_NOCB_INIT(
   ux_sign_tx_send_flow_4_step,
   bnnn_paging,
   {
-    os_memset(lineBuffer, 0, sizeof(lineBuffer));
-    os_memmove(lineBuffer,
-               txContext.tx_asset._2_0_transfer.data,
-               txContext.tx_asset._2_0_transfer.dataLength);
+    memset(lineBuffer, 0, sizeof(lineBuffer));
+    memmove(lineBuffer,
+            txContext.tx_asset._2_0_transfer.data,
+            txContext.tx_asset._2_0_transfer.dataLength);
   },
   {
     "Message",
@@ -56,7 +56,7 @@ UX_STEP_NOCB_INIT(
   ux_sign_tx_send_flow_5_step,
   bn,
   {
-    os_memset(lineBuffer, 0, sizeof(lineBuffer));
+    memset(lineBuffer, 0, sizeof(lineBuffer));
     satoshiToString(txContext.tx_asset._2_0_transfer.amount, lineBuffer);
   },
   {
@@ -67,7 +67,7 @@ UX_STEP_NOCB_INIT(
   ux_sign_tx_send_flow_6_step,
   bn,
   {
-    os_memset(lineBuffer, 0, sizeof(lineBuffer));
+    memset(lineBuffer, 0, sizeof(lineBuffer));
     satoshiToString(txContext.fee, lineBuffer);
   },
   {
